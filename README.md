@@ -1,2 +1,2 @@
 # Chord-trainer
-Instant recognition of chords trauner
+Instant recognition of chords trainer
