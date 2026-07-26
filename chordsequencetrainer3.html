@@ -625,41 +625,41 @@
       }
     }, 400);
   }
-
-  async function connectMIDI() {
-    try {
-      if (!navigator.requestMIDIAccess) {
-        midiStatus.textContent = '⚠️ Web MIDI not supported (use Chrome or Web MIDI Browser)';
-        midiStatus.className = 'midi-status error';
-        return;
-      }
-      midiAccess = await navigator.requestMIDIAccess({ sysex: false });
-      const inputs = [...midiAccess.inputs.values()];
-      if (inputs.length === 0) {
-        midiStatus.textContent = '⚠️ No MIDI inputs found. Connect a keyboard.';
-        midiStatus.className = 'midi-status error';
-        return;
-      }
-      midiInput = inputs[0];
-      midiInput.onmidimessage = handleMIDIMessage;
-      connected = true;
-      midiStatus.textContent = `✅ MIDI connected: ${midiInput.name || 'Keyboard'}`;
-      midiStatus.className = 'midi-status connected';
-      midiConnectBtn.textContent = 'Disconnect';
-      midiConnectBtn.classList.add('active');
-      listenMode = true;
-      if (currentSequence.length > 0) {
-        currentIndex = 0;
-        setCurrentChord(0);
-        feedbackMsg.textContent = '🎯 MIDI ready – play the chord!';
-      } else {
-        feedbackMsg.textContent = 'Generate a sequence to start.';
-      }
-    } catch (e) {
-      midiStatus.textContent = `❌ MIDI error: ${e.message}`;
+async function connectMIDI() {
+  try {
+    if (!navigator.requestMIDIAccess) {
+      midiStatus.textContent = '⚠️ Web MIDI not supported (use Chrome or Web MIDI Browser)';
       midiStatus.className = 'midi-status error';
+      return;
     }
+    const access = await navigator.requestMIDIAccess({ sysex: false });
+    const inputs = [...access.inputs.values()];
+    if (inputs.length === 0) {
+      midiStatus.textContent = '⚠️ No MIDI inputs found. Connect a keyboard.';
+      midiStatus.className = 'midi-status error';
+      return;
+    }
+    midiInput = inputs[0];
+    midiInput.onmidimessage = handleMIDIMessage;
+    connected = true;
+    midiStatus.textContent = `✅ MIDI connected: ${midiInput.name || 'Keyboard'}`;
+    midiStatus.className = 'midi-status connected';
+    midiConnectBtn.textContent = 'Disconnect';
+    midiConnectBtn.classList.add('active');
+    listenMode = true;
+    if (currentSequence.length > 0) {
+      currentIndex = 0;
+      setCurrentChord(0);
+      feedbackMsg.textContent = '🎯 MIDI ready – play the chord!';
+    } else {
+      feedbackMsg.textContent = 'Generate a sequence to start.';
+    }
+  } catch (e) {
+    midiStatus.textContent = `❌ MIDI error: ${e.message}`;
+    midiStatus.className = 'midi-status error';
   }
+}
+  
 
   function disconnectMIDI() {
     if (midiInput) { midiInput.onmidimessage = null; midiInput = null; }
