@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Chord Sequence Trainer – MIDI Feedback</title>
   <style>
-    /* --- same styles as before, plus a flash class --- */
+    /* --- Reset & base --- */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -67,10 +67,6 @@
     .feedback-area {
       background: #f1efe9; border-radius: 0.6rem; padding: 0.5rem 0.7rem; margin-bottom: 0.6rem;
       min-height: 3rem; display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;
-      transition: background 0.1s;
-    }
-    .feedback-area.flash {
-      background: #ffeaa7 !important;
     }
     .feedback-area .msg { font-size: 0.9rem; font-weight: 600; flex: 1; }
     .feedback-area .msg.correct { color: #2f7d48; font-weight: 700; }
@@ -202,7 +198,7 @@
 
 <script>
   // =====================================================================
-  // THEORY (same as before)
+  // THEORY
   // =====================================================================
   const NOTE_NAMES_MIXED = ['C','Db','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
   const NOTE_NAMES_SHARP = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
@@ -468,7 +464,7 @@
   }
 
   // =====================================================================
-  // AUDIO – FIXED: direct connection, visual feedback
+  // AUDIO
   // =====================================================================
   let audioCtx = null, masterGain = null;
   let playbackTimeouts = [], isPlaying = false;
@@ -481,9 +477,7 @@
       masterGain.connect(audioCtx.destination);
       masterGain.gain.exponentialRampToValueAtTime(0.9, audioCtx.currentTime + 0.02);
     }
-    if (audioCtx.state === 'suspended') {
-      audioCtx.resume();
-    }
+    if (audioCtx.state === 'suspended') audioCtx.resume();
     return audioCtx;
   }
 
@@ -515,7 +509,7 @@
   function playSingleChord(notes) { stopPlayback(); playChordNotes(notes, 1.0); }
 
   // =====================================================================
-  // MIDI – WITH AUDIO FIX AND VISUAL FLASH
+  // MIDI – WITH FIXED AUDIO AND WORKING VALIDATION
   // =====================================================================
   let midiAccess = null, midiInput = null;
   let connected = false;
@@ -524,6 +518,7 @@
 
   const inputVoices = new Map();
   const feedbackArea = document.getElementById('feedback-area');
+  const testSoundBtn = document.getElementById('test-sound');
 
   function flashFeedback() {
     feedbackArea.classList.add('flash');
@@ -532,7 +527,6 @@
 
   function startInputNote(note, velocity = 96) {
     const ctx = ensureAudio();
-    // Remove existing voice for same note
     const existing = inputVoices.get(note);
     if (existing) {
       try { existing.osc.stop(); } catch {}
@@ -546,11 +540,9 @@
     gain.gain.setValueAtTime(0.0001, ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(amp, ctx.currentTime + 0.02);
     osc.connect(gain);
-    // Connect directly to destination (like test sound)
     gain.connect(ctx.destination);
     osc.start(ctx.currentTime);
     inputVoices.set(note, { osc, gain });
-    // Visual feedback
     flashFeedback();
   }
 
@@ -569,142 +561,6 @@
       stopInputNote(note);
     }
     inputVoices.clear();
-  }
-
-  const midiStatus = document.getElementById('midi-status');
-  const midiConnectBtn = document.getElementById('midi-connect');
-  const testSoundBtn = document.getElementById('test-sound');
-  const playedDisplay = document.getElementById('played-display');
-  const feedbackMsg = document.getElementById('feedback-msg');
-  const statsDisplay = document.getElementById('stats-display');
-
-  let stats = { correct: 0, wrong: 0, streak: 0, bestStreak: 0, total: 0, times: [] };
-
-  let currentExpectedNotes = [];
-  let currentBassNote = null;
-  let currentIndex = 0;
-  let listenMode = false;
-  let chordStartTime = 0;
-
-  function updateStats() {
-    const avg = stats.times.length ? Math.round(stats.times.reduce((a,b)=>a+b,0)/stats.times.length) : 0;
-    statsDisplay.innerHTML = `
-      <span>✅ ${stats.correct}</span>
-      <span>❌ ${stats.wrong}</span>
-      <span>🔥 ${stats.streak}</span>
-      <span>⚡ ${avg}ms</span>
-      <span>📊 ${stats.total}</span>
-    `;
-  }
-
-  function setCurrentChord(index) {
-    const item = currentSequence[index];
-    if (!item) return;
-    currentExpectedNotes = [...item.notes];
-    currentBassNote = item.isSlash ? item.slashBassRoot : null;
-    currentIndex = index;
-    chordStartTime = Date.now();
-    const displayName = currentMode === 'absolute' || item._mode === 'absolute' ? item.symbol : item.display;
-    feedbackMsg.textContent = `🎯 Play: ${displayName}`;
-    feedbackMsg.className = 'msg waiting';
-    const items = document.querySelectorAll('.seq-item');
-    items.forEach(el => el.classList.remove('playing'));
-    if (items[index]) items[index].classList.add('playing');
-    heldNotes.clear();
-    playedDisplay.textContent = '🎹 notes: none';
-  }
-
-  function checkChord(playedNotes) {
-    if (!currentExpectedNotes || currentExpectedNotes.length === 0) {
-      feedbackMsg.textContent = 'No chord to check. Generate a sequence first.';
-      feedbackMsg.className = 'msg waiting';
-      return;
-    }
-    const expected = [...currentExpectedNotes].sort((a,b)=>a-b);
-    const played = [...playedNotes].sort((a,b)=>a-b);
-    const elapsed = Date.now() - chordStartTime;
-
-    const allPresent = expected.every(n => played.includes(n));
-    const extraNotes = played.filter(n => !expected.includes(n));
-    const missingNotes = expected.filter(n => !played.includes(n));
-
-    const items = document.querySelectorAll('.seq-item');
-    const currentItem = items[currentIndex];
-
-    if (allPresent && extraNotes.length === 0 && missingNotes.length === 0) {
-      stats.correct++;
-      stats.streak++;
-      if (stats.streak > stats.bestStreak) stats.bestStreak = stats.streak;
-      stats.total++;
-      stats.times.push(elapsed);
-      updateStats();
-
-      feedbackMsg.innerHTML = `✅ <span style="color:#2f7d48;font-weight:700;">Correct!</span> (${elapsed}ms)`;
-      feedbackMsg.className = 'msg correct';
-
-      if (currentItem) {
-        currentItem.classList.add('done');
-        currentItem.classList.remove('playing');
-        const degSpan = currentItem.querySelector('.deg');
-        if (degSpan && !degSpan.textContent.includes('✅')) {
-          degSpan.textContent = '✅ ' + degSpan.textContent.replace(/[✅❌]\s*/, '');
-        }
-        currentItem.style.borderLeftColor = '#2f7d48';
-        currentItem.style.background = '#e8f5e9';
-      }
-
-      currentIndex++;
-      if (currentIndex < currentSequence.length) {
-        setCurrentChord(currentIndex);
-      } else {
-        feedbackMsg.innerHTML = '🎉 <span style="color:#2f7d48;font-weight:700;">Complete!</span> Generate a new sequence.';
-        listenMode = false;
-      }
-    } else {
-      stats.wrong++;
-      stats.streak = 0;
-      stats.total++;
-      updateStats();
-
-      let msg = '❌ ';
-      if (missingNotes.length > 0) msg += `Missing: ${missingNotes.map(n=>noteLabel(n)).join(' ')} `;
-      if (extraNotes.length > 0) msg += `Extra: ${extraNotes.map(n=>noteLabel(n)).join(' ')} `;
-      if (missingNotes.length === 0 && extraNotes.length === 0 && !allPresent) msg = '❌ Wrong notes played';
-
-      feedbackMsg.innerHTML = msg;
-      feedbackMsg.className = 'msg wrong';
-
-      if (currentItem) {
-        const degSpan = currentItem.querySelector('.deg');
-        if (degSpan && !degSpan.textContent.includes('❌')) {
-          degSpan.textContent = '❌ ' + degSpan.textContent.replace(/[✅❌]\s*/, '');
-        }
-        currentItem.style.borderLeftColor = '#ba3e4b';
-        currentItem.style.background = '#fbe9e7';
-      }
-    }
-  }
-
-  function handleMIDIMessage(event) {
-    const [status, note, velocity] = event.data;
-    const cmd = status & 0xf0;
-    if (cmd === 0x90 && velocity > 0) {
-      heldNotes.add(note);
-      startInputNote(note, velocity);
-    } else if (cmd === 0x80 || (cmd === 0x90 && velocity === 0)) {
-      heldNotes.delete(note);
-      stopInputNote(note);
-    } else if (cmd === 0xb0 && note === 64) {
-      return;
-    }
-    const notes = [...heldNotes].sort((a, b) => a - b);
-    playedDisplay.textContent = notes.length ? `🎹 ${notes.map(n => noteLabel(n)).join(' ')}` : '🎹 notes: none';
-    if (chordCheckTimeout) clearTimeout(chordCheckTimeout);
-    chordCheckTimeout = setTimeout(() => {
-      if (listenMode && heldNotes.size > 0) {
-        checkChord(heldNotes);
-      }
-    }, 400);
   }
 
   testSoundBtn.addEventListener('click', () => {
@@ -729,6 +585,171 @@
       feedbackMsg.className = 'msg wrong';
     }
   });
+
+  const midiStatus = document.getElementById('midi-status');
+  const midiConnectBtn = document.getElementById('midi-connect');
+  const playedDisplay = document.getElementById('played-display');
+  const feedbackMsg = document.getElementById('feedback-msg');
+  const statsDisplay = document.getElementById('stats-display');
+
+  let stats = { correct: 0, wrong: 0, streak: 0, bestStreak: 0, total: 0, times: [] };
+
+  let currentExpectedNotes = [];
+  let currentIndex = 0;
+  let listenMode = false;
+  let chordStartTime = 0;
+
+  function updateStats() {
+    const avg = stats.times.length ? Math.round(stats.times.reduce((a,b)=>a+b,0)/stats.times.length) : 0;
+    statsDisplay.innerHTML = `
+      <span>✅ ${stats.correct}</span>
+      <span>❌ ${stats.wrong}</span>
+      <span>🔥 ${stats.streak}</span>
+      <span>⚡ ${avg}ms</span>
+      <span>📊 ${stats.total}</span>
+    `;
+  }
+
+  // =====================================================================
+  // CORRECTED setCurrentChord
+  // =====================================================================
+  function setCurrentChord(index) {
+    if (!currentSequence || index >= currentSequence.length) {
+      feedbackMsg.innerHTML = '🎉 Complete! Generate a new sequence.';
+      feedbackMsg.className = 'msg correct';
+      listenMode = false;
+      return;
+    }
+
+    const item = currentSequence[index];
+    if (!item) {
+      feedbackMsg.textContent = 'Error: No chord found at index ' + index;
+      feedbackMsg.className = 'msg wrong';
+      return;
+    }
+
+    currentExpectedNotes = [...item.notes];
+    currentIndex = index;
+    chordStartTime = Date.now();
+
+    const displayName = currentMode === 'absolute' || item._mode === 'absolute' ? item.symbol : item.display;
+    feedbackMsg.innerHTML = `🎯 Play: <strong>${displayName}</strong>`;
+    feedbackMsg.className = 'msg waiting';
+
+    const items = document.querySelectorAll('.seq-item');
+    items.forEach(el => {
+      el.classList.remove('playing');
+    });
+    if (items[index]) {
+      items[index].classList.add('playing');
+      const degSpan = items[index].querySelector('.deg');
+      if (degSpan) {
+        degSpan.textContent = degSpan.textContent.replace(/[✅❌]\s*/, '');
+      }
+      items[index].style.borderLeftColor = '#d97706';
+      items[index].style.background = '';
+    }
+
+    heldNotes.clear();
+    playedDisplay.textContent = '🎹 notes: none';
+  }
+
+  // =====================================================================
+  // CORRECTED checkChord
+  // =====================================================================
+  function checkChord(playedNotes) {
+    if (!currentExpectedNotes || currentExpectedNotes.length === 0) {
+      feedbackMsg.textContent = 'No chord to check. Generate a sequence first.';
+      feedbackMsg.className = 'msg waiting';
+      return;
+    }
+
+    const expected = [...currentExpectedNotes].sort((a, b) => a - b);
+    const played = [...playedNotes].sort((a, b) => a - b);
+    const elapsed = Date.now() - chordStartTime;
+
+    const allPresent = expected.every(n => played.includes(n));
+    const extraNotes = played.filter(n => !expected.includes(n));
+    const missingNotes = expected.filter(n => !played.includes(n));
+
+    const items = document.querySelectorAll('.seq-item');
+    const currentItem = items[currentIndex];
+
+    function updateItem(marker, color, bg) {
+      if (currentItem) {
+        const degSpan = currentItem.querySelector('.deg');
+        if (degSpan) {
+          const clean = degSpan.textContent.replace(/[✅❌]\s*/, '');
+          degSpan.textContent = marker + ' ' + clean;
+        }
+        currentItem.style.borderLeftColor = color;
+        currentItem.style.background = bg;
+        currentItem.classList.remove('playing');
+      }
+    }
+
+    if (allPresent && extraNotes.length === 0 && missingNotes.length === 0) {
+      // ✅ CORRECT
+      stats.correct++;
+      stats.streak++;
+      if (stats.streak > stats.bestStreak) stats.bestStreak = stats.streak;
+      stats.total++;
+      stats.times.push(elapsed);
+      updateStats();
+
+      feedbackMsg.innerHTML = `✅ <span style="color:#2f7d48;font-weight:700;">Correct!</span> (${elapsed}ms)`;
+      feedbackMsg.className = 'msg correct';
+
+      updateItem('✅', '#2f7d48', '#e8f5e9');
+
+      currentIndex++;
+      if (currentIndex < currentSequence.length) {
+        setCurrentChord(currentIndex);
+      } else {
+        feedbackMsg.innerHTML = '🎉 <span style="color:#2f7d48;font-weight:700;">Complete!</span> Generate a new sequence.';
+        feedbackMsg.className = 'msg correct';
+        listenMode = false;
+      }
+    } else {
+      // ❌ WRONG
+      stats.wrong++;
+      stats.streak = 0;
+      stats.total++;
+      updateStats();
+
+      let msg = '❌ ';
+      if (missingNotes.length > 0) msg += `Missing: ${missingNotes.map(n => noteLabel(n)).join(' ')} `;
+      if (extraNotes.length > 0) msg += `Extra: ${extraNotes.map(n => noteLabel(n)).join(' ')} `;
+      if (missingNotes.length === 0 && extraNotes.length === 0 && !allPresent) msg = '❌ Wrong notes played';
+
+      feedbackMsg.innerHTML = msg;
+      feedbackMsg.className = 'msg wrong';
+
+      updateItem('❌', '#ba3e4b', '#fbe9e7');
+    }
+  }
+
+  function handleMIDIMessage(event) {
+    const [status, note, velocity] = event.data;
+    const cmd = status & 0xf0;
+    if (cmd === 0x90 && velocity > 0) {
+      heldNotes.add(note);
+      startInputNote(note, velocity);
+    } else if (cmd === 0x80 || (cmd === 0x90 && velocity === 0)) {
+      heldNotes.delete(note);
+      stopInputNote(note);
+    } else if (cmd === 0xb0 && note === 64) {
+      return;
+    }
+    const notes = [...heldNotes].sort((a, b) => a - b);
+    playedDisplay.textContent = notes.length ? `🎹 ${notes.map(n => noteLabel(n)).join(' ')}` : '🎹 notes: none';
+    if (chordCheckTimeout) clearTimeout(chordCheckTimeout);
+    chordCheckTimeout = setTimeout(() => {
+      if (listenMode && heldNotes.size > 0) {
+        checkChord(heldNotes);
+      }
+    }, 400);
+  }
 
   async function connectMIDI() {
     try {
@@ -824,7 +845,7 @@
   });
 
   // =====================================================================
-  // UI (unchanged)
+  // UI
   // =====================================================================
   const keySelect = document.getElementById('key-select');
   const keyModeSelect = document.getElementById('key-mode-select');
