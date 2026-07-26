@@ -626,31 +626,66 @@
       const access = await navigator.requestMIDIAccess({ sysex: false });
       // SAFE: use Array.from instead of spread
       const inputs = Array.from(access.inputs.values());
-      if (inputs.length === 0) {
-        midiStatus.textContent = '⚠️ No MIDI inputs found. Connect a keyboard.';
-        midiStatus.className = 'midi-status error';
-        return;
-      }
-      midiInput = inputs[0];
-      midiInput.onmidimessage = handleMIDIMessage;
-      connected = true;
-      midiStatus.textContent = `✅ MIDI connected: ${midiInput.name || 'Keyboard'}`;
-      midiStatus.className = 'midi-status connected';
-      midiConnectBtn.textContent = 'Disconnect';
-      midiConnectBtn.classList.add('active');
-      listenMode = true;
-      if (currentSequence.length > 0) {
-        currentIndex = 0;
-        setCurrentChord(0);
-        feedbackMsg.textContent = '🎯 MIDI ready – play the chord!';
-      } else {
-        feedbackMsg.textContent = 'Generate a sequence to start.';
-      }
-    } catch (e) {
-      midiStatus.textContent = `❌ MIDI error: ${e.message}`;
+    async function connectMIDI() {
+  try {
+    if (!navigator.requestMIDIAccess) {
+      midiStatus.textContent = '⚠️ Web MIDI not supported';
       midiStatus.className = 'midi-status error';
+      return;
     }
+    
+    midiStatus.textContent = '⏳ Requesting MIDI access...';
+    const access = await navigator.requestMIDIAccess({ sysex: false });
+    
+    // Get inputs using the compatible method (no spread syntax)
+    const inputs = [];
+    const inputsIterator = access.inputs.values();
+    let next = inputsIterator.next();
+    while (!next.done) {
+      inputs.push(next.value);
+      next = inputsIterator.next();
+    }
+    
+    if (inputs.length === 0) {
+      midiStatus.textContent = '⚠️ No MIDI inputs found. Connect a keyboard.';
+      midiStatus.className = 'midi-status error';
+      return;
+    }
+    
+    // Find the Bluetooth input (or use the first one)
+    let selectedInput = inputs.find(input => 
+      input.name.toLowerCase().includes('bluetooth') || 
+      input.name.toLowerCase().includes('ble')
+    );
+    
+    if (!selectedInput) {
+      selectedInput = inputs[0]; // fallback to first input
+    }
+    
+    midiInput = selectedInput;
+    midiInput.onmidimessage = handleMIDIMessage;
+    connected = true;
+    
+    midiStatus.textContent = `✅ MIDI connected: ${midiInput.name || 'Keyboard'}`;
+    midiStatus.className = 'midi-status connected';
+    midiConnectBtn.textContent = 'Disconnect';
+    midiConnectBtn.classList.add('active');
+    listenMode = true;
+    
+    if (currentSequence.length > 0) {
+      currentIndex = 0;
+      setCurrentChord(0);
+      feedbackMsg.textContent = '🎯 MIDI ready – play the chord!';
+    } else {
+      feedbackMsg.textContent = 'Generate a sequence to start.';
+    }
+    
+  } catch (e) {
+    midiStatus.textContent = `❌ MIDI error: ${e.message}`;
+    midiStatus.className = 'midi-status error';
+    console.error(e);
   }
+}
 
   function disconnectMIDI() {
     if (midiInput) { midiInput.onmidimessage = null; midiInput = null; }
