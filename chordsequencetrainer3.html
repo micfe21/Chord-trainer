@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Chord Sequence Trainer – MIDI Feedback</title>
   <style>
+    /* --- Reset & base --- */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -41,7 +42,6 @@
     .mode-selector button { padding: 0.3rem 0.8rem; border-radius: 999px; border: 2px solid #d7d2c8; background: transparent; font-weight: 600; font-size: 0.8rem; cursor: pointer; transition: 0.15s; min-height: 32px; }
     .mode-selector button.active { background: #0b6d73; color: white; border-color: #0b6d73; }
     .mode-selector button:hover { background: #e4ded4; }
-    .mode-selector button .badge-mode { font-size: 0.6rem; background: #d7d2c8; padding: 0.05rem 0.4rem; border-radius: 999px; margin-left: 0.3rem; }
 
     .chord-palette { display: flex; flex-wrap: wrap; gap: 0.3rem; padding: 0.3rem 0.5rem; background: #f1efe9; border-radius: 0.6rem; margin-bottom: 0.6rem; }
     .chord-palette span { font-size: 0.65rem; font-weight: 600; color: #6e6a62; padding: 0.1rem 0.4rem; border-radius: 999px; background: rgba(255,255,255,0.5); border: 1px solid #d7d2c8; cursor: pointer; transition: 0.15s; }
@@ -194,7 +194,7 @@
 
 <script>
   // =====================================================================
-  // THEORY – same as before
+  // THEORY (unchanged)
   // =====================================================================
   const NOTE_NAMES_MIXED = ['C','Db','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
   const NOTE_NAMES_SHARP = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
@@ -460,7 +460,7 @@
   }
 
   // =====================================================================
-  // AUDIO
+  // AUDIO (unchanged)
   // =====================================================================
   let audioCtx = null, masterGain = null;
   let playbackTimeouts = [], isPlaying = false;
@@ -501,7 +501,7 @@
   function playSingleChord(notes) { stopPlayback(); playChordNotes(notes, 1.0); }
 
   // =====================================================================
-  // MIDI – SAFE VERSION (No spread operator)
+  // MIDI – CORRECTED for Web MIDI Browser compatibility
   // =====================================================================
   let midiAccess = null, midiInput = null;
   let connected = false;
@@ -531,15 +531,14 @@
     `;
   }
 
-  function checkChord(playedNotesSet) {
+  function checkChord(playedNotes) {
     if (!currentExpectedNotes || currentExpectedNotes.length === 0) {
       feedbackMsg.textContent = 'No chord to check. Generate a sequence first.';
       feedbackMsg.className = 'msg waiting';
       return;
     }
-    // Convert sets to arrays safely
-    const expected = Array.isArray(currentExpectedNotes) ? currentExpectedNotes.slice().sort((a,b)=>a-b) : [];
-    const played = playedNotesSet ? Array.from(playedNotesSet).sort((a,b)=>a-b) : [];
+    const expected = [...currentExpectedNotes].sort((a,b)=>a-b);
+    const played = [...playedNotes].sort((a,b)=>a-b);
     const elapsed = Date.now() - chordStartTime;
 
     const allPresent = expected.every(n => played.includes(n));
@@ -581,11 +580,11 @@
   function setCurrentChord(index) {
     const item = currentSequence[index];
     if (!item) return;
-    currentExpectedNotes = Array.isArray(item.notes) ? item.notes.slice() : [];
+    currentExpectedNotes = [...item.notes];
     currentBassNote = item.isSlash ? item.slashBassRoot : null;
     currentIndex = index;
     chordStartTime = Date.now();
-    const displayName = currentMode === 'absolute' || (item._mode && item._mode === 'absolute') ? item.symbol : item.display;
+    const displayName = currentMode === 'absolute' || item._mode === 'absolute' ? item.symbol : item.display;
     feedbackMsg.textContent = `🎯 Play: ${displayName}`;
     feedbackMsg.className = 'msg waiting';
     const items = document.querySelectorAll('.seq-item');
@@ -605,9 +604,8 @@
     } else if (cmd === 0xb0 && note === 64) {
       return;
     }
-    const notes = Array.from(heldNotes).sort((a,b)=>a-b);
+    const notes = [...heldNotes].sort((a,b)=>a-b);
     playedDisplay.textContent = notes.length ? `🎹 ${notes.map(n=>noteLabel(n)).join(' ')}` : '🎹 notes: none';
-
     if (chordCheckTimeout) clearTimeout(chordCheckTimeout);
     chordCheckTimeout = setTimeout(() => {
       if (listenMode && heldNotes.size > 0) {
@@ -616,76 +614,66 @@
     }, 400);
   }
 
+  // =====================================================================
+  // CORRECTED connectMIDI – uses compatible iteration (no spread)
+  // =====================================================================
   async function connectMIDI() {
     try {
       if (!navigator.requestMIDIAccess) {
-        midiStatus.textContent = '⚠️ Web MIDI not supported (use Chrome or Web MIDI Browser)';
+        midiStatus.textContent = '⚠️ Web MIDI not supported';
         midiStatus.className = 'midi-status error';
         return;
       }
+
+      midiStatus.textContent = '⏳ Requesting MIDI access...';
       const access = await navigator.requestMIDIAccess({ sysex: false });
-      // SAFE: use Array.from instead of spread
-      const inputs = Array.from(access.inputs.values());
-    async function connectMIDI() {
-  try {
-    if (!navigator.requestMIDIAccess) {
-      midiStatus.textContent = '⚠️ Web MIDI not supported';
+
+      // --- Get inputs without spread syntax ---
+      const inputs = [];
+      const inputsIterator = access.inputs.values();
+      let next = inputsIterator.next();
+      while (!next.done) {
+        inputs.push(next.value);
+        next = inputsIterator.next();
+      }
+
+      if (inputs.length === 0) {
+        midiStatus.textContent = '⚠️ No MIDI inputs found. Connect a keyboard.';
+        midiStatus.className = 'midi-status error';
+        return;
+      }
+
+      // Prefer Bluetooth input, otherwise pick the first
+      let selectedInput = inputs.find(input =>
+        input.name.toLowerCase().includes('bluetooth') ||
+        input.name.toLowerCase().includes('ble')
+      );
+      if (!selectedInput) selectedInput = inputs[0];
+
+      midiInput = selectedInput;
+      midiInput.onmidimessage = handleMIDIMessage;
+      connected = true;
+
+      midiStatus.textContent = `✅ MIDI connected: ${midiInput.name || 'Keyboard'}`;
+      midiStatus.className = 'midi-status connected';
+      midiConnectBtn.textContent = 'Disconnect';
+      midiConnectBtn.classList.add('active');
+      listenMode = true;
+
+      if (currentSequence.length > 0) {
+        currentIndex = 0;
+        setCurrentChord(0);
+        feedbackMsg.textContent = '🎯 MIDI ready – play the chord!';
+      } else {
+        feedbackMsg.textContent = 'Generate a sequence to start.';
+      }
+
+    } catch (e) {
+      midiStatus.textContent = `❌ MIDI error: ${e.message}`;
       midiStatus.className = 'midi-status error';
-      return;
+      console.error(e);
     }
-    
-    midiStatus.textContent = '⏳ Requesting MIDI access...';
-    const access = await navigator.requestMIDIAccess({ sysex: false });
-    
-    // Get inputs using the compatible method (no spread syntax)
-    const inputs = [];
-    const inputsIterator = access.inputs.values();
-    let next = inputsIterator.next();
-    while (!next.done) {
-      inputs.push(next.value);
-      next = inputsIterator.next();
-    }
-    
-    if (inputs.length === 0) {
-      midiStatus.textContent = '⚠️ No MIDI inputs found. Connect a keyboard.';
-      midiStatus.className = 'midi-status error';
-      return;
-    }
-    
-    // Find the Bluetooth input (or use the first one)
-    let selectedInput = inputs.find(input => 
-      input.name.toLowerCase().includes('bluetooth') || 
-      input.name.toLowerCase().includes('ble')
-    );
-    
-    if (!selectedInput) {
-      selectedInput = inputs[0]; // fallback to first input
-    }
-    
-    midiInput = selectedInput;
-    midiInput.onmidimessage = handleMIDIMessage;
-    connected = true;
-    
-    midiStatus.textContent = `✅ MIDI connected: ${midiInput.name || 'Keyboard'}`;
-    midiStatus.className = 'midi-status connected';
-    midiConnectBtn.textContent = 'Disconnect';
-    midiConnectBtn.classList.add('active');
-    listenMode = true;
-    
-    if (currentSequence.length > 0) {
-      currentIndex = 0;
-      setCurrentChord(0);
-      feedbackMsg.textContent = '🎯 MIDI ready – play the chord!';
-    } else {
-      feedbackMsg.textContent = 'Generate a sequence to start.';
-    }
-    
-  } catch (e) {
-    midiStatus.textContent = `❌ MIDI error: ${e.message}`;
-    midiStatus.className = 'midi-status error';
-    console.error(e);
   }
-}
 
   function disconnectMIDI() {
     if (midiInput) { midiInput.onmidimessage = null; midiInput = null; }
@@ -705,7 +693,7 @@
   });
 
   // =====================================================================
-  // UI – unchanged
+  // UI (unchanged)
   // =====================================================================
   const keySelect = document.getElementById('key-select');
   const keyModeSelect = document.getElementById('key-mode-select');
@@ -793,7 +781,7 @@
       div.addEventListener('click', () => { playSingleChord(item.notes); });
       const topRow = document.createElement('div'); topRow.className = 'top-row';
       const degSpan = document.createElement('span'); degSpan.className = 'deg';
-      if (currentMode === 'roman' || (item._mode && item._mode === 'roman')) degSpan.textContent = `${idx+1}. ${item.degreeLabel || '?'}`;
+      if (currentMode === 'roman' || item._mode === 'roman') degSpan.textContent = `${idx+1}. ${item.degreeLabel || '?'}`;
       else degSpan.textContent = `${idx+1}.`;
       const nameSpan = document.createElement('span'); nameSpan.className = 'name';
       if (currentMode === 'mixed' && item._mode) nameSpan.textContent = item._mode === 'roman' ? item.display : item.symbol;
@@ -809,8 +797,7 @@
       topRow.append(degSpan, nameSpan, keyLabel, badge); div.appendChild(topRow);
       if (showNotes) {
         const notesRow = document.createElement('div'); notesRow.className = 'seq-notes';
-        const noteNames = item.notes ? item.notes.map(n=>noteLabel(n)).join('  ') : '';
-        notesRow.textContent = `♪  ${noteNames}`;
+        notesRow.textContent = `♪  ${item.notes.map(n=>noteLabel(n)).join('  ')}`;
         div.appendChild(notesRow);
       }
       list.appendChild(div);
@@ -859,7 +846,7 @@
   function copySequence() {
     if (!currentSequence.length) return;
     const text = currentSequence.map((item, i) => {
-      const displayName = currentMode === 'absolute' || (item._mode && item._mode === 'absolute') ? item.symbol : item.display;
+      const displayName = currentMode === 'absolute' || item._mode === 'absolute' ? item.symbol : item.display;
       return `${i+1}. ${displayName}`;
     }).join('\n');
     const btn = document.getElementById('copy-btn'), orig = btn.textContent;
