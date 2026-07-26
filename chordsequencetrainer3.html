@@ -633,7 +633,10 @@ async function connectMIDI() {
       return;
     }
     const access = await navigator.requestMIDIAccess({ sysex: false });
-    const inputs = [...access.inputs.values()];
+    
+    // ✅ SAFE: Convert Map to Array using Array.from() instead of spread
+    const inputs = Array.from(access.inputs.values());
+    
     if (inputs.length === 0) {
       midiStatus.textContent = '⚠️ No MIDI inputs found. Connect a keyboard.';
       midiStatus.className = 'midi-status error';
