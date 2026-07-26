@@ -197,7 +197,7 @@
 
 <script>
   // =====================================================================
-  // THEORY (unchanged)
+  // THEORY
   // =====================================================================
   const NOTE_NAMES_MIXED = ['C','Db','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
   const NOTE_NAMES_SHARP = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
@@ -507,7 +507,7 @@
   function playSingleChord(notes) { stopPlayback(); playChordNotes(notes, 1.0); }
 
   // =====================================================================
-  // MIDI – WITH AUDIO FEEDBACK AND CORRECTED VALIDATION
+  // MIDI – WITH FIXED AUDIO
   // =====================================================================
   let midiAccess = null, midiInput = null;
   let connected = false;
@@ -726,7 +726,8 @@
       midiInput.onmidimessage = handleMIDIMessage;
       connected = true;
 
-      ensureAudio();  // start audio context on user gesture
+      // ===== KEY FIX: ensure audio context is resumed on user gesture =====
+      ensureAudio();
 
       midiStatus.textContent = `✅ MIDI connected: ${midiInput.name || 'Keyboard'}`;
       midiStatus.className = 'midi-status connected';
@@ -784,7 +785,7 @@
   });
 
   // =====================================================================
-  // UI (unchanged)
+  // UI
   // =====================================================================
   const keySelect = document.getElementById('key-select');
   const keyModeSelect = document.getElementById('key-mode-select');
