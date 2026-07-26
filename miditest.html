@@ -18,29 +18,79 @@
         const access = await navigator.requestMIDIAccess();
         log.textContent = 'MIDI access granted!\n\nInputs:';
 
-        // Use forEach instead of spread syntax
-        let hasInputs = false;
-        access.inputs.forEach(input => {
-          hasInputs = true;
-          log.textContent += `\n✅ ${input.name} (${input.manufacturer || 'unknown'})`;
-          input.onmidimessage = (event) => {
-            const [status, note, velocity] = event.data;
-            log.textContent += `\n📩 Note: ${note} (${status === 144 ? 'ON' : 'OFF'})`;
-          };
-        });
-        if (!hasInputs) {
-          log.textContent += '\n❌ No MIDI inputs found.';
+        // Method 1: Try to get inputs as an array using Array.from
+        try {
+          const inputsArray = Array.from(access.inputs);
+          if (inputsArray.length === 0) {
+            log.textContent += '\n❌ No MIDI inputs found (Array.from).';
+          } else {
+            inputsArray.forEach(([id, input]) => {
+              log.textContent += `\n✅ ${input.name} (${input.manufacturer || 'unknown'})`;
+              input.onmidimessage = (event) => {
+                const [status, note, velocity] = event.data;
+                log.textContent += `\n📩 Note: ${note} (${status === 144 ? 'ON' : 'OFF'})`;
+              };
+            });
+          }
+        } catch (e) {
+          log.textContent += `\n⚠️ Array.from failed: ${e.message}`;
+        }
+
+        // Method 2: Try to get inputs using values() and a for...of loop
+        try {
+          log.textContent += '\n\nTrying values() method...';
+          const inputsIterator = access.inputs.values();
+          let hasInputs = false;
+          let next = inputsIterator.next();
+          while (!next.done) {
+            hasInputs = true;
+            const input = next.value;
+            log.textContent += `\n✅ ${input.name} (${input.manufacturer || 'unknown'})`;
+            input.onmidimessage = (event) => {
+              const [status, note, velocity] = event.data;
+              log.textContent += `\n📩 Note: ${note} (${status === 144 ? 'ON' : 'OFF'})`;
+            };
+            next = inputsIterator.next();
+          }
+          if (!hasInputs) {
+            log.textContent += '\n❌ No MIDI inputs found (values).';
+          }
+        } catch (e) {
+          log.textContent += `\n⚠️ values() failed: ${e.message}`;
+        }
+
+        // Method 3: Try a different approach – using the raw MIDI access
+        try {
+          log.textContent += '\n\nTrying direct MIDI access...';
+          const inputs = access.inputs;
+          for (let key in inputs) {
+            if (inputs.hasOwnProperty(key) && !isNaN(key)) {
+              const input = inputs[key];
+              log.textContent += `\n✅ ${input.name} (${input.manufacturer || 'unknown'})`;
+              input.onmidimessage = (event) => {
+                const [status, note, velocity] = event.data;
+                log.textContent += `\n📩 Note: ${note} (${status === 144 ? 'ON' : 'OFF'})`;
+              };
+            }
+          }
+        } catch (e) {
+          log.textContent += `\n⚠️ Direct access failed: ${e.message}`;
         }
 
         log.textContent += '\n\nOutputs:';
-        let hasOutputs = false;
-        access.outputs.forEach(output => {
-          hasOutputs = true;
-          log.textContent += `\n✅ ${output.name}`;
-        });
-        if (!hasOutputs) {
-          log.textContent += '\n❌ No MIDI outputs found.';
+        try {
+          const outputsArray = Array.from(access.outputs);
+          if (outputsArray.length === 0) {
+            log.textContent += '\n❌ No MIDI outputs found.';
+          } else {
+            outputsArray.forEach(([id, output]) => {
+              log.textContent += `\n✅ ${output.name}`;
+            });
+          }
+        } catch (e) {
+          log.textContent += `\n⚠️ Outputs failed: ${e.message}`;
         }
+
       } catch (error) {
         log.textContent = `❌ Error: ${error.message}`;
       }
