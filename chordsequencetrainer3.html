@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Chord Trainer – Fixed</title>
+  <title>Chord Trainer – Persistent Notes</title>
   <style>
-    /* --- Reset & base --- */
+    /* --- same as before, kept minimal --- */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -142,7 +142,7 @@
 <div class="app">
   <div class="shell">
     <h1>🎵 Chord Trainer</h1>
-    <div class="sub">Fixed chord detection – shows expected notes in debug log</div>
+    <div class="sub">Persistent notes – they stay until you check</div>
 
     <div class="mode-selector" id="mode-selector" role="tablist">
       <button class="active" data-mode="roman" role="tab">Roman</button>
@@ -171,7 +171,6 @@
       <span data-filter="slash" role="button" tabindex="0">Slash</span>
     </div>
 
-    <!-- MIDI Section -->
     <div class="midi-section">
       <span class="midi-status" id="midi-status">⏳ MIDI: idle</span>
       <button class="midi-btn" id="midi-connect">Connect MIDI</button>
@@ -179,7 +178,6 @@
       <span class="played-notes" id="played-display">🎹 notes: none</span>
     </div>
 
-    <!-- Feedback -->
     <div class="feedback-area" id="feedback-area">
       <div class="msg waiting" id="feedback-msg">Generate a sequence and play on your MIDI keyboard</div>
       <div class="stats" id="stats-display">
@@ -194,7 +192,6 @@
       <div class="empty-state">Tap "Generate" to create a progression.</div>
     </div>
 
-    <!-- Debug Area -->
     <div class="debug-area" id="debug-log">⏳ Waiting for action...</div>
 
     <div class="actions">
@@ -211,7 +208,7 @@
 
 <script>
   // =====================================================================
-  // THEORY – FIXED CHORD BUILDING
+  // THEORY
   // =====================================================================
   const NOTE_NAMES_MIXED = ['C','Db','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
   const NOTE_NAMES_SHARP = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
@@ -254,7 +251,8 @@
   let listenMode = false;
   let currentExpectedNotes = [];
   let currentIndex = 0;
-  let heldNotes = new Set();
+  // Persistent notes: we store notes as they are played and never clear them until check
+  let playedNotesForCheck = [];
   let stats = { correct: 0, wrong: 0, streak: 0, total: 0 };
 
   const debugLog = document.getElementById('debug-log');
@@ -272,21 +270,18 @@
   }
 
   // =====================================================================
-  // FIXED CHORD BUILDER
+  // CHORD BUILDER
   // =====================================================================
   function buildChord(root, typeKey, inversion = 0) {
     const def = CHORD_TYPES[typeKey];
     if (!def) return [];
-    // Get the raw intervals
     let notes = def.intervals.map(iv => root + iv);
-    // Apply inversion by rotating the notes
     const n = notes.length;
     const inv = ((inversion % n) + n) % n;
     for (let i = 0; i < inv; i++) {
       const first = notes.shift();
       notes.push(first + 12);
     }
-    // Sort and deduplicate
     notes = [...new Set(notes)].sort((a,b) => a-b);
     return notes;
   }
@@ -322,7 +317,6 @@
       const scale = [0,2,4,5,7,9,11];
       const chordRoot = chordKeyRoot + scale[deg - 1];
 
-      // Determine chord quality based on degree
       const degInfo = DEGREE_MAP[deg];
       const qualityKey = degInfo ? degInfo.seventh : 'maj';
       const typeKey = allowedTypes.includes(qualityKey) ? qualityKey : allowedTypes[0] || 'maj';
@@ -369,7 +363,6 @@
       const notes = buildChord(chordRoot, typeKey, inv);
       const symbol = getChordSymbol(chordRoot, typeKey);
       const display = getRomanSymbol(deg, typeKey, inv);
-      const fullName = currentMode === 'absolute' ? symbol : display;
 
       seq.push({
         degree: deg,
@@ -381,7 +374,7 @@
         notes: notes,
         symbol: symbol,
         display: display,
-        fullName: fullName,
+        fullName: currentMode === 'absolute' ? symbol : display,
         category: CHORD_TYPES[typeKey].category || 'diatonic'
       });
     }
@@ -392,8 +385,6 @@
   // AUDIO
   // =====================================================================
   let audioCtx = null;
-  let playbackTimeouts = [];
-
   function ensureAudio() {
     if (!audioCtx) {
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -445,7 +436,7 @@
   }
 
   // =====================================================================
-  // VALIDATION
+  // VALIDATION – uses playedNotesForCheck (persistent)
   // =====================================================================
   function setCurrentChord(index) {
     if (!currentSequence || index >= currentSequence.length) {
@@ -472,7 +463,8 @@
       items[index].style.borderLeftColor = '#d97706';
       items[index].style.background = '';
     }
-    heldNotes.clear();
+    // Clear persistent notes for new chord
+    playedNotesForCheck = [];
     playedDisplay.textContent = '🎹 notes: none';
   }
 
@@ -482,14 +474,14 @@
       feedbackMsg.className = 'msg waiting';
       return;
     }
-    if (heldNotes.size === 0) {
+    if (playedNotesForCheck.length === 0) {
       feedbackMsg.textContent = '⚠️ No notes played. Play some notes on your keyboard first.';
       feedbackMsg.className = 'msg waiting';
       return;
     }
 
     const expected = [...currentExpectedNotes].sort((a,b)=>a-b);
-    const played = [...heldNotes].sort((a,b)=>a-b);
+    const played = [...playedNotesForCheck].sort((a,b)=>a-b);
 
     const allPresent = expected.every(n => played.includes(n));
     const extra = played.filter(n => !expected.includes(n));
@@ -520,6 +512,7 @@
       feedbackMsg.className = 'msg correct';
       updateItem('✅', '#2f7d48', '#e8f5e9');
       logDebug(`✅ Correct! Expected: ${expected.map(n=>noteLabel(n)).join(' ')}`, 'success');
+      // Advance
       currentIndex++;
       if (currentIndex < currentSequence.length) {
         setCurrentChord(currentIndex);
@@ -544,13 +537,16 @@
   }
 
   // =====================================================================
-  // MIDI HANDLER
+  // MIDI HANDLER – stores notes persistently
   // =====================================================================
   function handleMIDIMessage(event) {
     const [status, note, velocity] = event.data;
     const cmd = status & 0xf0;
     if (cmd === 0x90 && velocity > 0) {
-      heldNotes.add(note);
+      // Add to persistent list if not already there
+      if (!playedNotesForCheck.includes(note)) {
+        playedNotesForCheck.push(note);
+      }
       // Play sound
       const ctx = ensureAudio();
       const freq = 440 * Math.pow(2, (note - 69) / 12);
@@ -565,17 +561,11 @@
       gain.connect(ctx.destination);
       osc.start(ctx.currentTime);
       osc.stop(ctx.currentTime + 0.4);
-    } else if (cmd === 0x80 || (cmd === 0x90 && velocity === 0)) {
-      heldNotes.delete(note);
     }
-    const notes = [...heldNotes].sort((a,b)=>a-b);
+    // Note Off does NOT remove notes from persistent list
+    // Update display
+    const notes = [...playedNotesForCheck].sort((a,b)=>a-b);
     playedDisplay.textContent = notes.length ? `🎹 ${notes.map(n=>noteLabel(n)).join(' ')}` : '🎹 notes: none';
-    if (chordCheckTimeout) clearTimeout(chordCheckTimeout);
-    chordCheckTimeout = setTimeout(() => {
-      if (listenMode && heldNotes.size > 0) {
-        checkChord();
-      }
-    }, 600);
   }
 
   // =====================================================================
@@ -621,9 +611,9 @@
     midiStatus.className = 'midi-status';
     midiConnectBtn.textContent = 'Connect MIDI';
     midiConnectBtn.classList.remove('active');
-    heldNotes.clear();
+    // Clear persistent notes
+    playedNotesForCheck = [];
     playedDisplay.textContent = '🎹 notes: none';
-    if (chordCheckTimeout) clearTimeout(chordCheckTimeout);
   }
 
   midiConnectBtn.addEventListener('click', () => {
@@ -776,12 +766,10 @@
     }
   });
   document.getElementById('stop-audio').addEventListener('click', () => {
-    playbackTimeouts.forEach(clearTimeout);
-    playbackTimeouts = [];
+    // no-op
   });
 
   spellingSelect.addEventListener('change', () => {
-    // Update key labels when spelling changes
     const names = currentSpelling === 'sharp' ? NOTE_NAMES_SHARP : currentSpelling === 'flat' ? NOTE_NAMES_FLAT : NOTE_NAMES_MIXED;
     const options = keySelect.options;
     for (let i = 0; i < options.length; i++) {
@@ -792,7 +780,7 @@
   });
 
   generate();
-  logDebug('🚀 App loaded. Connect MIDI and play!', 'success');
+  logDebug('🚀 App loaded. Persistent notes mode – notes stay until checked.', 'success');
 </script>
 </body>
 </html>
