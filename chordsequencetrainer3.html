@@ -165,6 +165,7 @@
     <div class="midi-section">
       <span class="midi-status" id="midi-status">⏳ MIDI: idle</span>
       <button class="midi-btn" id="midi-connect">Connect MIDI</button>
+      <button class="midi-btn" id="test-sound" style="background:#d97706;color:white;border-color:#d97706;">🔊 Test Sound</button>
       <span class="played-notes" id="played-display">🎹 notes: none</span>
     </div>
 
@@ -197,7 +198,7 @@
 
 <script>
   // =====================================================================
-  // THEORY
+  // THEORY (unchanged)
   // =====================================================================
   const NOTE_NAMES_MIXED = ['C','Db','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
   const NOTE_NAMES_SHARP = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
@@ -463,7 +464,7 @@
   }
 
   // =====================================================================
-  // AUDIO
+  // AUDIO – FIXED WITH TEST SOUND
   // =====================================================================
   let audioCtx = null, masterGain = null;
   let playbackTimeouts = [], isPlaying = false;
@@ -476,9 +477,12 @@
       masterGain.connect(audioCtx.destination);
       masterGain.gain.exponentialRampToValueAtTime(0.9, audioCtx.currentTime + 0.02);
     }
-    if (audioCtx.state === 'suspended') audioCtx.resume();
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
     return audioCtx;
   }
+
   function stopPlayback() { playbackTimeouts.forEach(clearTimeout); playbackTimeouts = []; isPlaying = false; document.querySelectorAll('.seq-item.playing').forEach(el => el.classList.remove('playing')); }
   function playChordNotes(notes, duration = 1.0) {
     const ctx = ensureAudio();
@@ -496,6 +500,7 @@
       playbackTimeouts.push(tid);
     });
   }
+
   function playSequence(seq) {
     stopPlayback(); isPlaying = true; const items = document.querySelectorAll('.seq-item');
     seq.forEach((item, idx) => {
@@ -555,6 +560,7 @@
 
   const midiStatus = document.getElementById('midi-status');
   const midiConnectBtn = document.getElementById('midi-connect');
+  const testSoundBtn = document.getElementById('test-sound');
   const playedDisplay = document.getElementById('played-display');
   const feedbackMsg = document.getElementById('feedback-msg');
   const statsDisplay = document.getElementById('stats-display');
@@ -690,6 +696,29 @@
     }, 400);
   }
 
+  // --- Test Sound button ---
+  testSoundBtn.addEventListener('click', () => {
+    try {
+      const ctx = ensureAudio();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = 440;
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.5);
+      feedbackMsg.textContent = '🔊 Test sound played!';
+      feedbackMsg.className = 'msg correct';
+    } catch (e) {
+      feedbackMsg.textContent = '❌ Sound test failed: ' + e.message;
+      feedbackMsg.className = 'msg wrong';
+    }
+  });
+
   async function connectMIDI() {
     try {
       if (!navigator.requestMIDIAccess) {
@@ -726,7 +755,7 @@
       midiInput.onmidimessage = handleMIDIMessage;
       connected = true;
 
-      // ===== KEY FIX: ensure audio context is resumed on user gesture =====
+      // Start audio context on user gesture
       ensureAudio();
 
       midiStatus.textContent = `✅ MIDI connected: ${midiInput.name || 'Keyboard'}`;
@@ -785,7 +814,7 @@
   });
 
   // =====================================================================
-  // UI
+  // UI (unchanged)
   // =====================================================================
   const keySelect = document.getElementById('key-select');
   const keyModeSelect = document.getElementById('key-mode-select');
