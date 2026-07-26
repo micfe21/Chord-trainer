@@ -77,7 +77,24 @@
 
     .played-notes { font-size: 0.8rem; color: #6e6a62; font-family: monospace; letter-spacing: 0.05em; }
 
-    .sequence-list { display: flex; flex-direction: column; gap: 0.35rem; margin-top: 0.5rem; max-height: 40vh; overflow-y: auto; padding-right: 0.2rem; }
+    .debug-area {
+      background: #1a1a1a;
+      color: #00ff00;
+      font-family: 'Courier New', monospace;
+      font-size: 0.65rem;
+      padding: 0.5rem;
+      border-radius: 0.4rem;
+      max-height: 120px;
+      overflow-y: auto;
+      margin-top: 0.4rem;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .debug-area .error { color: #ff6b6b; }
+    .debug-area .success { color: #69db7c; }
+    .debug-area .info { color: #74c0fc; }
+
+    .sequence-list { display: flex; flex-direction: column; gap: 0.35rem; margin-top: 0.5rem; max-height: 35vh; overflow-y: auto; padding-right: 0.2rem; }
     .seq-item {
       background: #f1efe9; border-radius: 0.5rem; padding: 0.5rem 0.7rem; display: flex; flex-direction: column;
       border-left: 4px solid #0b6d73; gap: 0.15rem; cursor: pointer; transition: background 0.15s;
@@ -111,6 +128,8 @@
     .actions button.toggle-notes:hover { background: #4f4b44; }
     .actions button.danger { background: #ba3e4b; color: white; border-color: #ba3e4b; }
     .actions button.danger:hover { background: #a0323e; }
+    .actions button.check-now { background: #6c5ce7; color: white; border-color: #6c5ce7; }
+    .actions button.check-now:hover { background: #5a4bd1; }
     .footer-note { margin-top: 0.5rem; font-size: 0.7rem; color: #9d988f; text-align: center; }
     .mode-hint { font-size: 0.6rem; color: #9d988f; font-style: italic; }
 
@@ -125,6 +144,7 @@
       .seq-item .top-row { gap: 0.15rem; }
       .chord-palette { justify-content: center; }
       .mode-selector { justify-content: center; }
+      .debug-area { font-size: 0.5rem; max-height: 80px; }
     }
   </style>
 </head>
@@ -185,10 +205,14 @@
       <div class="empty-state">Tap "Generate" or "New" to create a progression.</div>
     </div>
 
+    <!-- Debug Area -->
+    <div class="debug-area" id="debug-log">⏳ Waiting for action...</div>
+
     <div class="actions">
       <button id="play-audio" class="primary">🔊 Play</button>
       <button id="stop-audio" class="danger">⏹ Stop</button>
       <button id="toggle-notes" class="toggle-notes">Show Notes</button>
+      <button id="check-now" class="check-now">🔍 Check Now</button>
       <button id="copy-btn">📋 Copy</button>
       <button id="clear-btn">✖ Clear</button>
     </div>
@@ -268,6 +292,25 @@
   let currentMode = 'roman', currentSpelling = 'mixed', currentInversionMode = 'voice-leading', currentFilter = 'all';
   let currentSequence = [], showNotes = false;
 
+  // =====================================================================
+  // DEBUG
+  // =====================================================================
+  const debugLog = document.getElementById('debug-log');
+
+  function logDebug(msg, type = 'info') {
+    const time = new Date().toLocaleTimeString();
+    const colors = { info: '#74c0fc', success: '#69db7c', error: '#ff6b6b', warn: '#ffd43b' };
+    debugLog.innerHTML += `\n[${time}] <span style="color:${colors[type] || '#74c0fc'}">${msg}</span>`;
+    debugLog.scrollTop = debugLog.scrollHeight;
+  }
+
+  function clearDebug() {
+    debugLog.innerHTML = '⏳ Log cleared...';
+  }
+
+  // =====================================================================
+  // THEORY HELPERS
+  // =====================================================================
   function getNoteNames() { switch(currentSpelling) { case 'sharp': return NOTE_NAMES_SHARP; case 'flat': return NOTE_NAMES_FLAT; default: return NOTE_NAMES_MIXED; } }
   function pitchClass(m) { return ((m % 12) + 12) % 12; }
   function octave(m) { return Math.floor(m / 12) - 1; }
@@ -476,8 +519,12 @@
       masterGain.gain.value = 0.0001;
       masterGain.connect(audioCtx.destination);
       masterGain.gain.exponentialRampToValueAtTime(0.9, audioCtx.currentTime + 0.02);
+      logDebug('🎵 Audio context created', 'success');
     }
-    if (audioCtx.state === 'suspended') audioCtx.resume();
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+      logDebug('🎵 Audio context resumed', 'success');
+    }
     return audioCtx;
   }
 
@@ -509,7 +556,7 @@
   function playSingleChord(notes) { stopPlayback(); playChordNotes(notes, 1.0); }
 
   // =====================================================================
-  // MIDI – WITH FIXED AUDIO AND WORKING VALIDATION
+  // MIDI
   // =====================================================================
   let midiAccess = null, midiInput = null;
   let connected = false;
@@ -544,6 +591,7 @@
     osc.start(ctx.currentTime);
     inputVoices.set(note, { osc, gain });
     flashFeedback();
+    logDebug(`🎹 Note ON: ${noteLabel(note)} (${note})`, 'info');
   }
 
   function stopInputNote(note) {
@@ -554,6 +602,7 @@
     voice.gain.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.03);
     try { voice.osc.stop(ctx.currentTime + 0.12); } catch {}
     inputVoices.delete(note);
+    logDebug(`🎹 Note OFF: ${noteLabel(note)} (${note})`, 'info');
   }
 
   function clearInputVoices() {
@@ -580,9 +629,11 @@
       feedbackMsg.textContent = '🔊 Test sound played!';
       feedbackMsg.className = 'msg correct';
       flashFeedback();
+      logDebug('🔊 Test sound played successfully', 'success');
     } catch (e) {
       feedbackMsg.textContent = '❌ Sound test failed: ' + e.message;
       feedbackMsg.className = 'msg wrong';
+      logDebug('❌ Test sound failed: ' + e.message, 'error');
     }
   });
 
@@ -608,16 +659,18 @@
       <span>⚡ ${avg}ms</span>
       <span>📊 ${stats.total}</span>
     `;
+    logDebug(`📊 Stats updated: ${stats.correct} correct, ${stats.wrong} wrong, streak ${stats.streak}`, 'info');
   }
 
   // =====================================================================
-  // CORRECTED setCurrentChord
+  // setCurrentChord
   // =====================================================================
   function setCurrentChord(index) {
     if (!currentSequence || index >= currentSequence.length) {
       feedbackMsg.innerHTML = '🎉 Complete! Generate a new sequence.';
       feedbackMsg.className = 'msg correct';
       listenMode = false;
+      logDebug('🎉 Sequence complete!', 'success');
       return;
     }
 
@@ -625,6 +678,7 @@
     if (!item) {
       feedbackMsg.textContent = 'Error: No chord found at index ' + index;
       feedbackMsg.className = 'msg wrong';
+      logDebug('❌ Error: No chord at index ' + index, 'error');
       return;
     }
 
@@ -635,6 +689,7 @@
     const displayName = currentMode === 'absolute' || item._mode === 'absolute' ? item.symbol : item.display;
     feedbackMsg.innerHTML = `🎯 Play: <strong>${displayName}</strong>`;
     feedbackMsg.className = 'msg waiting';
+    logDebug(`🎯 Set current chord: ${displayName} (${item.notes.map(n=>noteLabel(n)).join(' ')})`, 'info');
 
     const items = document.querySelectorAll('.seq-item');
     items.forEach(el => {
@@ -655,18 +710,24 @@
   }
 
   // =====================================================================
-  // CORRECTED checkChord
+  // checkChord
   // =====================================================================
   function checkChord(playedNotes) {
+    logDebug('🔍 checkChord() called with ' + playedNotes.size + ' notes', 'info');
+
     if (!currentExpectedNotes || currentExpectedNotes.length === 0) {
       feedbackMsg.textContent = 'No chord to check. Generate a sequence first.';
       feedbackMsg.className = 'msg waiting';
+      logDebug('❌ No chord to check (currentExpectedNotes is empty)', 'error');
       return;
     }
 
     const expected = [...currentExpectedNotes].sort((a, b) => a - b);
     const played = [...playedNotes].sort((a, b) => a - b);
     const elapsed = Date.now() - chordStartTime;
+
+    logDebug(`📝 Expected: ${expected.map(n=>noteLabel(n)).join(' ')}`, 'info');
+    logDebug(`📝 Played: ${played.map(n=>noteLabel(n)).join(' ')}`, 'info');
 
     const allPresent = expected.every(n => played.includes(n));
     const extraNotes = played.filter(n => !expected.includes(n));
@@ -701,6 +762,7 @@
       feedbackMsg.className = 'msg correct';
 
       updateItem('✅', '#2f7d48', '#e8f5e9');
+      logDebug(`✅ Correct! (${elapsed}ms)`, 'success');
 
       currentIndex++;
       if (currentIndex < currentSequence.length) {
@@ -709,6 +771,7 @@
         feedbackMsg.innerHTML = '🎉 <span style="color:#2f7d48;font-weight:700;">Complete!</span> Generate a new sequence.';
         feedbackMsg.className = 'msg correct';
         listenMode = false;
+        logDebug('🎉 Sequence complete!', 'success');
       }
     } else {
       // ❌ WRONG
@@ -726,9 +789,25 @@
       feedbackMsg.className = 'msg wrong';
 
       updateItem('❌', '#ba3e4b', '#fbe9e7');
+      logDebug(`❌ Wrong: ${msg}`, 'error');
     }
   }
 
+  // ---- Manual Check Now button ----
+  document.getElementById('check-now').addEventListener('click', () => {
+    if (heldNotes.size === 0) {
+      feedbackMsg.textContent = '⚠️ No notes played. Play some notes on your keyboard first.';
+      feedbackMsg.className = 'msg waiting';
+      logDebug('⚠️ Check Now: No notes to check', 'warn');
+      return;
+    }
+    logDebug('🔍 Manual check triggered', 'info');
+    checkChord(heldNotes);
+  });
+
+  // =====================================================================
+  // handleMIDIMessage
+  // =====================================================================
   function handleMIDIMessage(event) {
     const [status, note, velocity] = event.data;
     const cmd = status & 0xf0;
@@ -746,20 +825,26 @@
     if (chordCheckTimeout) clearTimeout(chordCheckTimeout);
     chordCheckTimeout = setTimeout(() => {
       if (listenMode && heldNotes.size > 0) {
+        logDebug('⏱️ Auto-check triggered by timeout', 'info');
         checkChord(heldNotes);
       }
-    }, 400);
+    }, 800);
   }
 
+  // =====================================================================
+  // connectMIDI
+  // =====================================================================
   async function connectMIDI() {
     try {
       if (!navigator.requestMIDIAccess) {
         midiStatus.textContent = '⚠️ Web MIDI not supported';
         midiStatus.className = 'midi-status error';
+        logDebug('❌ Web MIDI not supported', 'error');
         return;
       }
 
       midiStatus.textContent = '⏳ Requesting MIDI access...';
+      logDebug('⏳ Requesting MIDI access...', 'info');
       const access = await navigator.requestMIDIAccess({ sysex: false });
 
       const inputs = [];
@@ -773,6 +858,7 @@
       if (inputs.length === 0) {
         midiStatus.textContent = '⚠️ No MIDI inputs found. Connect a keyboard.';
         midiStatus.className = 'midi-status error';
+        logDebug('⚠️ No MIDI inputs found', 'warn');
         return;
       }
 
@@ -795,6 +881,8 @@
       midiConnectBtn.classList.add('active');
       listenMode = true;
 
+      logDebug(`✅ MIDI connected: ${midiInput.name || 'Keyboard'}`, 'success');
+
       if (midiAccess) {
         midiAccess.onstatechange = () => {
           const inputs2 = [];
@@ -807,6 +895,7 @@
           if (!connected && inputs2.length) {
             midiStatus.textContent = '✅ MIDI device available. Tap Connect MIDI.';
             midiStatus.className = 'midi-status connected';
+            logDebug('✅ MIDI device available', 'success');
           }
         };
       }
@@ -817,11 +906,13 @@
         feedbackMsg.textContent = '🎯 MIDI ready – play the chord!';
       } else {
         feedbackMsg.textContent = 'Generate a sequence to start.';
+        logDebug('ℹ️ Generate a sequence to start', 'info');
       }
 
     } catch (e) {
       midiStatus.textContent = `❌ MIDI error: ${e.message}`;
       midiStatus.className = 'midi-status error';
+      logDebug('❌ MIDI error: ' + e.message, 'error');
       console.error(e);
     }
   }
@@ -838,6 +929,7 @@
     playedDisplay.textContent = '🎹 notes: none';
     if (chordCheckTimeout) clearTimeout(chordCheckTimeout);
     clearInputVoices();
+    logDebug('⏳ MIDI disconnected', 'info');
   }
 
   midiConnectBtn.addEventListener('click', () => {
@@ -874,13 +966,14 @@
       keyModeSelect.parentElement.style.display = isRoman ? 'flex' : 'none';
       keyHint.textContent = isRoman ? 'Used in Roman/Mixed mode' : 'No key needed';
       if (listenMode) { listenMode = false; feedbackMsg.textContent = 'Mode changed. Regenerate sequence.'; }
+      logDebug(`🔄 Mode changed to: ${currentMode}`, 'info');
       generate();
     });
   });
 
-  spellingSelect.addEventListener('change', () => { currentSpelling = spellingSelect.value; populateKeys(); if (listenMode) listenMode = false; generate(); });
-  inversionModeSelect.addEventListener('change', () => { currentInversionMode = inversionModeSelect.value; if (listenMode) listenMode = false; generate(); });
-  keyModeSelect.addEventListener('change', () => { const isModulating = keyModeSelect.value === 'modulating'; keySelect.disabled = isModulating; keyHint.textContent = isModulating ? 'Ignored (each chord gets its own key)' : 'Used for all chords'; if (listenMode) listenMode = false; generate(); });
+  spellingSelect.addEventListener('change', () => { currentSpelling = spellingSelect.value; populateKeys(); if (listenMode) listenMode = false; logDebug(`🔄 Spelling changed to: ${currentSpelling}`, 'info'); generate(); });
+  inversionModeSelect.addEventListener('change', () => { currentInversionMode = inversionModeSelect.value; if (listenMode) listenMode = false; logDebug(`🔄 Inversion mode changed to: ${currentInversionMode}`, 'info'); generate(); });
+  keyModeSelect.addEventListener('change', () => { const isModulating = keyModeSelect.value === 'modulating'; keySelect.disabled = isModulating; keyHint.textContent = isModulating ? 'Ignored (each chord gets its own key)' : 'Used for all chords'; if (listenMode) listenMode = false; logDebug(`🔄 Key mode changed to: ${keyModeSelect.value}`, 'info'); generate(); });
 
   document.querySelectorAll('#palette span').forEach(el => {
     el.addEventListener('click', () => {
@@ -888,12 +981,13 @@
       el.classList.add('active');
       currentFilter = el.dataset.filter || 'all';
       if (listenMode) listenMode = false;
+      logDebug(`🔄 Filter changed to: ${currentFilter}`, 'info');
       generate();
     });
     el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.click(); } });
   });
 
-  toggleNotesBtn.addEventListener('click', () => { showNotes = !showNotes; toggleNotesBtn.textContent = showNotes ? 'Hide Notes' : 'Show Notes'; renderSequence(currentSequence); });
+  toggleNotesBtn.addEventListener('click', () => { showNotes = !showNotes; toggleNotesBtn.textContent = showNotes ? 'Hide Notes' : 'Show Notes'; renderSequence(currentSequence); logDebug(`📝 Show notes: ${showNotes}`, 'info'); });
 
   function getBadgeClass(category) {
     switch(category) {
@@ -959,6 +1053,7 @@
       currentIndex = 0;
       setCurrentChord(0);
     }
+    logDebug(`📋 Sequence rendered with ${seq.length} chords`, 'info');
   }
 
   function generate() {
@@ -974,6 +1069,7 @@
     else { feedbackMsg.textContent = 'Generate a sequence and connect MIDI for feedback.'; feedbackMsg.className = 'msg waiting'; }
     stats = { correct: 0, wrong: 0, streak: 0, bestStreak: 0, total: 0, times: [] };
     updateStats();
+    logDebug(`🔄 Generated sequence with ${seq.length} chords`, 'success');
   }
 
   function randomSequence() {
@@ -992,6 +1088,7 @@
     keySelect.parentElement.style.display = isRoman ? 'flex' : 'none';
     keyModeSelect.parentElement.style.display = isRoman ? 'flex' : 'none';
     if (listenMode) { listenMode = false; feedbackMsg.textContent = 'New sequence – reconnect MIDI or tap a chord.'; }
+    logDebug('🎲 Random sequence generated', 'success');
     generate();
   }
 
@@ -1006,18 +1103,20 @@
       navigator.clipboard.writeText(text).then(() => { btn.textContent = '✅ Copied!'; setTimeout(() => btn.textContent = orig, 1500); })
         .catch(() => { prompt('Copy this:', text); btn.textContent = '📋 Copied?'; setTimeout(() => btn.textContent = orig, 1500); });
     } else { prompt('Copy this:', text); btn.textContent = '📋 Copied?'; setTimeout(() => btn.textContent = orig, 1500); }
+    logDebug('📋 Sequence copied to clipboard', 'success');
   }
 
   document.getElementById('generate-btn').addEventListener('click', generate);
   document.getElementById('random-btn').addEventListener('click', randomSequence);
-  document.getElementById('clear-btn').addEventListener('click', () => { currentSequence = []; renderSequence([]); stopPlayback(); if (listenMode) { disconnectMIDI(); } });
+  document.getElementById('clear-btn').addEventListener('click', () => { currentSequence = []; renderSequence([]); stopPlayback(); if (listenMode) { disconnectMIDI(); } logDebug('🗑️ Cleared', 'info'); });
   document.getElementById('copy-btn').addEventListener('click', copySequence);
-  document.getElementById('play-audio').addEventListener('click', () => { if (currentSequence.length) playSequence(currentSequence); });
+  document.getElementById('play-audio').addEventListener('click', () => { if (currentSequence.length) { logDebug('🔊 Playing sequence', 'info'); playSequence(currentSequence); } });
   document.getElementById('stop-audio').addEventListener('click', stopPlayback);
   keySelect.addEventListener('change', generate);
   lengthSelect.addEventListener('change', generate);
 
   // ---- Initial generate ----
+  logDebug('🚀 App loaded! Connect MIDI and generate a sequence.', 'success');
   generate();
 </script>
 </body>
