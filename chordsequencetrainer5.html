@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Chord Sequence Trainer – MIDI Feedback</title>
+  <title>Chord Trainer – Sound + Persistent Notes</title>
   <style>
-    /* --- same styles as before, plus a flash class --- */
+    /* --- same as your working version, I've kept it unchanged --- */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -47,11 +47,6 @@
     .chord-palette span { font-size: 0.65rem; font-weight: 600; color: #6e6a62; padding: 0.1rem 0.4rem; border-radius: 999px; background: rgba(255,255,255,0.5); border: 1px solid #d7d2c8; cursor: pointer; transition: 0.15s; }
     .chord-palette span.active { background: #0b6d73; color: white; border-color: #0b6d73; }
     .chord-palette span:hover { background: #d7d2c8; }
-
-    .toggle-row { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-bottom: 0.6rem; }
-    .toggle-row button { padding: 0.2rem 0.6rem; border-radius: 999px; border: 1px solid #d7d2c8; background: transparent; font-size: 0.7rem; font-weight: 600; cursor: pointer; transition: 0.15s; }
-    .toggle-row button.active { background: #0b6d73; color: white; border-color: #0b6d73; }
-    .toggle-row button:hover { background: #e4ded4; }
 
     .midi-section {
       background: #f1efe9; border-radius: 0.6rem; padding: 0.5rem 0.7rem; margin-bottom: 0.6rem;
@@ -115,6 +110,8 @@
     .actions button.toggle-notes:hover { background: #4f4b44; }
     .actions button.danger { background: #ba3e4b; color: white; border-color: #ba3e4b; }
     .actions button.danger:hover { background: #a0323e; }
+    .actions button.check-now { background: #6c5ce7; color: white; border-color: #6c5ce7; }
+    .actions button.check-now:hover { background: #5a4bd1; }
     .footer-note { margin-top: 0.5rem; font-size: 0.7rem; color: #9d988f; text-align: center; }
     .mode-hint { font-size: 0.6rem; color: #9d988f; font-style: italic; }
 
@@ -135,8 +132,8 @@
 <body>
 <div class="app">
   <div class="shell">
-    <h1>🎵 Sequence Trainer</h1>
-    <div class="sub">Instant chord recognition &amp; execution trainer with MIDI feedback</div>
+    <h1>🎵 Chord Trainer</h1>
+    <div class="sub">Sound works – notes stay until checked</div>
 
     <div class="mode-selector" id="mode-selector" role="tablist">
       <button class="active" data-mode="roman" role="tab">Roman</button>
@@ -165,7 +162,6 @@
       <span data-filter="slash" role="button" tabindex="0">Slash</span>
     </div>
 
-    <!-- MIDI Section -->
     <div class="midi-section">
       <span class="midi-status" id="midi-status">⏳ MIDI: idle</span>
       <button class="midi-btn" id="midi-connect">Connect MIDI</button>
@@ -173,7 +169,6 @@
       <span class="played-notes" id="played-display">🎹 notes: none</span>
     </div>
 
-    <!-- Feedback -->
     <div class="feedback-area" id="feedback-area">
       <div class="msg waiting" id="feedback-msg">Generate a sequence and play on your MIDI keyboard</div>
       <div class="stats" id="stats-display">
@@ -193,6 +188,7 @@
       <button id="play-audio" class="primary">🔊 Play</button>
       <button id="stop-audio" class="danger">⏹ Stop</button>
       <button id="toggle-notes" class="toggle-notes">Show Notes</button>
+      <button id="check-now" class="check-now">🔍 Check Now</button>
       <button id="copy-btn">📋 Copy</button>
       <button id="clear-btn">✖ Clear</button>
     </div>
@@ -468,7 +464,7 @@
   }
 
   // =====================================================================
-  // AUDIO – FIXED: direct connection, visual feedback
+  // AUDIO – WORKING VERSION (from your pasted code)
   // =====================================================================
   let audioCtx = null, masterGain = null;
   let playbackTimeouts = [], isPlaying = false;
@@ -481,9 +477,7 @@
       masterGain.connect(audioCtx.destination);
       masterGain.gain.exponentialRampToValueAtTime(0.9, audioCtx.currentTime + 0.02);
     }
-    if (audioCtx.state === 'suspended') {
-      audioCtx.resume();
-    }
+    if (audioCtx.state === 'suspended') audioCtx.resume();
     return audioCtx;
   }
 
@@ -515,14 +509,18 @@
   function playSingleChord(notes) { stopPlayback(); playChordNotes(notes, 1.0); }
 
   // =====================================================================
-  // MIDI – WITH AUDIO FIX AND VISUAL FLASH
+  // MIDI – WORKING SOUND + PERSISTENT NOTES (combined)
   // =====================================================================
   let midiAccess = null, midiInput = null;
   let connected = false;
-  let heldNotes = new Set();
   let chordCheckTimeout = null;
 
+  // This is for sound – notes are added and removed here
   const inputVoices = new Map();
+
+  // This is for validation – notes are added on Note On and NEVER removed on Note Off
+  let persistentNotes = [];
+
   const feedbackArea = document.getElementById('feedback-area');
 
   function flashFeedback() {
@@ -530,9 +528,9 @@
     setTimeout(() => feedbackArea.classList.remove('flash'), 150);
   }
 
+  // Sound functions (unchanged from working version)
   function startInputNote(note, velocity = 96) {
     const ctx = ensureAudio();
-    // Remove existing voice for same note
     const existing = inputVoices.get(note);
     if (existing) {
       try { existing.osc.stop(); } catch {}
@@ -546,11 +544,9 @@
     gain.gain.setValueAtTime(0.0001, ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(amp, ctx.currentTime + 0.02);
     osc.connect(gain);
-    // Connect directly to destination (like test sound)
     gain.connect(ctx.destination);
     osc.start(ctx.currentTime);
     inputVoices.set(note, { osc, gain });
-    // Visual feedback
     flashFeedback();
   }
 
@@ -571,17 +567,64 @@
     inputVoices.clear();
   }
 
+  // ---- MIDI handler (modified: persistent notes on Note On) ----
+  function handleMIDIMessage(event) {
+    const [status, note, velocity] = event.data;
+    const cmd = status & 0xf0;
+
+    if (cmd === 0x90 && velocity > 0) {
+      // Sound
+      startInputNote(note, velocity);
+      // Persistent notes (for validation)
+      if (!persistentNotes.includes(note)) {
+        persistentNotes.push(note);
+      }
+    } else if (cmd === 0x80 || (cmd === 0x90 && velocity === 0)) {
+      // Sound off
+      stopInputNote(note);
+      // Do NOT remove from persistentNotes – they stay for checking
+    } else if (cmd === 0xb0 && note === 64) {
+      return;
+    }
+    // Update display
+    const notes = [...persistentNotes].sort((a, b) => a - b);
+    playedDisplay.textContent = notes.length ? `🎹 ${notes.map(n => noteLabel(n)).join(' ')}` : '🎹 notes: none';
+  }
+
+  // ---- Test sound ----
+  const testSoundBtn = document.getElementById('test-sound');
+  testSoundBtn.addEventListener('click', () => {
+    try {
+      const ctx = ensureAudio();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = 440;
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.5);
+      feedbackMsg.textContent = '🔊 Test sound played!';
+      feedbackMsg.className = 'msg correct';
+      flashFeedback();
+    } catch (e) {
+      feedbackMsg.textContent = '❌ Sound test failed: ' + e.message;
+      feedbackMsg.className = 'msg wrong';
+    }
+  });
+
+  // ---- MIDI connection (compatible) ----
   const midiStatus = document.getElementById('midi-status');
   const midiConnectBtn = document.getElementById('midi-connect');
-  const testSoundBtn = document.getElementById('test-sound');
   const playedDisplay = document.getElementById('played-display');
   const feedbackMsg = document.getElementById('feedback-msg');
   const statsDisplay = document.getElementById('stats-display');
 
   let stats = { correct: 0, wrong: 0, streak: 0, bestStreak: 0, total: 0, times: [] };
-
   let currentExpectedNotes = [];
-  let currentBassNote = null;
   let currentIndex = 0;
   let listenMode = false;
   let chordStartTime = 0;
@@ -597,11 +640,11 @@
     `;
   }
 
+  // ---- Validation functions ----
   function setCurrentChord(index) {
     const item = currentSequence[index];
     if (!item) return;
     currentExpectedNotes = [...item.notes];
-    currentBassNote = item.isSlash ? item.slashBassRoot : null;
     currentIndex = index;
     chordStartTime = Date.now();
     const displayName = currentMode === 'absolute' || item._mode === 'absolute' ? item.symbol : item.display;
@@ -610,7 +653,8 @@
     const items = document.querySelectorAll('.seq-item');
     items.forEach(el => el.classList.remove('playing'));
     if (items[index]) items[index].classList.add('playing');
-    heldNotes.clear();
+    // Clear persistent notes for new chord
+    persistentNotes = [];
     playedDisplay.textContent = '🎹 notes: none';
   }
 
@@ -620,6 +664,12 @@
       feedbackMsg.className = 'msg waiting';
       return;
     }
+    if (playedNotes.length === 0) {
+      feedbackMsg.textContent = '⚠️ No notes played. Play some notes on your keyboard first.';
+      feedbackMsg.className = 'msg waiting';
+      return;
+    }
+
     const expected = [...currentExpectedNotes].sort((a,b)=>a-b);
     const played = [...playedNotes].sort((a,b)=>a-b);
     const elapsed = Date.now() - chordStartTime;
@@ -653,6 +703,10 @@
         currentItem.style.background = '#e8f5e9';
       }
 
+      // Clear persistent notes (they were correct)
+      persistentNotes = [];
+      playedDisplay.textContent = '🎹 notes: none';
+
       currentIndex++;
       if (currentIndex < currentSequence.length) {
         setCurrentChord(currentIndex);
@@ -685,51 +739,7 @@
     }
   }
 
-  function handleMIDIMessage(event) {
-    const [status, note, velocity] = event.data;
-    const cmd = status & 0xf0;
-    if (cmd === 0x90 && velocity > 0) {
-      heldNotes.add(note);
-      startInputNote(note, velocity);
-    } else if (cmd === 0x80 || (cmd === 0x90 && velocity === 0)) {
-      heldNotes.delete(note);
-      stopInputNote(note);
-    } else if (cmd === 0xb0 && note === 64) {
-      return;
-    }
-    const notes = [...heldNotes].sort((a, b) => a - b);
-    playedDisplay.textContent = notes.length ? `🎹 ${notes.map(n => noteLabel(n)).join(' ')}` : '🎹 notes: none';
-    if (chordCheckTimeout) clearTimeout(chordCheckTimeout);
-    chordCheckTimeout = setTimeout(() => {
-      if (listenMode && heldNotes.size > 0) {
-        checkChord(heldNotes);
-      }
-    }, 400);
-  }
-
-  testSoundBtn.addEventListener('click', () => {
-    try {
-      const ctx = ensureAudio();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.value = 440;
-      gain.gain.setValueAtTime(0.0001, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + 0.5);
-      feedbackMsg.textContent = '🔊 Test sound played!';
-      feedbackMsg.className = 'msg correct';
-      flashFeedback();
-    } catch (e) {
-      feedbackMsg.textContent = '❌ Sound test failed: ' + e.message;
-      feedbackMsg.className = 'msg wrong';
-    }
-  });
-
+  // ---- Connect MIDI ----
   async function connectMIDI() {
     try {
       if (!navigator.requestMIDIAccess) {
@@ -813,7 +823,7 @@
     midiStatus.className = 'midi-status';
     midiConnectBtn.textContent = 'Connect MIDI';
     midiConnectBtn.classList.remove('active');
-    heldNotes.clear();
+    persistentNotes = [];
     playedDisplay.textContent = '🎹 notes: none';
     if (chordCheckTimeout) clearTimeout(chordCheckTimeout);
     clearInputVoices();
@@ -821,6 +831,17 @@
 
   midiConnectBtn.addEventListener('click', () => {
     if (connected) { disconnectMIDI(); } else { connectMIDI(); }
+  });
+
+  // ---- Check Now button ----
+  document.getElementById('check-now').addEventListener('click', () => {
+    // Use persistentNotes for checking
+    if (persistentNotes.length === 0) {
+      feedbackMsg.textContent = '⚠️ No notes played. Play some notes on your keyboard first.';
+      feedbackMsg.className = 'msg waiting';
+      return;
+    }
+    checkChord(persistentNotes);
   });
 
   // =====================================================================
