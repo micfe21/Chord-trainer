@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>MIDI Test</title>
+</head>
+<body>
+  <h1>MIDI Test</h1>
+  <button id="connectBtn">Connect MIDI</button>
+  <pre id="log">Waiting...</pre>
+
+  <script>
+    const log = document.getElementById('log');
+    const connectBtn = document.getElementById('connectBtn');
+
+    connectBtn.addEventListener('click', async () => {
+      try {
+        log.textContent = 'Requesting MIDI access...';
+        const access = await navigator.requestMIDIAccess();
+        log.textContent = 'MIDI access granted!\n\nInputs:';
+        const inputs = [...access.inputs.values()];
+        if (inputs.length === 0) {
+          log.textContent += '\n❌ No MIDI inputs found.';
+        } else {
+          inputs.forEach(input => {
+            log.textContent += `\n✅ ${input.name} (${input.manufacturer || 'unknown'})`;
+            input.onmidimessage = (event) => {
+              const [status, note, velocity] = event.data;
+              log.textContent += `\n📩 Note: ${note} (${status === 144 ? 'ON' : 'OFF'})`;
+            };
+          });
+        }
+        log.textContent += '\n\nOutputs:';
+        const outputs = [...access.outputs.values()];
+        if (outputs.length === 0) {
+          log.textContent += '\n❌ No MIDI outputs found.';
+        } else {
+          outputs.forEach(output => {
+            log.textContent += `\n✅ ${output.name}`;
+          });
+        }
+      } catch (error) {
+        log.textContent = `❌ Error: ${error.message}`;
+      }
+    });
+  </script>
+</body>
+</html>
