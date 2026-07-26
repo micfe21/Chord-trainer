@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Chord Sequence Trainer – MIDI Feedback</title>
   <style>
-    /* --- Reset & base --- */
+    /* --- same styles as before, plus a flash class --- */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -67,6 +67,10 @@
     .feedback-area {
       background: #f1efe9; border-radius: 0.6rem; padding: 0.5rem 0.7rem; margin-bottom: 0.6rem;
       min-height: 3rem; display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;
+      transition: background 0.1s;
+    }
+    .feedback-area.flash {
+      background: #ffeaa7 !important;
     }
     .feedback-area .msg { font-size: 0.9rem; font-weight: 600; flex: 1; }
     .feedback-area .msg.correct { color: #2f7d48; font-weight: 700; }
@@ -198,7 +202,7 @@
 
 <script>
   // =====================================================================
-  // THEORY (unchanged)
+  // THEORY (same as before)
   // =====================================================================
   const NOTE_NAMES_MIXED = ['C','Db','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
   const NOTE_NAMES_SHARP = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
@@ -464,7 +468,7 @@
   }
 
   // =====================================================================
-  // AUDIO – FIXED WITH TEST SOUND
+  // AUDIO – FIXED: direct connection, visual feedback
   // =====================================================================
   let audioCtx = null, masterGain = null;
   let playbackTimeouts = [], isPlaying = false;
@@ -500,7 +504,6 @@
       playbackTimeouts.push(tid);
     });
   }
-
   function playSequence(seq) {
     stopPlayback(); isPlaying = true; const items = document.querySelectorAll('.seq-item');
     seq.forEach((item, idx) => {
@@ -512,7 +515,7 @@
   function playSingleChord(notes) { stopPlayback(); playChordNotes(notes, 1.0); }
 
   // =====================================================================
-  // MIDI – WITH FIXED AUDIO
+  // MIDI – WITH AUDIO FIX AND VISUAL FLASH
   // =====================================================================
   let midiAccess = null, midiInput = null;
   let connected = false;
@@ -520,9 +523,16 @@
   let chordCheckTimeout = null;
 
   const inputVoices = new Map();
+  const feedbackArea = document.getElementById('feedback-area');
+
+  function flashFeedback() {
+    feedbackArea.classList.add('flash');
+    setTimeout(() => feedbackArea.classList.remove('flash'), 150);
+  }
 
   function startInputNote(note, velocity = 96) {
     const ctx = ensureAudio();
+    // Remove existing voice for same note
     const existing = inputVoices.get(note);
     if (existing) {
       try { existing.osc.stop(); } catch {}
@@ -536,9 +546,12 @@
     gain.gain.setValueAtTime(0.0001, ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(amp, ctx.currentTime + 0.02);
     osc.connect(gain);
-    gain.connect(masterGain || ctx.destination);
-    osc.start();
+    // Connect directly to destination (like test sound)
+    gain.connect(ctx.destination);
+    osc.start(ctx.currentTime);
     inputVoices.set(note, { osc, gain });
+    // Visual feedback
+    flashFeedback();
   }
 
   function stopInputNote(note) {
@@ -619,7 +632,6 @@
     const currentItem = items[currentIndex];
 
     if (allPresent && extraNotes.length === 0 && missingNotes.length === 0) {
-      // ✅ CORRECT
       stats.correct++;
       stats.streak++;
       if (stats.streak > stats.bestStreak) stats.bestStreak = stats.streak;
@@ -649,7 +661,6 @@
         listenMode = false;
       }
     } else {
-      // ❌ WRONG
       stats.wrong++;
       stats.streak = 0;
       stats.total++;
@@ -696,7 +707,6 @@
     }, 400);
   }
 
-  // --- Test Sound button ---
   testSoundBtn.addEventListener('click', () => {
     try {
       const ctx = ensureAudio();
@@ -713,6 +723,7 @@
       osc.stop(ctx.currentTime + 0.5);
       feedbackMsg.textContent = '🔊 Test sound played!';
       feedbackMsg.className = 'msg correct';
+      flashFeedback();
     } catch (e) {
       feedbackMsg.textContent = '❌ Sound test failed: ' + e.message;
       feedbackMsg.className = 'msg wrong';
@@ -755,7 +766,6 @@
       midiInput.onmidimessage = handleMIDIMessage;
       connected = true;
 
-      // Start audio context on user gesture
       ensureAudio();
 
       midiStatus.textContent = `✅ MIDI connected: ${midiInput.name || 'Keyboard'}`;
