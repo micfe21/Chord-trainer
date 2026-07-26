@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Chord Trainer – Working Sound + Notes</title>
+  <title>Chord Trainer – Fixed Spread</title>
   <style>
-    /* --- styles (same as before, keep minimal) --- */
+    /* --- same styles as before --- */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -142,7 +142,7 @@
 <div class="app">
   <div class="shell">
     <h1>🎵 Chord Trainer</h1>
-    <div class="sub">Sound works – notes persist until checked</div>
+    <div class="sub">Fixed spread syntax – MIDI works</div>
 
     <div class="mode-selector" id="mode-selector" role="tablist">
       <button class="active" data-mode="roman" role="tab">Roman</button>
@@ -208,7 +208,7 @@
 
 <script>
   // =====================================================================
-  // THEORY (same as before, kept minimal)
+  // THEORY
   // =====================================================================
   const NOTE_NAMES_MIXED = ['C','Db','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
   const NOTE_NAMES_SHARP = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
@@ -251,7 +251,6 @@
   let listenMode = false;
   let currentExpectedNotes = [];
   let currentIndex = 0;
-  // Persistent notes – these stay until cleared by a correct check or new chord
   let persistentNotes = [];
   let stats = { correct: 0, wrong: 0, streak: 0, total: 0 };
 
@@ -269,9 +268,6 @@
     return names[pitchClass(m)];
   }
 
-  // =====================================================================
-  // CHORD BUILDER
-  // =====================================================================
   function buildChord(root, typeKey, inversion = 0) {
     const def = CHORD_TYPES[typeKey];
     if (!def) return [];
@@ -299,9 +295,6 @@
     return label + symbol + (inversion > 0 ? invNames[inversion] || '' : '');
   }
 
-  // =====================================================================
-  // SEQUENCE GENERATOR
-  // =====================================================================
   function generateSequence(keyRoot, length, filter, keyMode, invMode) {
     const degrees = [1,2,3,4,5,6,7];
     const seq = [];
@@ -382,7 +375,7 @@
   }
 
   // =====================================================================
-  // AUDIO (working version)
+  // AUDIO
   // =====================================================================
   let audioCtx = null;
 
@@ -396,7 +389,6 @@
     return audioCtx;
   }
 
-  // Play a chord (for preview / play button)
   function playChordNotes(notes) {
     const ctx = ensureAudio();
     notes.forEach((n, i) => {
@@ -414,14 +406,11 @@
           gain.connect(ctx.destination);
           osc.start(ctx.currentTime);
           osc.stop(ctx.currentTime + 0.6);
-        } catch (e) {
-          // silent
-        }
+        } catch (e) {}
       }, i * 80);
     });
   }
 
-  // Play a single MIDI note sound (used by MIDI handler)
   function playNoteSound(midi) {
     try {
       const ctx = ensureAudio();
@@ -437,13 +426,11 @@
       gain.connect(ctx.destination);
       osc.start(ctx.currentTime);
       osc.stop(ctx.currentTime + 0.4);
-    } catch (e) {
-      // silent
-    }
+    } catch (e) {}
   }
 
   // =====================================================================
-  // MIDI – WORKING HANDLER (the one that had sound)
+  // MIDI – with fixed connectMIDI (no spread)
   // =====================================================================
   let midiInput = null;
   let connected = false;
@@ -464,9 +451,7 @@
     `;
   }
 
-  // =====================================================================
-  // VALIDATION
-  // =====================================================================
+  // ---- Validation ----
   function setCurrentChord(index) {
     if (!currentSequence || index >= currentSequence.length) {
       feedbackMsg.innerHTML = '🎉 Complete! Generate a new sequence.';
@@ -492,7 +477,6 @@
       items[index].style.borderLeftColor = '#d97706';
       items[index].style.background = '';
     }
-    // Clear persistent notes for new chord
     persistentNotes = [];
     playedDisplay.textContent = '🎹 notes: none';
   }
@@ -541,10 +525,8 @@
       feedbackMsg.className = 'msg correct';
       updateItem('✅', '#2f7d48', '#e8f5e9');
       logDebug(`✅ Correct! Expected: ${expected.map(n=>noteLabel(n)).join(' ')}`, 'success');
-      // Clear persistent notes (they were correct)
       persistentNotes = [];
       playedDisplay.textContent = '🎹 notes: none';
-      // Advance
       currentIndex++;
       if (currentIndex < currentSequence.length) {
         setCurrentChord(currentIndex);
@@ -568,31 +550,22 @@
     }
   }
 
-  // =====================================================================
-  // MIDI HANDLER – this is the one that worked before (sound + note tracking)
-  // =====================================================================
+  // ---- MIDI handler (working, with persistent notes) ----
   function handleMIDIMessage(event) {
     const [status, note, velocity] = event.data;
     const cmd = status & 0xf0;
     if (cmd === 0x90 && velocity > 0) {
-      // Add to persistent notes
       if (!persistentNotes.includes(note)) {
         persistentNotes.push(note);
       }
-      // Play sound (this worked)
       playNoteSound(note);
-    } else if (cmd === 0x80 || (cmd === 0x90 && velocity === 0)) {
-      // Note Off – do NOT remove from persistentNotes
-      // (we want them to stay until checked)
     }
-    // Update display
+    // Note Off does NOT remove persistent notes
     const notes = [...persistentNotes].sort((a,b)=>a-b);
     playedDisplay.textContent = notes.length ? `🎹 ${notes.map(n=>noteLabel(n)).join(' ')}` : '🎹 notes: none';
   }
 
-  // =====================================================================
-  // CONNECT MIDI
-  // =====================================================================
+  // ---- Connect MIDI (fixed: no spread) ----
   async function connectMIDI() {
     try {
       if (!navigator.requestMIDIAccess) {
@@ -601,7 +574,9 @@
         return;
       }
       const access = await navigator.requestMIDIAccess({ sysex: false });
-      const inputs = [...access.inputs.values()];
+
+      // Use Array.from instead of spread
+      const inputs = Array.from(access.inputs.values());
       if (inputs.length === 0) {
         midiStatus.textContent = '⚠️ No MIDI inputs found';
         midiStatus.className = 'midi-status error';
@@ -623,6 +598,7 @@
     } catch (e) {
       midiStatus.textContent = `❌ MIDI error: ${e.message}`;
       midiStatus.className = 'midi-status error';
+      logDebug('❌ MIDI error: ' + e.message, 'error');
     }
   }
 
@@ -804,7 +780,7 @@
   });
 
   generate();
-  logDebug('🚀 App loaded. Sound works, notes persist until checked.', 'success');
+  logDebug('🚀 App loaded. Fixed spread syntax, MIDI should work.', 'success');
 </script>
 </body>
 </html>
