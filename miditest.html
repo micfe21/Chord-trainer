@@ -17,26 +17,29 @@
         log.textContent = 'Requesting MIDI access...';
         const access = await navigator.requestMIDIAccess();
         log.textContent = 'MIDI access granted!\n\nInputs:';
-        const inputs = [...access.inputs.values()];
-        if (inputs.length === 0) {
+
+        // Use forEach instead of spread syntax
+        let hasInputs = false;
+        access.inputs.forEach(input => {
+          hasInputs = true;
+          log.textContent += `\n✅ ${input.name} (${input.manufacturer || 'unknown'})`;
+          input.onmidimessage = (event) => {
+            const [status, note, velocity] = event.data;
+            log.textContent += `\n📩 Note: ${note} (${status === 144 ? 'ON' : 'OFF'})`;
+          };
+        });
+        if (!hasInputs) {
           log.textContent += '\n❌ No MIDI inputs found.';
-        } else {
-          inputs.forEach(input => {
-            log.textContent += `\n✅ ${input.name} (${input.manufacturer || 'unknown'})`;
-            input.onmidimessage = (event) => {
-              const [status, note, velocity] = event.data;
-              log.textContent += `\n📩 Note: ${note} (${status === 144 ? 'ON' : 'OFF'})`;
-            };
-          });
         }
+
         log.textContent += '\n\nOutputs:';
-        const outputs = [...access.outputs.values()];
-        if (outputs.length === 0) {
+        let hasOutputs = false;
+        access.outputs.forEach(output => {
+          hasOutputs = true;
+          log.textContent += `\n✅ ${output.name}`;
+        });
+        if (!hasOutputs) {
           log.textContent += '\n❌ No MIDI outputs found.';
-        } else {
-          outputs.forEach(output => {
-            log.textContent += `\n✅ ${output.name}`;
-          });
         }
       } catch (error) {
         log.textContent = `❌ Error: ${error.message}`;
