@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Chord Sequence Trainer – MIDI Feedback</title>
+  <title>Chord Trainer – Fixed</title>
   <style>
     /* --- Reset & base --- */
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -48,11 +48,6 @@
     .chord-palette span.active { background: #0b6d73; color: white; border-color: #0b6d73; }
     .chord-palette span:hover { background: #d7d2c8; }
 
-    .toggle-row { display: flex; flex-wrap: wrap; gap: 0.3rem; margin-bottom: 0.6rem; }
-    .toggle-row button { padding: 0.2rem 0.6rem; border-radius: 999px; border: 1px solid #d7d2c8; background: transparent; font-size: 0.7rem; font-weight: 600; cursor: pointer; transition: 0.15s; }
-    .toggle-row button.active { background: #0b6d73; color: white; border-color: #0b6d73; }
-    .toggle-row button:hover { background: #e4ded4; }
-
     .midi-section {
       background: #f1efe9; border-radius: 0.6rem; padding: 0.5rem 0.7rem; margin-bottom: 0.6rem;
       display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;
@@ -81,10 +76,10 @@
       background: #1a1a1a;
       color: #00ff00;
       font-family: 'Courier New', monospace;
-      font-size: 0.65rem;
+      font-size: 0.6rem;
       padding: 0.5rem;
       border-radius: 0.4rem;
-      max-height: 120px;
+      max-height: 100px;
       overflow-y: auto;
       margin-top: 0.4rem;
       white-space: pre-wrap;
@@ -101,21 +96,16 @@
     }
     .seq-item:hover { background: #e8e4db; }
     .seq-item.playing { animation: pulse 0.6s ease-in-out 3; border-left-color: #d97706; }
-    .seq-item.done { border-left-color: #2f7d48; opacity: 0.6; }
     .seq-item.correct { background: #e8f5e9 !important; border-left-color: #2f7d48 !important; }
     .seq-item.wrong { background: #fbe9e7 !important; border-left-color: #ba3e4b !important; }
     .seq-item .top-row { display: flex; justify-content: space-between; align-items: center; gap: 0.3rem; flex-wrap: wrap; }
-    .seq-item .deg { font-weight: 700; min-width: 1.8rem; font-size: 0.85rem; transition: color 0.2s; }
+    .seq-item .deg { font-weight: 700; min-width: 1.8rem; font-size: 0.85rem; }
     .seq-item .name { color: #1f1c18; font-weight: 500; flex: 1; font-size: 0.9rem; }
-    .seq-item .chord-symbol { color: #0b6d73; font-weight: 700; font-size: 0.95rem; }
     .seq-item .key-label { background: #d7d2c8; padding: 0.05rem 0.4rem; border-radius: 999px; font-size: 0.6rem; font-weight: 700; }
     .seq-item .badge { background: #d7d2c8; padding: 0.05rem 0.4rem; border-radius: 999px; font-size: 0.6rem; font-weight: 700; text-transform: uppercase; color: #3b3832; }
     .seq-item .badge.sus { background: #f2e3cf; color: #b66a14; }
     .seq-item .badge.aug { background: #f4dcdf; color: #ba3e4b; }
     .seq-item .badge.dim7 { background: #d8ecde; color: #2f7d48; }
-    .seq-item .badge.slash { background: #d4e2f0; color: #1e4d82; }
-    .seq-item .badge.extended { background: #e8d4f0; color: #6b21a5; }
-    .seq-item .badge.alt { background: #f0d4d4; color: #991b1b; }
     .seq-notes { font-size: 0.75rem; color: #6e6a62; padding-left: 1.8rem; font-family: monospace; letter-spacing: 0.02em; }
     .empty-state { padding: 1.5rem 0; text-align: center; color: #9d988f; font-size: 0.9rem; }
 
@@ -151,8 +141,8 @@
 <body>
 <div class="app">
   <div class="shell">
-    <h1>🎵 Sequence Trainer</h1>
-    <div class="sub">Instant chord recognition &amp; execution trainer with MIDI feedback</div>
+    <h1>🎵 Chord Trainer</h1>
+    <div class="sub">Fixed chord detection – shows expected notes in debug log</div>
 
     <div class="mode-selector" id="mode-selector" role="tablist">
       <button class="active" data-mode="roman" role="tab">Roman</button>
@@ -196,13 +186,12 @@
         <span>✅ 0</span>
         <span>❌ 0</span>
         <span>🔥 0</span>
-        <span>⚡ 0ms</span>
         <span>📊 0</span>
       </div>
     </div>
 
     <div id="sequence-container">
-      <div class="empty-state">Tap "Generate" or "New" to create a progression.</div>
+      <div class="empty-state">Tap "Generate" to create a progression.</div>
     </div>
 
     <!-- Debug Area -->
@@ -222,7 +211,7 @@
 
 <script>
   // =====================================================================
-  // THEORY
+  // THEORY – FIXED CHORD BUILDING
   // =====================================================================
   const NOTE_NAMES_MIXED = ['C','Db','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
   const NOTE_NAMES_SHARP = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
@@ -237,36 +226,10 @@
     min7:  { label:'Minor 7', symbol:'m7', intervals:[0,3,7,10], category:'diatonic' },
     dom7:  { label:'Dominant 7', symbol:'7', intervals:[0,4,7,10], category:'diatonic' },
     m7b5:  { label:'Half-dim 7', symbol:'ø7', intervals:[0,3,6,10], category:'diatonic' },
-    maj9:  { label:'Major 9', symbol:'maj9', intervals:[0,4,7,11,14], category:'extended' },
-    min9:  { label:'Minor 9', symbol:'m9', intervals:[0,3,7,10,14], category:'extended' },
-    '9':   { label:'Dominant 9', symbol:'9', intervals:[0,4,7,10,14], category:'extended' },
-    '6':   { label:'Major 6', symbol:'6', intervals:[0,4,7,9], category:'extended' },
-    m6:    { label:'Minor 6', symbol:'m6', intervals:[0,3,7,9], category:'extended' },
-    add9:  { label:'Add 9', symbol:'add9', intervals:[0,4,7,14], category:'extended' },
-    '13':  { label:'13', symbol:'13', intervals:[0,4,7,10,14,21], category:'extended' },
-    '7b9': { label:'7♭9', symbol:'7♭9', intervals:[0,4,7,10,13], category:'altered' },
-    '7#9': { label:'7♯9', symbol:'7♯9', intervals:[0,4,7,10,15], category:'altered' },
-    '13b9':{ label:'13♭9', symbol:'13♭9', intervals:[0,4,7,10,13,21], category:'altered' },
-    '7#5': { label:'7♯5', symbol:'7♯5', intervals:[0,4,8,10], category:'altered' },
-    '7b5': { label:'7♭5', symbol:'7♭5', intervals:[0,4,6,10], category:'altered' },
-    '7#11':{ label:'7♯11', symbol:'7♯11', intervals:[0,4,7,10,18], category:'altered' },
-    '13#11':{ label:'13♯11', symbol:'13♯11', intervals:[0,4,7,10,14,18,21], category:'altered' },
     sus4:  { label:'Sus 4', symbol:'sus4', intervals:[0,5,7], category:'sus' },
-    sus2:  { label:'Sus 2', symbol:'sus2', intervals:[0,2,7], category:'sus' },
-    '7sus4': { label:'7 Sus 4', symbol:'7sus4', intervals:[0,5,7,10], category:'sus' },
-    '9sus4': { label:'9 Sus 4', symbol:'9sus4', intervals:[0,5,7,10,14], category:'sus' },
-    'sus2add4': { label:'Sus 2 Add 4', symbol:'sus2add4', intervals:[0,2,5,7], category:'sus' },
     aug:   { label:'Augmented', symbol:'+', intervals:[0,4,8], category:'aug' },
     dim7:  { label:'Dim 7', symbol:'°7', intervals:[0,3,6,9], category:'dim7' },
   };
-
-  const SLASH_CHORD_TYPES = [
-    { chord: 'maj', bassOffset: 0 }, { chord: 'maj', bassOffset: 2 },
-    { chord: 'min', bassOffset: 0 }, { chord: 'min', bassOffset: 2 },
-    { chord: 'dom7', bassOffset: 0 }, { chord: 'dom7', bassOffset: 2 },
-    { chord: 'maj7', bassOffset: 0 }, { chord: 'maj7', bassOffset: 2 },
-    { chord: 'min7', bassOffset: 0 }, { chord: 'min7', bassOffset: 2 },
-  ];
 
   const DEGREE_MAP = {
     1:{ label:'I', triad:'maj', seventh:'maj7' },
@@ -281,361 +244,190 @@
   const CATEGORIES = {
     all: Object.keys(CHORD_TYPES),
     diatonic: ['maj','min','dim','maj7','min7','dom7','m7b5'],
-    extended: ['maj9','min9','9','6','m6','add9','13'],
-    altered: ['7b9','7#9','13b9','7#5','7b5','7#11','13#11'],
-    sus: ['sus4','sus2','7sus4','9sus4','sus2add4'],
+    sus: ['sus4'],
     aug: ['aug'],
     dim7: ['dim7'],
-    slash: ['slash']
   };
 
   let currentMode = 'roman', currentSpelling = 'mixed', currentInversionMode = 'voice-leading', currentFilter = 'all';
   let currentSequence = [], showNotes = false;
+  let listenMode = false;
+  let currentExpectedNotes = [];
+  let currentIndex = 0;
+  let heldNotes = new Set();
+  let stats = { correct: 0, wrong: 0, streak: 0, total: 0 };
 
-  // =====================================================================
-  // DEBUG
-  // =====================================================================
   const debugLog = document.getElementById('debug-log');
-
-  function logDebug(msg, type = 'info') {
+  function logDebug(msg, type='info') {
     const time = new Date().toLocaleTimeString();
     const colors = { info: '#74c0fc', success: '#69db7c', error: '#ff6b6b', warn: '#ffd43b' };
     debugLog.innerHTML += `\n[${time}] <span style="color:${colors[type] || '#74c0fc'}">${msg}</span>`;
     debugLog.scrollTop = debugLog.scrollHeight;
   }
 
-  function clearDebug() {
-    debugLog.innerHTML = '⏳ Log cleared...';
-  }
-
-  // =====================================================================
-  // THEORY HELPERS
-  // =====================================================================
-  function getNoteNames() { switch(currentSpelling) { case 'sharp': return NOTE_NAMES_SHARP; case 'flat': return NOTE_NAMES_FLAT; default: return NOTE_NAMES_MIXED; } }
   function pitchClass(m) { return ((m % 12) + 12) % 12; }
-  function octave(m) { return Math.floor(m / 12) - 1; }
-  function noteLabel(m) { return getNoteNames()[pitchClass(m)]; }
-
-  function buildChord(root, typeKey, inversion = 0, octaveShift = 0) {
-    const def = CHORD_TYPES[typeKey]; if (!def) return [];
-    let notes = def.intervals.map(iv => root + iv + octaveShift * 12);
-    const n = notes.length, inv = ((inversion % n) + n) % n;
-    for (let i = 0; i < inv; i++) notes = notes.slice(1).concat(notes[0] + 12);
-    return notes;
+  function noteLabel(m) {
+    const names = currentSpelling === 'sharp' ? NOTE_NAMES_SHARP : currentSpelling === 'flat' ? NOTE_NAMES_FLAT : NOTE_NAMES_MIXED;
+    return names[pitchClass(m)];
   }
 
-  function buildSlashChord(root, typeKey, bassOffset, inversion = 0, octaveShift = 0) {
-    const def = CHORD_TYPES[typeKey]; if (!def) return [];
-    let notes = def.intervals.map(iv => root + iv + octaveShift * 12);
-    const n = notes.length, inv = ((inversion % n) + n) % n;
-    for (let i = 0; i < inv; i++) notes = notes.slice(1).concat(notes[0] + 12);
-    const bassNote = root + bassOffset + octaveShift * 12;
-    const minNote = Math.min(...notes);
-    let bassPitch = bassNote;
-    while (bassPitch >= minNote) bassPitch -= 12;
-    if (!notes.includes(bassPitch)) { notes.push(bassPitch); notes.sort((a,b) => a-b); }
+  // =====================================================================
+  // FIXED CHORD BUILDER
+  // =====================================================================
+  function buildChord(root, typeKey, inversion = 0) {
+    const def = CHORD_TYPES[typeKey];
+    if (!def) return [];
+    // Get the raw intervals
+    let notes = def.intervals.map(iv => root + iv);
+    // Apply inversion by rotating the notes
+    const n = notes.length;
+    const inv = ((inversion % n) + n) % n;
+    for (let i = 0; i < inv; i++) {
+      const first = notes.shift();
+      notes.push(first + 12);
+    }
+    // Sort and deduplicate
+    notes = [...new Set(notes)].sort((a,b) => a-b);
     return notes;
   }
 
   function getChordSymbol(root, typeKey) {
-    const info = CHORD_TYPES[typeKey];
-    return noteLabel(root) + (info ? info.symbol : '');
+    return noteLabel(root) + (CHORD_TYPES[typeKey] ? CHORD_TYPES[typeKey].symbol : '');
   }
 
-  function getSlashSymbol(root, typeKey, bassRoot) {
-    return getChordSymbol(root, typeKey) + '/' + noteLabel(bassRoot);
+  function getRomanSymbol(degree, typeKey, inversion) {
+    const degInfo = DEGREE_MAP[degree];
+    if (!degInfo) return '?';
+    const label = degInfo.label;
+    const symbol = CHORD_TYPES[typeKey] ? CHORD_TYPES[typeKey].symbol : '';
+    const invNames = ['', ' (1st)', ' (2nd)', ' (3rd)'];
+    return label + symbol + (inversion > 0 ? invNames[inversion] || '' : '');
   }
 
-  function getRandomOctaveShift() { return [-1,0,1][Math.floor(Math.random()*3)]; }
-
-  function chooseVoiceLeadingInversion(prevNotes, currentRoot, typeKey, maxInv) {
-    if (!prevNotes || prevNotes.length === 0) return Math.floor(Math.random() * (maxInv + 1));
-    let bestInv = 0, bestDistance = Infinity;
-    const prevLowest = Math.min(...prevNotes);
-    for (let inv = 0; inv <= maxInv; inv++) {
-      const testNotes = buildChord(currentRoot, typeKey, inv);
-      if (testNotes.length === 0) continue;
-      const testLowest = Math.min(...testNotes);
-      let distance = Infinity;
-      for (let oct = -1; oct <= 1; oct++) {
-        const d = Math.abs((testLowest + oct * 12) - prevLowest);
-        if (d < distance) distance = d;
-      }
-      if (distance < bestDistance) { bestDistance = distance; bestInv = inv; }
-    }
-    return bestInv;
-  }
-
-  function chooseChaosInversion(prevNotes, currentRoot, typeKey, maxInv) {
-    if (!prevNotes || prevNotes.length === 0) return Math.floor(Math.random() * (maxInv + 1));
-    let worstInv = 0, worstDistance = -1;
-    const prevLowest = Math.min(...prevNotes);
-    for (let inv = 0; inv <= maxInv; inv++) {
-      const testNotes = buildChord(currentRoot, typeKey, inv);
-      if (testNotes.length === 0) continue;
-      const testLowest = Math.min(...testNotes);
-      let distance = 0;
-      for (let oct = -2; oct <= 2; oct++) {
-        const d = Math.abs((testLowest + oct * 12) - prevLowest);
-        if (d > distance) distance = d;
-      }
-      if (distance > worstDistance) { worstDistance = distance; worstInv = inv; }
-    }
-    return worstInv;
-  }
-
-  // ---- Sequence generators ----
-  function generateRomanSequence(keyRoot, length, filter, keyMode, invMode) {
-    const degrees = [1,2,3,4,5,6,7]; const seq = [];
-    let prevDegree = null, prevNotes = null;
+  // =====================================================================
+  // SEQUENCE GENERATOR
+  // =====================================================================
+  function generateSequence(keyRoot, length, filter, keyMode, invMode) {
+    const degrees = [1,2,3,4,5,6,7];
+    const seq = [];
+    let prevDegree = null;
     let allowedTypes = CATEGORIES[filter] || CATEGORIES.all;
-    const allowSlash = filter === 'all' || filter === 'slash';
+
     for (let i = 0; i < length; i++) {
-      let deg; do { deg = degrees[Math.floor(Math.random() * degrees.length)]; } while (deg === prevDegree && length > 3); prevDegree = deg;
+      let deg;
+      do { deg = degrees[Math.floor(Math.random() * degrees.length)]; } while (deg === prevDegree && length > 3);
+      prevDegree = deg;
+
       let chordKeyRoot = keyMode === 'modulating' ? ALL_ROOTS[Math.floor(Math.random() * ALL_ROOTS.length)] : parseInt(keyRoot, 10);
       const scale = [0,2,4,5,7,9,11];
       const chordRoot = chordKeyRoot + scale[deg - 1];
-      let typeKey, isSlash = false, slashBassOffset = 0, slashBassRoot = chordRoot;
-      if (allowSlash && Math.random() < 0.15 && !['sus','aug','dim7','extended','altered'].includes(filter)) {
-        isSlash = true; const sd = SLASH_CHORD_TYPES[Math.floor(Math.random() * SLASH_CHORD_TYPES.length)];
-        typeKey = sd.chord; slashBassOffset = sd.bassOffset;
-        const bassDeg = (deg + slashBassOffset) % 7;
-        slashBassRoot = chordKeyRoot + scale[bassDeg];
-      } else {
-        const available = allowedTypes.filter(t => t !== 'slash');
-        typeKey = available.length ? available[Math.floor(Math.random() * available.length)] : 'maj';
-      }
-      const chordInfo = CHORD_TYPES[typeKey]; if (!chordInfo) continue;
-      const maxInv = chordInfo.intervals.length - 1;
+
+      // Determine chord quality based on degree
+      const degInfo = DEGREE_MAP[deg];
+      const qualityKey = degInfo ? degInfo.seventh : 'maj';
+      const typeKey = allowedTypes.includes(qualityKey) ? qualityKey : allowedTypes[0] || 'maj';
+
+      const maxInv = CHORD_TYPES[typeKey].intervals.length - 1;
       let inv = 0;
       if (invMode === 'none') inv = 0;
-      else if (invMode === 'voice-leading') inv = chooseVoiceLeadingInversion(prevNotes, chordRoot, typeKey, maxInv);
-      else if (invMode === 'chaos') inv = chooseChaosInversion(prevNotes, chordRoot, typeKey, maxInv);
-      else inv = Math.floor(Math.random() * (maxInv + 1));
-      const octShift = getRandomOctaveShift();
-      let notes, symbol, display;
-      if (isSlash) {
-        notes = buildSlashChord(chordRoot, typeKey, slashBassOffset, inv, octShift);
-        symbol = getSlashSymbol(chordRoot, typeKey, slashBassRoot);
-        display = DEGREE_MAP[deg].label + ' / ' + noteLabel(slashBassRoot);
+      else if (invMode === 'voice-leading' && seq.length > 0) {
+        const prevNotes = seq[seq.length - 1].notes;
+        let bestInv = 0, bestDist = Infinity;
+        const prevLowest = Math.min(...prevNotes);
+        for (let v = 0; v <= maxInv; v++) {
+          const testNotes = buildChord(chordRoot, typeKey, v);
+          if (testNotes.length === 0) continue;
+          const testLowest = Math.min(...testNotes);
+          let dist = Infinity;
+          for (let oct = -1; oct <= 1; oct++) {
+            const d = Math.abs((testLowest + oct * 12) - prevLowest);
+            if (d < dist) dist = d;
+          }
+          if (dist < bestDist) { bestDist = dist; bestInv = v; }
+        }
+        inv = bestInv;
+      } else if (invMode === 'chaos' && seq.length > 0) {
+        const prevNotes = seq[seq.length - 1].notes;
+        let worstInv = 0, worstDist = -1;
+        const prevLowest = Math.min(...prevNotes);
+        for (let v = 0; v <= maxInv; v++) {
+          const testNotes = buildChord(chordRoot, typeKey, v);
+          if (testNotes.length === 0) continue;
+          const testLowest = Math.min(...testNotes);
+          let dist = 0;
+          for (let oct = -2; oct <= 2; oct++) {
+            const d = Math.abs((testLowest + oct * 12) - prevLowest);
+            if (d > dist) dist = d;
+          }
+          if (dist > worstDist) { worstDist = dist; worstInv = v; }
+        }
+        inv = worstInv;
       } else {
-        notes = buildChord(chordRoot, typeKey, inv, octShift);
-        symbol = getChordSymbol(chordRoot, typeKey);
-        const invNames = ['Root','1st','2nd','3rd'];
-        display = DEGREE_MAP[deg].label + (chordInfo.symbol || '') + (inv === 0 ? '' : ` (${invNames[inv] || inv})`);
+        inv = Math.floor(Math.random() * (maxInv + 1));
       }
-      if (notes.length > 0) prevNotes = notes;
+
+      const notes = buildChord(chordRoot, typeKey, inv);
+      const symbol = getChordSymbol(chordRoot, typeKey);
+      const display = getRomanSymbol(deg, typeKey, inv);
+      const fullName = currentMode === 'absolute' ? symbol : display;
+
       seq.push({
-        degree: deg, degreeLabel: DEGREE_MAP[deg].label,
-        typeKey: isSlash ? 'slash' : typeKey, chordInfo: chordInfo,
-        inversion: inv, chordRoot: chordRoot, chordKeyRoot: chordKeyRoot,
-        notes: notes, symbol: symbol, display: display,
-        isSlash: isSlash, slashBassRoot: slashBassRoot,
-        fullDesc: isSlash ? `${DEGREE_MAP[deg].label} in ${noteLabel(chordKeyRoot)} – ${symbol}` : `${DEGREE_MAP[deg].label} in ${noteLabel(chordKeyRoot)} (${symbol})`,
-        category: isSlash ? 'slash' : (chordInfo.category || 'diatonic')
+        degree: deg,
+        degreeLabel: DEGREE_MAP[deg].label,
+        typeKey: typeKey,
+        inversion: inv,
+        chordRoot: chordRoot,
+        chordKeyRoot: chordKeyRoot,
+        notes: notes,
+        symbol: symbol,
+        display: display,
+        fullName: fullName,
+        category: CHORD_TYPES[typeKey].category || 'diatonic'
       });
     }
     return seq;
-  }
-
-  function generateAbsoluteSequence(length, filter, invMode) {
-    const seq = []; let prevNotes = null;
-    let allowedTypes = CATEGORIES[filter] || CATEGORIES.all;
-    const allowSlash = filter === 'all' || filter === 'slash';
-    for (let i = 0; i < length; i++) {
-      const chordRoot = ALL_ROOTS[Math.floor(Math.random() * ALL_ROOTS.length)];
-      let typeKey, isSlash = false, slashBassOffset = 0, slashBassRoot = chordRoot;
-      if (allowSlash && Math.random() < 0.15 && !['sus','aug','dim7','extended','altered'].includes(filter)) {
-        isSlash = true; const sd = SLASH_CHORD_TYPES[Math.floor(Math.random() * SLASH_CHORD_TYPES.length)];
-        typeKey = sd.chord; slashBassOffset = sd.bassOffset;
-        const scale = [0,2,4,5,7,9,11];
-        const bassDeg = Math.floor(Math.random() * 7);
-        slashBassRoot = chordRoot + scale[bassDeg];
-      } else {
-        const available = allowedTypes.filter(t => t !== 'slash');
-        typeKey = available.length ? available[Math.floor(Math.random() * available.length)] : 'maj';
-      }
-      const chordInfo = CHORD_TYPES[typeKey]; if (!chordInfo) continue;
-      const maxInv = chordInfo.intervals.length - 1;
-      let inv = 0;
-      if (invMode === 'none') inv = 0;
-      else if (invMode === 'voice-leading') inv = chooseVoiceLeadingInversion(prevNotes, chordRoot, typeKey, maxInv);
-      else if (invMode === 'chaos') inv = chooseChaosInversion(prevNotes, chordRoot, typeKey, maxInv);
-      else inv = Math.floor(Math.random() * (maxInv + 1));
-      const octShift = getRandomOctaveShift();
-      let notes, symbol;
-      if (isSlash) {
-        notes = buildSlashChord(chordRoot, typeKey, slashBassOffset, inv, octShift);
-        symbol = getSlashSymbol(chordRoot, typeKey, slashBassRoot);
-      } else {
-        notes = buildChord(chordRoot, typeKey, inv, octShift);
-        symbol = getChordSymbol(chordRoot, typeKey);
-      }
-      if (notes.length > 0) prevNotes = notes;
-      seq.push({
-        degree: 0, degreeLabel: '',
-        typeKey: isSlash ? 'slash' : typeKey, chordInfo: chordInfo,
-        inversion: inv, chordRoot: chordRoot, chordKeyRoot: chordRoot,
-        notes: notes, symbol: symbol, display: symbol,
-        isSlash: isSlash, slashBassRoot: slashBassRoot,
-        fullDesc: isSlash ? symbol : symbol,
-        category: isSlash ? 'slash' : (chordInfo.category || 'diatonic')
-      });
-    }
-    return seq;
-  }
-
-  function generateMixedSequence(keyRoot, length, filter, keyMode, invMode) {
-    const roman = generateRomanSequence(keyRoot, length, filter, keyMode, invMode);
-    const abs = generateAbsoluteSequence(length, filter, invMode);
-    const mixed = []; let rIdx=0, aIdx=0;
-    const usedR = roman.map(()=>false), usedA = abs.map(()=>false);
-    for (let i=0; i<length; i++) {
-      const useR = Math.random() < 0.5;
-      let found = false;
-      for (let att=0; att<20; att++) {
-        if (useR) { const idx = Math.floor(Math.random()*roman.length); if (!usedR[idx]) { usedR[idx]=true; mixed.push({...roman[idx], _mode:'roman'}); found=true; break; } }
-        else { const idx = Math.floor(Math.random()*abs.length); if (!usedA[idx]) { usedA[idx]=true; mixed.push({...abs[idx], _mode:'absolute'}); found=true; break; } }
-      }
-      if (!found) {
-        for (let j=0; j<roman.length; j++) if (!usedR[j]) { usedR[j]=true; mixed.push({...roman[j], _mode:'roman'}); found=true; break; }
-        if (!found) for (let j=0; j<abs.length; j++) if (!usedA[j]) { usedA[j]=true; mixed.push({...abs[j], _mode:'absolute'}); found=true; break; }
-      }
-    }
-    mixed.forEach(item => { item.display = item._mode === 'roman' ? item.display : item.symbol; item.fullDesc = item._mode === 'roman' ? item.fullDesc : item.symbol; });
-    return mixed;
   }
 
   // =====================================================================
   // AUDIO
   // =====================================================================
-  let audioCtx = null, masterGain = null;
-  let playbackTimeouts = [], isPlaying = false;
+  let audioCtx = null;
+  let playbackTimeouts = [];
 
   function ensureAudio() {
     if (!audioCtx) {
       audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      masterGain = audioCtx.createGain();
-      masterGain.gain.value = 0.0001;
-      masterGain.connect(audioCtx.destination);
-      masterGain.gain.exponentialRampToValueAtTime(0.9, audioCtx.currentTime + 0.02);
-      logDebug('🎵 Audio context created', 'success');
     }
-    if (audioCtx.state === 'suspended') {
-      audioCtx.resume();
-      logDebug('🎵 Audio context resumed', 'success');
-    }
+    if (audioCtx.state === 'suspended') audioCtx.resume();
     return audioCtx;
   }
 
-  function stopPlayback() { playbackTimeouts.forEach(clearTimeout); playbackTimeouts = []; isPlaying = false; document.querySelectorAll('.seq-item.playing').forEach(el => el.classList.remove('playing')); }
-  function playChordNotes(notes, duration = 1.0) {
+  function playChordNotes(notes) {
     const ctx = ensureAudio();
     notes.forEach((n, i) => {
-      const tid = setTimeout(() => {
+      setTimeout(() => {
         const freq = 440 * Math.pow(2, (n - 69) / 12);
-        const osc = ctx.createOscillator(), gain = ctx.createGain();
-        osc.type = 'triangle'; osc.frequency.value = freq;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.value = freq;
         gain.gain.setValueAtTime(0.0001, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.25, ctx.currentTime + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
-        osc.connect(gain); gain.connect(ctx.destination);
-        osc.start(ctx.currentTime); osc.stop(ctx.currentTime + duration);
-      }, i * 150);
-      playbackTimeouts.push(tid);
+        gain.gain.exponentialRampToValueAtTime(0.2, ctx.currentTime + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.6);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.6);
+      }, i * 80);
     });
   }
-  function playSequence(seq) {
-    stopPlayback(); isPlaying = true; const items = document.querySelectorAll('.seq-item');
-    seq.forEach((item, idx) => {
-      const tid = setTimeout(() => { if (!isPlaying) return; items.forEach(el => el.classList.remove('playing')); if (items[idx]) items[idx].classList.add('playing'); playChordNotes(item.notes, 0.9); }, idx * 1000);
-      playbackTimeouts.push(tid);
-    });
-    playbackTimeouts.push(setTimeout(() => { items.forEach(el => el.classList.remove('playing')); isPlaying = false; }, seq.length * 1000 + 500));
-  }
-  function playSingleChord(notes) { stopPlayback(); playChordNotes(notes, 1.0); }
 
   // =====================================================================
   // MIDI
   // =====================================================================
-  let midiAccess = null, midiInput = null;
+  let midiInput = null;
   let connected = false;
-  let heldNotes = new Set();
   let chordCheckTimeout = null;
-
-  const inputVoices = new Map();
-  const feedbackArea = document.getElementById('feedback-area');
-  const testSoundBtn = document.getElementById('test-sound');
-
-  function flashFeedback() {
-    feedbackArea.classList.add('flash');
-    setTimeout(() => feedbackArea.classList.remove('flash'), 150);
-  }
-
-  function startInputNote(note, velocity = 96) {
-    const ctx = ensureAudio();
-    const existing = inputVoices.get(note);
-    if (existing) {
-      try { existing.osc.stop(); } catch {}
-      inputVoices.delete(note);
-    }
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'triangle';
-    osc.frequency.value = 440 * Math.pow(2, (note - 69) / 12);
-    const amp = Math.max(0.02, Math.min(0.25, (velocity / 127) * 0.25));
-    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(amp, ctx.currentTime + 0.02);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start(ctx.currentTime);
-    inputVoices.set(note, { osc, gain });
-    flashFeedback();
-    logDebug(`🎹 Note ON: ${noteLabel(note)} (${note})`, 'info');
-  }
-
-  function stopInputNote(note) {
-    const voice = inputVoices.get(note);
-    if (!voice) return;
-    const ctx = ensureAudio();
-    voice.gain.gain.cancelScheduledValues(ctx.currentTime);
-    voice.gain.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.03);
-    try { voice.osc.stop(ctx.currentTime + 0.12); } catch {}
-    inputVoices.delete(note);
-    logDebug(`🎹 Note OFF: ${noteLabel(note)} (${note})`, 'info');
-  }
-
-  function clearInputVoices() {
-    for (const note of inputVoices.keys()) {
-      stopInputNote(note);
-    }
-    inputVoices.clear();
-  }
-
-  testSoundBtn.addEventListener('click', () => {
-    try {
-      const ctx = ensureAudio();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.value = 440;
-      gain.gain.setValueAtTime(0.0001, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + 0.5);
-      feedbackMsg.textContent = '🔊 Test sound played!';
-      feedbackMsg.className = 'msg correct';
-      flashFeedback();
-      logDebug('🔊 Test sound played successfully', 'success');
-    } catch (e) {
-      feedbackMsg.textContent = '❌ Sound test failed: ' + e.message;
-      feedbackMsg.className = 'msg wrong';
-      logDebug('❌ Test sound failed: ' + e.message, 'error');
-    }
-  });
 
   const midiStatus = document.getElementById('midi-status');
   const midiConnectBtn = document.getElementById('midi-connect');
@@ -643,95 +435,65 @@
   const feedbackMsg = document.getElementById('feedback-msg');
   const statsDisplay = document.getElementById('stats-display');
 
-  let stats = { correct: 0, wrong: 0, streak: 0, bestStreak: 0, total: 0, times: [] };
-
-  let currentExpectedNotes = [];
-  let currentIndex = 0;
-  let listenMode = false;
-  let chordStartTime = 0;
-
   function updateStats() {
-    const avg = stats.times.length ? Math.round(stats.times.reduce((a,b)=>a+b,0)/stats.times.length) : 0;
     statsDisplay.innerHTML = `
       <span>✅ ${stats.correct}</span>
       <span>❌ ${stats.wrong}</span>
       <span>🔥 ${stats.streak}</span>
-      <span>⚡ ${avg}ms</span>
       <span>📊 ${stats.total}</span>
     `;
-    logDebug(`📊 Stats updated: ${stats.correct} correct, ${stats.wrong} wrong, streak ${stats.streak}`, 'info');
   }
 
   // =====================================================================
-  // setCurrentChord
+  // VALIDATION
   // =====================================================================
   function setCurrentChord(index) {
     if (!currentSequence || index >= currentSequence.length) {
       feedbackMsg.innerHTML = '🎉 Complete! Generate a new sequence.';
       feedbackMsg.className = 'msg correct';
       listenMode = false;
-      logDebug('🎉 Sequence complete!', 'success');
       return;
     }
-
     const item = currentSequence[index];
-    if (!item) {
-      feedbackMsg.textContent = 'Error: No chord found at index ' + index;
-      feedbackMsg.className = 'msg wrong';
-      logDebug('❌ Error: No chord at index ' + index, 'error');
-      return;
-    }
-
+    if (!item) return;
     currentExpectedNotes = [...item.notes];
     currentIndex = index;
-    chordStartTime = Date.now();
-
-    const displayName = currentMode === 'absolute' || item._mode === 'absolute' ? item.symbol : item.display;
+    const displayName = currentMode === 'absolute' ? item.symbol : item.display;
     feedbackMsg.innerHTML = `🎯 Play: <strong>${displayName}</strong>`;
     feedbackMsg.className = 'msg waiting';
-    logDebug(`🎯 Set current chord: ${displayName} (${item.notes.map(n=>noteLabel(n)).join(' ')})`, 'info');
+    logDebug(`🎯 Expected: ${item.notes.map(n=>noteLabel(n)).join(' ')} (${displayName})`, 'info');
 
     const items = document.querySelectorAll('.seq-item');
-    items.forEach(el => {
-      el.classList.remove('playing');
-    });
+    items.forEach(el => el.classList.remove('playing'));
     if (items[index]) {
       items[index].classList.add('playing');
       const degSpan = items[index].querySelector('.deg');
-      if (degSpan) {
-        degSpan.textContent = degSpan.textContent.replace(/[✅❌]\s*/, '');
-      }
+      if (degSpan) degSpan.textContent = degSpan.textContent.replace(/[✅❌]\s*/, '');
       items[index].style.borderLeftColor = '#d97706';
       items[index].style.background = '';
     }
-
     heldNotes.clear();
     playedDisplay.textContent = '🎹 notes: none';
   }
 
-  // =====================================================================
-  // checkChord
-  // =====================================================================
-  function checkChord(playedNotes) {
-    logDebug('🔍 checkChord() called with ' + playedNotes.size + ' notes', 'info');
-
+  function checkChord() {
     if (!currentExpectedNotes || currentExpectedNotes.length === 0) {
       feedbackMsg.textContent = 'No chord to check. Generate a sequence first.';
       feedbackMsg.className = 'msg waiting';
-      logDebug('❌ No chord to check (currentExpectedNotes is empty)', 'error');
+      return;
+    }
+    if (heldNotes.size === 0) {
+      feedbackMsg.textContent = '⚠️ No notes played. Play some notes on your keyboard first.';
+      feedbackMsg.className = 'msg waiting';
       return;
     }
 
-    const expected = [...currentExpectedNotes].sort((a, b) => a - b);
-    const played = [...playedNotes].sort((a, b) => a - b);
-    const elapsed = Date.now() - chordStartTime;
-
-    logDebug(`📝 Expected: ${expected.map(n=>noteLabel(n)).join(' ')}`, 'info');
-    logDebug(`📝 Played: ${played.map(n=>noteLabel(n)).join(' ')}`, 'info');
+    const expected = [...currentExpectedNotes].sort((a,b)=>a-b);
+    const played = [...heldNotes].sort((a,b)=>a-b);
 
     const allPresent = expected.every(n => played.includes(n));
-    const extraNotes = played.filter(n => !expected.includes(n));
-    const missingNotes = expected.filter(n => !played.includes(n));
+    const extra = played.filter(n => !expected.includes(n));
+    const missing = expected.filter(n => !played.includes(n));
 
     const items = document.querySelectorAll('.seq-item');
     const currentItem = items[currentIndex];
@@ -749,176 +511,110 @@
       }
     }
 
-    if (allPresent && extraNotes.length === 0 && missingNotes.length === 0) {
-      // ✅ CORRECT
+    if (allPresent && extra.length === 0 && missing.length === 0) {
       stats.correct++;
       stats.streak++;
-      if (stats.streak > stats.bestStreak) stats.bestStreak = stats.streak;
       stats.total++;
-      stats.times.push(elapsed);
       updateStats();
-
-      feedbackMsg.innerHTML = `✅ <span style="color:#2f7d48;font-weight:700;">Correct!</span> (${elapsed}ms)`;
+      feedbackMsg.innerHTML = `✅ Correct!`;
       feedbackMsg.className = 'msg correct';
-
       updateItem('✅', '#2f7d48', '#e8f5e9');
-      logDebug(`✅ Correct! (${elapsed}ms)`, 'success');
-
+      logDebug(`✅ Correct! Expected: ${expected.map(n=>noteLabel(n)).join(' ')}`, 'success');
       currentIndex++;
       if (currentIndex < currentSequence.length) {
         setCurrentChord(currentIndex);
       } else {
-        feedbackMsg.innerHTML = '🎉 <span style="color:#2f7d48;font-weight:700;">Complete!</span> Generate a new sequence.';
+        feedbackMsg.innerHTML = '🎉 Complete! Generate a new sequence.';
         feedbackMsg.className = 'msg correct';
         listenMode = false;
-        logDebug('🎉 Sequence complete!', 'success');
       }
     } else {
-      // ❌ WRONG
       stats.wrong++;
       stats.streak = 0;
       stats.total++;
       updateStats();
-
       let msg = '❌ ';
-      if (missingNotes.length > 0) msg += `Missing: ${missingNotes.map(n => noteLabel(n)).join(' ')} `;
-      if (extraNotes.length > 0) msg += `Extra: ${extraNotes.map(n => noteLabel(n)).join(' ')} `;
-      if (missingNotes.length === 0 && extraNotes.length === 0 && !allPresent) msg = '❌ Wrong notes played';
-
+      if (missing.length) msg += `Missing: ${missing.map(n=>noteLabel(n)).join(' ')} `;
+      if (extra.length) msg += `Extra: ${extra.map(n=>noteLabel(n)).join(' ')} `;
       feedbackMsg.innerHTML = msg;
       feedbackMsg.className = 'msg wrong';
-
       updateItem('❌', '#ba3e4b', '#fbe9e7');
       logDebug(`❌ Wrong: ${msg}`, 'error');
     }
   }
 
-  // ---- Manual Check Now button ----
-  document.getElementById('check-now').addEventListener('click', () => {
-    if (heldNotes.size === 0) {
-      feedbackMsg.textContent = '⚠️ No notes played. Play some notes on your keyboard first.';
-      feedbackMsg.className = 'msg waiting';
-      logDebug('⚠️ Check Now: No notes to check', 'warn');
-      return;
-    }
-    logDebug('🔍 Manual check triggered', 'info');
-    checkChord(heldNotes);
-  });
-
   // =====================================================================
-  // handleMIDIMessage
+  // MIDI HANDLER
   // =====================================================================
   function handleMIDIMessage(event) {
     const [status, note, velocity] = event.data;
     const cmd = status & 0xf0;
     if (cmd === 0x90 && velocity > 0) {
       heldNotes.add(note);
-      startInputNote(note, velocity);
+      // Play sound
+      const ctx = ensureAudio();
+      const freq = 440 * Math.pow(2, (note - 69) / 12);
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.15, ctx.currentTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.4);
     } else if (cmd === 0x80 || (cmd === 0x90 && velocity === 0)) {
       heldNotes.delete(note);
-      stopInputNote(note);
-    } else if (cmd === 0xb0 && note === 64) {
-      return;
     }
-    const notes = [...heldNotes].sort((a, b) => a - b);
-    playedDisplay.textContent = notes.length ? `🎹 ${notes.map(n => noteLabel(n)).join(' ')}` : '🎹 notes: none';
+    const notes = [...heldNotes].sort((a,b)=>a-b);
+    playedDisplay.textContent = notes.length ? `🎹 ${notes.map(n=>noteLabel(n)).join(' ')}` : '🎹 notes: none';
     if (chordCheckTimeout) clearTimeout(chordCheckTimeout);
     chordCheckTimeout = setTimeout(() => {
       if (listenMode && heldNotes.size > 0) {
-        logDebug('⏱️ Auto-check triggered by timeout', 'info');
-        checkChord(heldNotes);
+        checkChord();
       }
-    }, 800);
+    }, 600);
   }
 
   // =====================================================================
-  // connectMIDI
+  // CONNECT MIDI
   // =====================================================================
   async function connectMIDI() {
     try {
       if (!navigator.requestMIDIAccess) {
         midiStatus.textContent = '⚠️ Web MIDI not supported';
         midiStatus.className = 'midi-status error';
-        logDebug('❌ Web MIDI not supported', 'error');
         return;
       }
-
-      midiStatus.textContent = '⏳ Requesting MIDI access...';
-      logDebug('⏳ Requesting MIDI access...', 'info');
       const access = await navigator.requestMIDIAccess({ sysex: false });
-
-      const inputs = [];
-      const inputsIterator = access.inputs.values();
-      let next = inputsIterator.next();
-      while (!next.done) {
-        inputs.push(next.value);
-        next = inputsIterator.next();
-      }
-
+      const inputs = [...access.inputs.values()];
       if (inputs.length === 0) {
-        midiStatus.textContent = '⚠️ No MIDI inputs found. Connect a keyboard.';
+        midiStatus.textContent = '⚠️ No MIDI inputs found';
         midiStatus.className = 'midi-status error';
-        logDebug('⚠️ No MIDI inputs found', 'warn');
         return;
       }
-
-      let selectedInput = inputs.find(input =>
-        input.name.toLowerCase().includes('bluetooth') ||
-        input.name.toLowerCase().includes('ble')
-      );
-      if (!selectedInput) selectedInput = inputs[0];
-
-      midiAccess = access;
-      midiInput = selectedInput;
+      midiInput = inputs[0];
       midiInput.onmidimessage = handleMIDIMessage;
       connected = true;
-
-      ensureAudio();
-
       midiStatus.textContent = `✅ MIDI connected: ${midiInput.name || 'Keyboard'}`;
       midiStatus.className = 'midi-status connected';
       midiConnectBtn.textContent = 'Disconnect';
       midiConnectBtn.classList.add('active');
       listenMode = true;
-
-      logDebug(`✅ MIDI connected: ${midiInput.name || 'Keyboard'}`, 'success');
-
-      if (midiAccess) {
-        midiAccess.onstatechange = () => {
-          const inputs2 = [];
-          const it2 = midiAccess.inputs.values();
-          let nxt = it2.next();
-          while (!nxt.done) {
-            inputs2.push(nxt.value);
-            nxt = it2.next();
-          }
-          if (!connected && inputs2.length) {
-            midiStatus.textContent = '✅ MIDI device available. Tap Connect MIDI.';
-            midiStatus.className = 'midi-status connected';
-            logDebug('✅ MIDI device available', 'success');
-          }
-        };
-      }
-
       if (currentSequence.length > 0) {
-        currentIndex = 0;
         setCurrentChord(0);
         feedbackMsg.textContent = '🎯 MIDI ready – play the chord!';
-      } else {
-        feedbackMsg.textContent = 'Generate a sequence to start.';
-        logDebug('ℹ️ Generate a sequence to start', 'info');
       }
-
     } catch (e) {
       midiStatus.textContent = `❌ MIDI error: ${e.message}`;
       midiStatus.className = 'midi-status error';
-      logDebug('❌ MIDI error: ' + e.message, 'error');
-      console.error(e);
     }
   }
 
   function disconnectMIDI() {
-    if (midiInput) { midiInput.onmidimessage = null; midiInput = null; }
+    if (midiInput) midiInput.onmidimessage = null;
     connected = false;
     listenMode = false;
     midiStatus.textContent = '⏳ MIDI: idle';
@@ -928,33 +624,113 @@
     heldNotes.clear();
     playedDisplay.textContent = '🎹 notes: none';
     if (chordCheckTimeout) clearTimeout(chordCheckTimeout);
-    clearInputVoices();
-    logDebug('⏳ MIDI disconnected', 'info');
   }
 
   midiConnectBtn.addEventListener('click', () => {
-    if (connected) { disconnectMIDI(); } else { connectMIDI(); }
+    if (connected) disconnectMIDI(); else connectMIDI();
   });
 
   // =====================================================================
   // UI
   // =====================================================================
+  document.getElementById('test-sound').addEventListener('click', () => {
+    try {
+      const ctx = ensureAudio();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = 440;
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.5);
+      feedbackMsg.textContent = '🔊 Test sound played!';
+      feedbackMsg.className = 'msg correct';
+    } catch(e) {
+      feedbackMsg.textContent = '❌ Sound test failed';
+      feedbackMsg.className = 'msg wrong';
+    }
+  });
+
+  document.getElementById('check-now').addEventListener('click', () => {
+    checkChord();
+  });
+
+  function generate() {
+    const key = keySelect.value;
+    const length = parseInt(lengthSelect.value);
+    const keyMode = keyModeSelect.value;
+    const invMode = inversionModeSelect.value;
+    const seq = generateSequence(key, length, currentFilter, keyMode, invMode);
+    currentSequence = seq;
+    renderSequence(seq);
+    stats = { correct: 0, wrong: 0, streak: 0, total: 0 };
+    updateStats();
+    if (listenMode && seq.length > 0) {
+      setCurrentChord(0);
+      feedbackMsg.textContent = '🎯 Play the chord!';
+    }
+  }
+
+  function renderSequence(seq) {
+    const container = document.getElementById('sequence-container');
+    container.innerHTML = '';
+    if (!seq || seq.length === 0) {
+      container.innerHTML = '<div class="empty-state">Tap "Generate" to create a progression.</div>';
+      return;
+    }
+    const list = document.createElement('div');
+    list.className = 'sequence-list';
+    seq.forEach((item, idx) => {
+      const div = document.createElement('div');
+      div.className = 'seq-item';
+      const color = item.category === 'sus' ? '#b66a14' : item.category === 'aug' ? '#ba3e4b' : item.category === 'dim7' ? '#2f7d48' : '#0b6d73';
+      div.style.borderLeftColor = color;
+      div.addEventListener('click', () => playChordNotes(item.notes));
+      const topRow = document.createElement('div');
+      topRow.className = 'top-row';
+      const degSpan = document.createElement('span');
+      degSpan.className = 'deg';
+      degSpan.textContent = `${idx+1}. ${item.degreeLabel}`;
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'name';
+      nameSpan.textContent = currentMode === 'absolute' ? item.symbol : item.display;
+      const keyLabel = document.createElement('span');
+      keyLabel.className = 'key-label';
+      keyLabel.textContent = currentMode === 'roman' ? noteLabel(item.chordKeyRoot) : '';
+      const badge = document.createElement('span');
+      badge.className = 'badge';
+      badge.textContent = item.category === 'sus' ? 'sus' : item.category === 'aug' ? '+' : item.category === 'dim7' ? '°7' : '3';
+      topRow.append(degSpan, nameSpan, keyLabel, badge);
+      div.appendChild(topRow);
+      if (showNotes) {
+        const notesRow = document.createElement('div');
+        notesRow.className = 'seq-notes';
+        notesRow.textContent = `♪  ${item.notes.map(n=>noteLabel(n)).join('  ')}`;
+        div.appendChild(notesRow);
+      }
+      list.appendChild(div);
+    });
+    container.appendChild(list);
+  }
+
   const keySelect = document.getElementById('key-select');
   const keyModeSelect = document.getElementById('key-mode-select');
   const spellingSelect = document.getElementById('spelling-select');
   const lengthSelect = document.getElementById('length-select');
   const inversionModeSelect = document.getElementById('inversion-mode-select');
-  const container = document.getElementById('sequence-container');
   const toggleNotesBtn = document.getElementById('toggle-notes');
-  const keyHint = document.getElementById('key-hint');
 
-  function populateKeys() {
-    keySelect.innerHTML = '';
-    const names = getNoteNames();
-    ALL_ROOTS.forEach((r, i) => { const opt = document.createElement('option'); opt.value = r; opt.textContent = names[i] || noteLabel(r); keySelect.appendChild(opt); });
-    keySelect.value = '63';
-  }
-  populateKeys();
+  ALL_ROOTS.forEach(r => {
+    const opt = document.createElement('option');
+    opt.value = r;
+    opt.textContent = noteLabel(r);
+    keySelect.appendChild(opt);
+  });
+  keySelect.value = '63';
 
   document.querySelectorAll('#mode-selector button').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -964,160 +740,59 @@
       const isRoman = currentMode === 'roman' || currentMode === 'mixed';
       keySelect.parentElement.style.display = isRoman ? 'flex' : 'none';
       keyModeSelect.parentElement.style.display = isRoman ? 'flex' : 'none';
-      keyHint.textContent = isRoman ? 'Used in Roman/Mixed mode' : 'No key needed';
-      if (listenMode) { listenMode = false; feedbackMsg.textContent = 'Mode changed. Regenerate sequence.'; }
-      logDebug(`🔄 Mode changed to: ${currentMode}`, 'info');
-      generate();
-    });
-  });
-
-  spellingSelect.addEventListener('change', () => { currentSpelling = spellingSelect.value; populateKeys(); if (listenMode) listenMode = false; logDebug(`🔄 Spelling changed to: ${currentSpelling}`, 'info'); generate(); });
-  inversionModeSelect.addEventListener('change', () => { currentInversionMode = inversionModeSelect.value; if (listenMode) listenMode = false; logDebug(`🔄 Inversion mode changed to: ${currentInversionMode}`, 'info'); generate(); });
-  keyModeSelect.addEventListener('change', () => { const isModulating = keyModeSelect.value === 'modulating'; keySelect.disabled = isModulating; keyHint.textContent = isModulating ? 'Ignored (each chord gets its own key)' : 'Used for all chords'; if (listenMode) listenMode = false; logDebug(`🔄 Key mode changed to: ${keyModeSelect.value}`, 'info'); generate(); });
-
-  document.querySelectorAll('#palette span').forEach(el => {
-    el.addEventListener('click', () => {
-      document.querySelectorAll('#palette span').forEach(s => s.classList.remove('active'));
-      el.classList.add('active');
-      currentFilter = el.dataset.filter || 'all';
       if (listenMode) listenMode = false;
-      logDebug(`🔄 Filter changed to: ${currentFilter}`, 'info');
       generate();
     });
-    el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.click(); } });
   });
 
-  toggleNotesBtn.addEventListener('click', () => { showNotes = !showNotes; toggleNotesBtn.textContent = showNotes ? 'Hide Notes' : 'Show Notes'; renderSequence(currentSequence); logDebug(`📝 Show notes: ${showNotes}`, 'info'); });
-
-  function getBadgeClass(category) {
-    switch(category) {
-      case 'sus': return 'badge sus';
-      case 'aug': return 'badge aug';
-      case 'dim7': return 'badge dim7';
-      case 'slash': return 'badge slash';
-      case 'extended': return 'badge extended';
-      case 'altered': return 'badge alt';
-      default: return 'badge';
-    }
-  }
-
-  function getBadgeText(typeKey, category) {
-    if (typeKey === 'slash') return '/';
-    if (category === 'extended') return '9';
-    if (category === 'altered') return 'alt';
-    const info = CHORD_TYPES[typeKey];
-    if (!info) return '';
-    if (info.category === 'sus') return 'sus';
-    if (info.category === 'aug') return '+';
-    if (info.category === 'dim7') return '°7';
-    return info.intervals.length === 3 ? '3' : '7';
-  }
-
-  function renderSequence(seq) {
-    container.innerHTML = '';
-    if (!seq || seq.length === 0) {
-      container.innerHTML = '<div class="empty-state">Tap "Generate" or "New" to create a progression.</div>';
-      return;
-    }
-    const list = document.createElement('div'); list.className = 'sequence-list';
-    seq.forEach((item, idx) => {
-      const div = document.createElement('div'); div.className = 'seq-item'; div.dataset.index = idx;
-      const color = item.category === 'sus' ? '#b66a14' : item.category === 'aug' ? '#ba3e4b' : item.category === 'dim7' ? '#2f7d48' : item.category === 'slash' ? '#1e4d82' : item.category === 'extended' ? '#6b21a5' : item.category === 'altered' ? '#991b1b' : '#0b6d73';
-      div.style.borderLeftColor = color;
-      div.addEventListener('click', () => { playSingleChord(item.notes); });
-      const topRow = document.createElement('div'); topRow.className = 'top-row';
-      const degSpan = document.createElement('span'); degSpan.className = 'deg';
-      if (currentMode === 'roman' || item._mode === 'roman') degSpan.textContent = `${idx+1}. ${item.degreeLabel || '?'}`;
-      else degSpan.textContent = `${idx+1}.`;
-      const nameSpan = document.createElement('span'); nameSpan.className = 'name';
-      if (currentMode === 'mixed' && item._mode) nameSpan.textContent = item._mode === 'roman' ? item.display : item.symbol;
-      else if (currentMode === 'roman') nameSpan.textContent = item.display;
-      else nameSpan.textContent = item.symbol;
-      const keyLabel = document.createElement('span'); keyLabel.className = 'key-label';
-      if (currentMode === 'roman' || (currentMode === 'mixed' && item._mode === 'roman')) keyLabel.textContent = noteLabel(item.chordKeyRoot);
-      else keyLabel.textContent = '';
-      if (currentMode === 'mixed' && item._mode) {
-        const mb = document.createElement('span'); mb.className = 'badge'; mb.style.background = item._mode === 'roman' ? '#d4e2f0' : '#f0e8d4'; mb.textContent = item._mode === 'roman' ? 'R' : 'A'; topRow.append(mb);
-      }
-      const badge = document.createElement('span'); badge.className = getBadgeClass(item.category); badge.textContent = getBadgeText(item.typeKey, item.category);
-      topRow.append(degSpan, nameSpan, keyLabel, badge); div.appendChild(topRow);
-      if (showNotes) {
-        const notesRow = document.createElement('div'); notesRow.className = 'seq-notes';
-        notesRow.textContent = `♪  ${item.notes.map(n=>noteLabel(n)).join('  ')}`;
-        div.appendChild(notesRow);
-      }
-      list.appendChild(div);
-    });
-    container.appendChild(list);
-    if (listenMode && seq.length > 0) {
-      currentIndex = 0;
-      setCurrentChord(0);
-    }
-    logDebug(`📋 Sequence rendered with ${seq.length} chords`, 'info');
-  }
-
-  function generate() {
-    const key = keySelect.value, length = parseInt(lengthSelect.value, 10), keyMode = keyModeSelect.value, invMode = inversionModeSelect.value;
-    let seq;
-    if (currentMode === 'roman') seq = generateRomanSequence(key, length, currentFilter, keyMode, invMode);
-    else if (currentMode === 'absolute') seq = generateAbsoluteSequence(length, currentFilter, invMode);
-    else seq = generateMixedSequence(key, length, currentFilter, keyMode, invMode);
-    currentSequence = seq;
-    renderSequence(seq);
-    stopPlayback();
-    if (listenMode && seq.length > 0) { currentIndex = 0; setCurrentChord(0); feedbackMsg.textContent = '🎯 Play the chord!'; }
-    else { feedbackMsg.textContent = 'Generate a sequence and connect MIDI for feedback.'; feedbackMsg.className = 'msg waiting'; }
-    stats = { correct: 0, wrong: 0, streak: 0, bestStreak: 0, total: 0, times: [] };
-    updateStats();
-    logDebug(`🔄 Generated sequence with ${seq.length} chords`, 'success');
-  }
-
-  function randomSequence() {
-    const allRoots = ALL_ROOTS;
-    keySelect.value = allRoots[Math.floor(Math.random() * allRoots.length)];
+  document.getElementById('generate-btn').addEventListener('click', generate);
+  document.getElementById('random-btn').addEventListener('click', () => {
+    keySelect.value = ALL_ROOTS[Math.floor(Math.random() * ALL_ROOTS.length)];
     lengthSelect.value = [4,6,8,10][Math.floor(Math.random() * 4)];
     inversionModeSelect.value = ['voice-leading','chaos','random','none'][Math.floor(Math.random() * 4)];
     keyModeSelect.value = ['fixed','modulating'][Math.floor(Math.random() * 2)];
-    spellingSelect.value = ['mixed','sharp','flat'][Math.floor(Math.random() * 3)];
-    currentSpelling = spellingSelect.value; populateKeys();
-    const modeOptions = ['roman','absolute','mixed'];
-    const newMode = modeOptions[Math.floor(Math.random() * 3)];
-    document.querySelectorAll('#mode-selector button').forEach(b => b.classList.toggle('active', b.dataset.mode === newMode));
-    currentMode = newMode;
-    const isRoman = currentMode === 'roman' || currentMode === 'mixed';
-    keySelect.parentElement.style.display = isRoman ? 'flex' : 'none';
-    keyModeSelect.parentElement.style.display = isRoman ? 'flex' : 'none';
-    if (listenMode) { listenMode = false; feedbackMsg.textContent = 'New sequence – reconnect MIDI or tap a chord.'; }
-    logDebug('🎲 Random sequence generated', 'success');
     generate();
-  }
-
-  function copySequence() {
+  });
+  document.getElementById('clear-btn').addEventListener('click', () => {
+    currentSequence = [];
+    renderSequence([]);
+    if (listenMode) disconnectMIDI();
+  });
+  document.getElementById('toggle-notes').addEventListener('click', () => {
+    showNotes = !showNotes;
+    toggleNotesBtn.textContent = showNotes ? 'Hide Notes' : 'Show Notes';
+    renderSequence(currentSequence);
+  });
+  document.getElementById('copy-btn').addEventListener('click', () => {
     if (!currentSequence.length) return;
-    const text = currentSequence.map((item, i) => {
-      const displayName = currentMode === 'absolute' || item._mode === 'absolute' ? item.symbol : item.display;
-      return `${i+1}. ${displayName}`;
-    }).join('\n');
-    const btn = document.getElementById('copy-btn'), orig = btn.textContent;
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(text).then(() => { btn.textContent = '✅ Copied!'; setTimeout(() => btn.textContent = orig, 1500); })
-        .catch(() => { prompt('Copy this:', text); btn.textContent = '📋 Copied?'; setTimeout(() => btn.textContent = orig, 1500); });
-    } else { prompt('Copy this:', text); btn.textContent = '📋 Copied?'; setTimeout(() => btn.textContent = orig, 1500); }
-    logDebug('📋 Sequence copied to clipboard', 'success');
-  }
+    const text = currentSequence.map((item,i) => `${i+1}. ${item.display}`).join('\n');
+    navigator.clipboard?.writeText(text).catch(()=>{});
+  });
+  document.getElementById('play-audio').addEventListener('click', () => {
+    if (currentSequence.length) {
+      currentSequence.forEach((item, idx) => {
+        setTimeout(() => playChordNotes(item.notes), idx * 600);
+      });
+    }
+  });
+  document.getElementById('stop-audio').addEventListener('click', () => {
+    playbackTimeouts.forEach(clearTimeout);
+    playbackTimeouts = [];
+  });
 
-  document.getElementById('generate-btn').addEventListener('click', generate);
-  document.getElementById('random-btn').addEventListener('click', randomSequence);
-  document.getElementById('clear-btn').addEventListener('click', () => { currentSequence = []; renderSequence([]); stopPlayback(); if (listenMode) { disconnectMIDI(); } logDebug('🗑️ Cleared', 'info'); });
-  document.getElementById('copy-btn').addEventListener('click', copySequence);
-  document.getElementById('play-audio').addEventListener('click', () => { if (currentSequence.length) { logDebug('🔊 Playing sequence', 'info'); playSequence(currentSequence); } });
-  document.getElementById('stop-audio').addEventListener('click', stopPlayback);
-  keySelect.addEventListener('change', generate);
-  lengthSelect.addEventListener('change', generate);
+  spellingSelect.addEventListener('change', () => {
+    // Update key labels when spelling changes
+    const names = currentSpelling === 'sharp' ? NOTE_NAMES_SHARP : currentSpelling === 'flat' ? NOTE_NAMES_FLAT : NOTE_NAMES_MIXED;
+    const options = keySelect.options;
+    for (let i = 0; i < options.length; i++) {
+      const r = parseInt(options[i].value);
+      options[i].textContent = names[pitchClass(r)];
+    }
+    generate();
+  });
 
-  // ---- Initial generate ----
-  logDebug('🚀 App loaded! Connect MIDI and generate a sequence.', 'success');
   generate();
+  logDebug('🚀 App loaded. Connect MIDI and play!', 'success');
 </script>
 </body>
 </html>
