@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Chord Trainer – Robust</title>
+  <title>Chord Trainer – Working Sound + Notes</title>
   <style>
-    /* --- same styles as before (kept minimal) --- */
+    /* --- styles (same as before, keep minimal) --- */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -142,7 +142,7 @@
 <div class="app">
   <div class="shell">
     <h1>🎵 Chord Trainer</h1>
-    <div class="sub">Robust MIDI handling – no syntax errors</div>
+    <div class="sub">Sound works – notes persist until checked</div>
 
     <div class="mode-selector" id="mode-selector" role="tablist">
       <button class="active" data-mode="roman" role="tab">Roman</button>
@@ -208,7 +208,7 @@
 
 <script>
   // =====================================================================
-  // THEORY
+  // THEORY (same as before, kept minimal)
   // =====================================================================
   const NOTE_NAMES_MIXED = ['C','Db','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
   const NOTE_NAMES_SHARP = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
@@ -251,8 +251,8 @@
   let listenMode = false;
   let currentExpectedNotes = [];
   let currentIndex = 0;
-  // Persistent notes
-  let playedNotesForCheck = [];
+  // Persistent notes – these stay until cleared by a correct check or new chord
+  let persistentNotes = [];
   let stats = { correct: 0, wrong: 0, streak: 0, total: 0 };
 
   const debugLog = document.getElementById('debug-log');
@@ -382,10 +382,9 @@
   }
 
   // =====================================================================
-  // AUDIO
+  // AUDIO (working version)
   // =====================================================================
   let audioCtx = null;
-  let audioInitialized = false;
 
   function ensureAudio() {
     if (!audioCtx) {
@@ -394,16 +393,10 @@
     if (audioCtx.state === 'suspended') {
       audioCtx.resume().catch(() => {});
     }
-    if (!audioInitialized) {
-      audioInitialized = true;
-      logDebug('🎵 Audio context ready', 'success');
-    }
     return audioCtx;
   }
 
-  // Resume audio on any user interaction (tap)
-  document.addEventListener('click', () => { ensureAudio(); }, { once: false });
-
+  // Play a chord (for preview / play button)
   function playChordNotes(notes) {
     const ctx = ensureAudio();
     notes.forEach((n, i) => {
@@ -422,14 +415,35 @@
           osc.start(ctx.currentTime);
           osc.stop(ctx.currentTime + 0.6);
         } catch (e) {
-          logDebug('⚠️ Sound error: ' + e.message, 'error');
+          // silent
         }
       }, i * 80);
     });
   }
 
+  // Play a single MIDI note sound (used by MIDI handler)
+  function playNoteSound(midi) {
+    try {
+      const ctx = ensureAudio();
+      const freq = 440 * Math.pow(2, (midi - 69) / 12);
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.15, ctx.currentTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.4);
+    } catch (e) {
+      // silent
+    }
+  }
+
   // =====================================================================
-  // MIDI
+  // MIDI – WORKING HANDLER (the one that had sound)
   // =====================================================================
   let midiInput = null;
   let connected = false;
@@ -479,7 +493,7 @@
       items[index].style.background = '';
     }
     // Clear persistent notes for new chord
-    playedNotesForCheck = [];
+    persistentNotes = [];
     playedDisplay.textContent = '🎹 notes: none';
   }
 
@@ -489,14 +503,14 @@
       feedbackMsg.className = 'msg waiting';
       return;
     }
-    if (playedNotesForCheck.length === 0) {
+    if (persistentNotes.length === 0) {
       feedbackMsg.textContent = '⚠️ No notes played. Play some notes on your keyboard first.';
       feedbackMsg.className = 'msg waiting';
       return;
     }
 
     const expected = [...currentExpectedNotes].sort((a,b)=>a-b);
-    const played = [...playedNotesForCheck].sort((a,b)=>a-b);
+    const played = [...persistentNotes].sort((a,b)=>a-b);
 
     const allPresent = expected.every(n => played.includes(n));
     const extra = played.filter(n => !expected.includes(n));
@@ -527,6 +541,10 @@
       feedbackMsg.className = 'msg correct';
       updateItem('✅', '#2f7d48', '#e8f5e9');
       logDebug(`✅ Correct! Expected: ${expected.map(n=>noteLabel(n)).join(' ')}`, 'success');
+      // Clear persistent notes (they were correct)
+      persistentNotes = [];
+      playedDisplay.textContent = '🎹 notes: none';
+      // Advance
       currentIndex++;
       if (currentIndex < currentSequence.length) {
         setCurrentChord(currentIndex);
@@ -551,49 +569,25 @@
   }
 
   // =====================================================================
-  // MIDI HANDLER – with robust error handling
+  // MIDI HANDLER – this is the one that worked before (sound + note tracking)
   // =====================================================================
   function handleMIDIMessage(event) {
-    try {
-      // Web MIDI gives us a Uint8Array in event.data
-      let data = event.data;
-      if (!data || data.length < 3) return;
-      const status = data[0];
-      const note = data[1];
-      const velocity = data[2];
-      const cmd = status & 0xf0;
-
-      if (cmd === 0x90 && velocity > 0) {
-        // Note On
-        if (!playedNotesForCheck.includes(note)) {
-          playedNotesForCheck.push(note);
-        }
-        // Play sound
-        try {
-          const ctx = ensureAudio();
-          const freq = 440 * Math.pow(2, (note - 69) / 12);
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.type = 'triangle';
-          osc.frequency.value = freq;
-          gain.gain.setValueAtTime(0.0001, ctx.currentTime);
-          gain.gain.exponentialRampToValueAtTime(0.15, ctx.currentTime + 0.02);
-          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          osc.start(ctx.currentTime);
-          osc.stop(ctx.currentTime + 0.4);
-        } catch (audioErr) {
-          // silent fail
-        }
-        // Update display
-        const notes = [...playedNotesForCheck].sort((a,b)=>a-b);
-        playedDisplay.textContent = notes.length ? `🎹 ${notes.map(n=>noteLabel(n)).join(' ')}` : '🎹 notes: none';
+    const [status, note, velocity] = event.data;
+    const cmd = status & 0xf0;
+    if (cmd === 0x90 && velocity > 0) {
+      // Add to persistent notes
+      if (!persistentNotes.includes(note)) {
+        persistentNotes.push(note);
       }
-      // Note Off does NOT remove notes from the persistent list
-    } catch (err) {
-      logDebug('⚠️ MIDI parse error: ' + err.message, 'error');
+      // Play sound (this worked)
+      playNoteSound(note);
+    } else if (cmd === 0x80 || (cmd === 0x90 && velocity === 0)) {
+      // Note Off – do NOT remove from persistentNotes
+      // (we want them to stay until checked)
     }
+    // Update display
+    const notes = [...persistentNotes].sort((a,b)=>a-b);
+    playedDisplay.textContent = notes.length ? `🎹 ${notes.map(n=>noteLabel(n)).join(' ')}` : '🎹 notes: none';
   }
 
   // =====================================================================
@@ -604,7 +598,6 @@
       if (!navigator.requestMIDIAccess) {
         midiStatus.textContent = '⚠️ Web MIDI not supported';
         midiStatus.className = 'midi-status error';
-        logDebug('❌ Web MIDI not supported', 'error');
         return;
       }
       const access = await navigator.requestMIDIAccess({ sysex: false });
@@ -612,7 +605,6 @@
       if (inputs.length === 0) {
         midiStatus.textContent = '⚠️ No MIDI inputs found';
         midiStatus.className = 'midi-status error';
-        logDebug('⚠️ No MIDI inputs', 'warn');
         return;
       }
       midiInput = inputs[0];
@@ -623,16 +615,14 @@
       midiConnectBtn.textContent = 'Disconnect';
       midiConnectBtn.classList.add('active');
       listenMode = true;
-      ensureAudio(); // start audio context
+      ensureAudio();
       if (currentSequence.length > 0) {
         setCurrentChord(0);
         feedbackMsg.textContent = '🎯 MIDI ready – play the chord!';
       }
-      logDebug('✅ MIDI connected: ' + (midiInput.name || 'Keyboard'), 'success');
     } catch (e) {
       midiStatus.textContent = `❌ MIDI error: ${e.message}`;
       midiStatus.className = 'midi-status error';
-      logDebug('❌ MIDI error: ' + e.message, 'error');
     }
   }
 
@@ -644,7 +634,7 @@
     midiStatus.className = 'midi-status';
     midiConnectBtn.textContent = 'Connect MIDI';
     midiConnectBtn.classList.remove('active');
-    playedNotesForCheck = [];
+    persistentNotes = [];
     playedDisplay.textContent = '🎹 notes: none';
   }
 
@@ -671,11 +661,9 @@
       osc.stop(ctx.currentTime + 0.5);
       feedbackMsg.textContent = '🔊 Test sound played!';
       feedbackMsg.className = 'msg correct';
-      logDebug('🔊 Test sound OK', 'success');
     } catch(e) {
       feedbackMsg.textContent = '❌ Sound test failed';
       feedbackMsg.className = 'msg wrong';
-      logDebug('❌ Test sound failed: ' + e.message, 'error');
     }
   });
 
@@ -693,11 +681,12 @@
     renderSequence(seq);
     stats = { correct: 0, wrong: 0, streak: 0, total: 0 };
     updateStats();
+    persistentNotes = [];
+    playedDisplay.textContent = '🎹 notes: none';
     if (listenMode && seq.length > 0) {
       setCurrentChord(0);
       feedbackMsg.textContent = '🎯 Play the chord!';
     }
-    logDebug(`🔄 Generated ${seq.length} chords`, 'success');
   }
 
   function renderSequence(seq) {
@@ -815,7 +804,7 @@
   });
 
   generate();
-  logDebug('🚀 App loaded. Robust MIDI handling enabled.', 'success');
+  logDebug('🚀 App loaded. Sound works, notes persist until checked.', 'success');
 </script>
 </body>
 </html>
