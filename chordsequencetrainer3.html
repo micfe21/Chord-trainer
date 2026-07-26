@@ -69,8 +69,8 @@
       min-height: 3rem; display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center;
     }
     .feedback-area .msg { font-size: 0.9rem; font-weight: 600; flex: 1; }
-    .feedback-area .msg.correct { color: #2f7d48; }
-    .feedback-area .msg.wrong { color: #ba3e4b; }
+    .feedback-area .msg.correct { color: #2f7d48; font-weight: 700; }
+    .feedback-area .msg.wrong { color: #ba3e4b; font-weight: 700; }
     .feedback-area .msg.waiting { color: #6e6a62; }
     .feedback-area .stats { font-size: 0.7rem; color: #6e6a62; display: flex; gap: 0.8rem; flex-wrap: wrap; }
     .feedback-area .stats span { background: white; padding: 0.1rem 0.4rem; border-radius: 0.3rem; }
@@ -85,8 +85,10 @@
     .seq-item:hover { background: #e8e4db; }
     .seq-item.playing { animation: pulse 0.6s ease-in-out 3; border-left-color: #d97706; }
     .seq-item.done { border-left-color: #2f7d48; opacity: 0.6; }
+    .seq-item.correct { background: #e8f5e9 !important; border-left-color: #2f7d48 !important; }
+    .seq-item.wrong { background: #fbe9e7 !important; border-left-color: #ba3e4b !important; }
     .seq-item .top-row { display: flex; justify-content: space-between; align-items: center; gap: 0.3rem; flex-wrap: wrap; }
-    .seq-item .deg { font-weight: 700; min-width: 1.8rem; font-size: 0.85rem; }
+    .seq-item .deg { font-weight: 700; min-width: 1.8rem; font-size: 0.85rem; transition: color 0.2s; }
     .seq-item .name { color: #1f1c18; font-weight: 500; flex: 1; font-size: 0.9rem; }
     .seq-item .chord-symbol { color: #0b6d73; font-weight: 700; font-size: 0.95rem; }
     .seq-item .key-label { background: #d7d2c8; padding: 0.05rem 0.4rem; border-radius: 999px; font-size: 0.6rem; font-weight: 700; }
@@ -174,6 +176,7 @@
         <span>❌ 0</span>
         <span>🔥 0</span>
         <span>⚡ 0ms</span>
+        <span>📊 0</span>
       </div>
     </div>
 
@@ -460,7 +463,7 @@
   }
 
   // =====================================================================
-  // AUDIO (unchanged)
+  // AUDIO
   // =====================================================================
   let audioCtx = null, masterGain = null;
   let playbackTimeouts = [], isPlaying = false;
@@ -504,7 +507,7 @@
   function playSingleChord(notes) { stopPlayback(); playChordNotes(notes, 1.0); }
 
   // =====================================================================
-  // MIDI – WITH AUDIO FEEDBACK AND ENSUREAUDIO CALL
+  // MIDI – WITH AUDIO FEEDBACK AND CORRECTED VALIDATION
   // =====================================================================
   let midiAccess = null, midiInput = null;
   let connected = false;
@@ -557,6 +560,7 @@
   const statsDisplay = document.getElementById('stats-display');
 
   let stats = { correct: 0, wrong: 0, streak: 0, bestStreak: 0, total: 0, times: [] };
+
   let currentExpectedNotes = [];
   let currentBassNote = null;
   let currentIndex = 0;
@@ -570,53 +574,8 @@
       <span>❌ ${stats.wrong}</span>
       <span>🔥 ${stats.streak}</span>
       <span>⚡ ${avg}ms</span>
+      <span>📊 ${stats.total}</span>
     `;
-  }
-
-  function checkChord(playedNotes) {
-    if (!currentExpectedNotes || currentExpectedNotes.length === 0) {
-      feedbackMsg.textContent = 'No chord to check. Generate a sequence first.';
-      feedbackMsg.className = 'msg waiting';
-      return;
-    }
-    const expected = [...currentExpectedNotes].sort((a,b)=>a-b);
-    const played = [...playedNotes].sort((a,b)=>a-b);
-    const elapsed = Date.now() - chordStartTime;
-
-    const allPresent = expected.every(n => played.includes(n));
-    const extraNotes = played.filter(n => !expected.includes(n));
-    const missingNotes = expected.filter(n => !played.includes(n));
-
-    if (allPresent && extraNotes.length === 0 && missingNotes.length === 0) {
-      stats.correct++;
-      stats.streak++;
-      if (stats.streak > stats.bestStreak) stats.bestStreak = stats.streak;
-      stats.total++;
-      stats.times.push(elapsed);
-      updateStats();
-      feedbackMsg.textContent = `✅ Correct! (${elapsed}ms)`;
-      feedbackMsg.className = 'msg correct';
-      const items = document.querySelectorAll('.seq-item');
-      if (items[currentIndex]) { items[currentIndex].classList.add('done'); items[currentIndex].classList.remove('playing'); }
-      currentIndex++;
-      if (currentIndex < currentSequence.length) {
-        setCurrentChord(currentIndex);
-      } else {
-        feedbackMsg.textContent = '🎉 Complete! Generate a new sequence.';
-        listenMode = false;
-      }
-    } else {
-      stats.wrong++;
-      stats.streak = 0;
-      stats.total++;
-      updateStats();
-      let msg = '❌ ';
-      if (missingNotes.length > 0) msg += `Missing: ${missingNotes.map(n=>noteLabel(n)).join(' ')} `;
-      if (extraNotes.length > 0) msg += `Extra: ${extraNotes.map(n=>noteLabel(n)).join(' ')} `;
-      if (missingNotes.length === 0 && extraNotes.length === 0 && !allPresent) msg = '❌ Wrong notes played';
-      feedbackMsg.textContent = msg.trim();
-      feedbackMsg.className = 'msg wrong';
-    }
   }
 
   function setCurrentChord(index) {
@@ -634,6 +593,79 @@
     if (items[index]) items[index].classList.add('playing');
     heldNotes.clear();
     playedDisplay.textContent = '🎹 notes: none';
+  }
+
+  function checkChord(playedNotes) {
+    if (!currentExpectedNotes || currentExpectedNotes.length === 0) {
+      feedbackMsg.textContent = 'No chord to check. Generate a sequence first.';
+      feedbackMsg.className = 'msg waiting';
+      return;
+    }
+    const expected = [...currentExpectedNotes].sort((a,b)=>a-b);
+    const played = [...playedNotes].sort((a,b)=>a-b);
+    const elapsed = Date.now() - chordStartTime;
+
+    const allPresent = expected.every(n => played.includes(n));
+    const extraNotes = played.filter(n => !expected.includes(n));
+    const missingNotes = expected.filter(n => !played.includes(n));
+
+    const items = document.querySelectorAll('.seq-item');
+    const currentItem = items[currentIndex];
+
+    if (allPresent && extraNotes.length === 0 && missingNotes.length === 0) {
+      // ✅ CORRECT
+      stats.correct++;
+      stats.streak++;
+      if (stats.streak > stats.bestStreak) stats.bestStreak = stats.streak;
+      stats.total++;
+      stats.times.push(elapsed);
+      updateStats();
+
+      feedbackMsg.innerHTML = `✅ <span style="color:#2f7d48;font-weight:700;">Correct!</span> (${elapsed}ms)`;
+      feedbackMsg.className = 'msg correct';
+
+      if (currentItem) {
+        currentItem.classList.add('done');
+        currentItem.classList.remove('playing');
+        const degSpan = currentItem.querySelector('.deg');
+        if (degSpan && !degSpan.textContent.includes('✅')) {
+          degSpan.textContent = '✅ ' + degSpan.textContent.replace(/[✅❌]\s*/, '');
+        }
+        currentItem.style.borderLeftColor = '#2f7d48';
+        currentItem.style.background = '#e8f5e9';
+      }
+
+      currentIndex++;
+      if (currentIndex < currentSequence.length) {
+        setCurrentChord(currentIndex);
+      } else {
+        feedbackMsg.innerHTML = '🎉 <span style="color:#2f7d48;font-weight:700;">Complete!</span> Generate a new sequence.';
+        listenMode = false;
+      }
+    } else {
+      // ❌ WRONG
+      stats.wrong++;
+      stats.streak = 0;
+      stats.total++;
+      updateStats();
+
+      let msg = '❌ ';
+      if (missingNotes.length > 0) msg += `Missing: ${missingNotes.map(n=>noteLabel(n)).join(' ')} `;
+      if (extraNotes.length > 0) msg += `Extra: ${extraNotes.map(n=>noteLabel(n)).join(' ')} `;
+      if (missingNotes.length === 0 && extraNotes.length === 0 && !allPresent) msg = '❌ Wrong notes played';
+
+      feedbackMsg.innerHTML = msg;
+      feedbackMsg.className = 'msg wrong';
+
+      if (currentItem) {
+        const degSpan = currentItem.querySelector('.deg');
+        if (degSpan && !degSpan.textContent.includes('❌')) {
+          degSpan.textContent = '❌ ' + degSpan.textContent.replace(/[✅❌]\s*/, '');
+        }
+        currentItem.style.borderLeftColor = '#ba3e4b';
+        currentItem.style.background = '#fbe9e7';
+      }
+    }
   }
 
   function handleMIDIMessage(event) {
@@ -658,7 +690,6 @@
     }, 400);
   }
 
-  // UPDATED connectMIDI – now calls ensureAudio() right after connection
   async function connectMIDI() {
     try {
       if (!navigator.requestMIDIAccess) {
@@ -695,8 +726,7 @@
       midiInput.onmidimessage = handleMIDIMessage;
       connected = true;
 
-      // ===== KEY FIX: ensure audio context is resumed on user gesture =====
-      ensureAudio();
+      ensureAudio();  // start audio context on user gesture
 
       midiStatus.textContent = `✅ MIDI connected: ${midiInput.name || 'Keyboard'}`;
       midiStatus.className = 'midi-status connected';
