@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Chord Trainer – Debug + Feedback</title>
+  <title>Chord Trainer – Fixed</title>
   <style>
+    /* --- same as previous, kept minimal --- */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: system-ui, -apple-system, sans-serif;
@@ -168,7 +169,7 @@
 <div class="app">
   <div class="shell">
     <h1>🎵 Chord Trainer</h1>
-    <div class="sub">Debug log shows exactly what's happening</div>
+    <div class="sub">Fixed Set.every bug – feedback works</div>
 
     <div class="mode-selector" id="mode-selector" role="tablist">
       <button class="active" data-mode="roman" role="tab">Roman</button>
@@ -220,7 +221,6 @@
       </div>
     </div>
 
-    <!-- DEBUG LOG -->
     <div class="debug-area" id="debug-log">⏳ Waiting for action...</div>
 
     <div id="sequence-container">
@@ -241,7 +241,7 @@
 
 <script>
   // =====================================================================
-  // THEORY (simplified)
+  // THEORY (same as before)
   // =====================================================================
   const NOTE_NAMES_MIXED = ['C','Db','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
   const NOTE_NAMES_SHARP = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
@@ -549,7 +549,7 @@
   function playSingleChord(notes) { stopPlayback(); playChordNotes(notes, 1.0); }
 
   // =====================================================================
-  // MIDI – WITH DEBUG LOG
+  // MIDI – FIXED Set.every + note removal
   // =====================================================================
   let midiInput = null;
   let connected = false;
@@ -558,12 +558,18 @@
   let persistentNotes = [];
 
   const debugLog = document.getElementById('debug-log');
+  const feedbackArea = document.getElementById('feedback-area');
 
   function logDebug(msg, type='info') {
     const time = new Date().toLocaleTimeString();
     const colors = { info: '#74c0fc', success: '#69db7c', error: '#ff6b6b', warn: '#ffd43b' };
     debugLog.innerHTML += `\n[${time}] <span style="color:${colors[type] || '#74c0fc'}">${msg}</span>`;
     debugLog.scrollTop = debugLog.scrollHeight;
+  }
+
+  function flashFeedback() {
+    feedbackArea.classList.add('flash');
+    setTimeout(() => feedbackArea.classList.remove('flash'), 150);
   }
 
   function startInputNote(note, velocity = 96) {
@@ -623,14 +629,14 @@
   }
 
   // =====================================================================
-  // VALIDATION – WITH DEBUG LOG AND ROBUST DOM UPDATES
+  // FIXED setCurrentChord
   // =====================================================================
   function setCurrentChord(index) {
     if (!currentSequence || index >= currentSequence.length) {
       feedbackMsg.innerHTML = '🎉 Complete! Generate a new sequence.';
       feedbackMsg.className = 'msg correct';
       listenMode = false;
-      logDebug('🎉 Sequence complete!', 'success');
+      logDebug('🎉 Complete!', 'success');
       return;
     }
     const item = currentSequence[index];
@@ -657,38 +663,38 @@
     playedDisplay.textContent = '🎹 notes: none';
   }
 
+  // =====================================================================
+  // FIXED checkChord – fixes Set.every bug
+  // =====================================================================
   function checkChord() {
     logDebug('🔍 checkChord() called', 'info');
 
     if (!currentExpectedNotes || currentExpectedNotes.length === 0) {
       feedbackMsg.textContent = 'No chord to check. Generate a sequence first.';
       feedbackMsg.className = 'msg waiting';
-      logDebug('❌ No currentExpectedNotes', 'error');
       return;
     }
+
     if (persistentNotes.length === 0) {
       feedbackMsg.textContent = '⚠️ No notes played. Play some notes on your keyboard first.';
       feedbackMsg.className = 'msg waiting';
-      logDebug('⚠️ No notes in persistentNotes', 'warn');
       return;
     }
 
     const expectedSet = pitchClassSet(currentExpectedNotes);
     const playedSet = pitchClassSet(persistentNotes);
 
-    const expectedNames = [...expectedSet].map(pc => getNoteNames()[pc]).join(' ');
-    const playedNames = [...playedSet].map(pc => getNoteNames()[pc]).join(' ');
-    logDebug(`📊 Expected: ${expectedNames}`, 'info');
-    logDebug(`📊 Played: ${playedNames}`, 'info');
+    // FIX: Convert Set to array before using .every()
+    const allPresent =
+      expectedSet.size === playedSet.size &&
+      [...expectedSet].every(pc => playedSet.has(pc));
 
-    const allPresent = expectedSet.size === playedSet.size && expectedSet.every(pc => playedSet.has(pc));
     const extra = [...playedSet].filter(pc => !expectedSet.has(pc));
     const missing = [...expectedSet].filter(pc => !playedSet.has(pc));
 
     const items = document.querySelectorAll('.seq-item');
     const currentItem = items[currentIndex];
 
-    // Helper to update the chord item
     function updateItem(marker, color, bg) {
       if (currentItem) {
         const degSpan = currentItem.querySelector('.deg');
@@ -696,15 +702,11 @@
           const clean = degSpan.textContent.replace(/[✅❌]\s*/, '');
           degSpan.textContent = marker + ' ' + clean;
           logDebug(`✅ Updated deg span: ${degSpan.textContent}`, 'success');
-        } else {
-          logDebug('⚠️ degSpan not found in currentItem', 'warn');
         }
         currentItem.style.borderLeftColor = color;
         currentItem.style.background = bg;
         currentItem.classList.remove('playing');
       } else {
-        logDebug('⚠️ currentItem is null for index ' + currentIndex, 'error');
-        // Fallback: find by index
         const fallback = document.querySelector(`.seq-item[data-index="${currentIndex}"]`);
         if (fallback) {
           const degSpan = fallback.querySelector('.deg');
@@ -721,6 +723,7 @@
     }
 
     if (allPresent && extra.length === 0 && missing.length === 0) {
+      // Correct
       stats.correct++;
       stats.streak++;
       if (stats.streak > stats.bestStreak) stats.bestStreak = stats.streak;
@@ -742,9 +745,10 @@
         feedbackMsg.innerHTML = '🎉 Complete! Generate a new sequence.';
         feedbackMsg.className = 'msg correct';
         listenMode = false;
-        logDebug('🎉 Sequence complete!', 'success');
+        logDebug('🎉 Complete!', 'success');
       }
     } else {
+      // Wrong
       stats.wrong++;
       stats.streak = 0;
       stats.total++;
@@ -763,11 +767,12 @@
   }
 
   // =====================================================================
-  // MIDI HANDLER
+  // FIXED handleMIDIMessage – removes notes on Note Off
   // =====================================================================
   function handleMIDIMessage(event) {
     const [status, note, velocity] = event.data;
     const cmd = status & 0xf0;
+
     if (cmd === 0x90 && velocity > 0) {
       if (!persistentNotes.includes(note)) {
         persistentNotes.push(note);
@@ -776,15 +781,18 @@
       startInputNote(note, velocity);
     } else if (cmd === 0x80 || (cmd === 0x90 && velocity === 0)) {
       stopInputNote(note);
+      // FIX: Remove released notes from persistentNotes
+      persistentNotes = persistentNotes.filter(n => n !== note);
       logDebug(`➖ Released note: ${noteLabel(note)} (${note})`, 'info');
     }
+
     const notes = [...persistentNotes].sort((a,b)=>a-b);
     playedDisplay.textContent = notes.length ? `🎹 ${notes.map(n=>noteLabel(n)).join(' ')}` : '🎹 notes: none';
 
     if (chordCheckTimeout) clearTimeout(chordCheckTimeout);
     chordCheckTimeout = setTimeout(() => {
       if (listenMode && persistentNotes.length > 0) {
-        logDebug('⏱️ Auto-check triggered after 500ms', 'info');
+        logDebug('⏱️ Auto-check triggered', 'info');
         checkChord();
       }
     }, 500);
@@ -891,7 +899,7 @@
   });
 
   // =====================================================================
-  // UI
+  // UI – merged spelling handler
   // =====================================================================
   const keySelect = document.getElementById('key-select');
   const keyModeSelect = document.getElementById('key-mode-select');
@@ -934,9 +942,30 @@
     });
   });
 
-  spellingSelect.addEventListener('change', () => { currentSpelling = spellingSelect.value; populateKeys(); if (listenMode) listenMode = false; logDebug(`🔄 Spelling changed to: ${currentSpelling}`, 'info'); generate(); });
-  inversionModeSelect.addEventListener('change', () => { currentInversionMode = inversionModeSelect.value; if (listenMode) listenMode = false; logDebug(`🔄 Inversion mode changed to: ${currentInversionMode}`, 'info'); generate(); });
-  keyModeSelect.addEventListener('change', () => { const isModulating = keyModeSelect.value === 'modulating'; keySelect.disabled = isModulating; keyHint.textContent = isModulating ? 'Ignored (each chord gets its own key)' : 'Used for all chords'; if (listenMode) listenMode = false; logDebug(`🔄 Key mode changed to: ${keyModeSelect.value}`, 'info'); generate(); });
+  // MERGED spelling handler – only one
+  spellingSelect.addEventListener('change', () => {
+    currentSpelling = spellingSelect.value;
+    populateKeys();
+    if (listenMode) listenMode = false;
+    logDebug(`🔄 Spelling changed to: ${currentSpelling}`, 'info');
+    generate();
+  });
+
+  inversionModeSelect.addEventListener('change', () => {
+    currentInversionMode = inversionModeSelect.value;
+    if (listenMode) listenMode = false;
+    logDebug(`🔄 Inversion mode changed to: ${currentInversionMode}`, 'info');
+    generate();
+  });
+
+  keyModeSelect.addEventListener('change', () => {
+    const isModulating = keyModeSelect.value === 'modulating';
+    keySelect.disabled = isModulating;
+    keyHint.textContent = isModulating ? 'Ignored (each chord gets its own key)' : 'Used for all chords';
+    if (listenMode) listenMode = false;
+    logDebug(`🔄 Key mode changed to: ${keyModeSelect.value}`, 'info');
+    generate();
+  });
 
   document.querySelectorAll('#palette span').forEach(el => {
     el.addEventListener('click', () => {
@@ -1166,18 +1195,9 @@
   document.getElementById('stop-audio').addEventListener('click', stopPlayback);
   keySelect.addEventListener('change', generate);
   lengthSelect.addEventListener('change', generate);
-  spellingSelect.addEventListener('change', () => {
-    const names = getNoteNames();
-    const options = keySelect.options;
-    for (let i = 0; i < options.length; i++) {
-      const r = parseInt(options[i].value);
-      options[i].textContent = names[pitchClass(r)];
-    }
-    generate();
-  });
 
   generate();
-  logDebug('🚀 App loaded. Connect MIDI and play.', 'success');
+  logDebug('🚀 App loaded. Set.every bug fixed.', 'success');
 </script>
 </body>
 </html>
