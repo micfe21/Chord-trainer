@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Chord Trainer – Working Feedback</title>
+  <title>Chord Trainer – Debug Feedback</title>
   <style>
     /* --- same styles, kept minimal --- */
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -65,19 +65,9 @@
       cursor: pointer;
       transition: 0.15s;
     }
-    .toggle-row button.active {
-      background: #0b6d73;
-      color: white;
-      border-color: #0b6d73;
-    }
+    .toggle-row button.active { background: #0b6d73; color: white; border-color: #0b6d73; }
     .toggle-row button:hover { background: #e4ded4; }
-    .toggle-row .toggle-label {
-      font-size: 0.65rem;
-      font-weight: 700;
-      color: #6e6a62;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-    }
+    .toggle-row .toggle-label { font-size: 0.65rem; font-weight: 700; color: #6e6a62; text-transform: uppercase; letter-spacing: 0.06em; }
 
     .midi-section {
       background: #f1efe9; border-radius: 0.6rem; padding: 0.5rem 0.7rem; margin-bottom: 0.6rem;
@@ -179,8 +169,8 @@
 <body>
 <div class="app">
   <div class="shell">
-    <h1>🎵 Chord Trainer</h1>
-    <div class="sub">Feedback working – pitch‑class comparison</div>
+    <h1>🎵 Chord Trainer – Debug</h1>
+    <div class="sub">Check console for logs – manual "Check Now" works</div>
 
     <div class="mode-selector" id="mode-selector" role="tablist">
       <button class="active" data-mode="roman" role="tab">Roman</button>
@@ -252,7 +242,7 @@
 
 <script>
   // =====================================================================
-  // THEORY
+  // THEORY (same as before, but with console logs)
   // =====================================================================
   const NOTE_NAMES_MIXED = ['C','Db','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
   const NOTE_NAMES_SHARP = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
@@ -560,7 +550,7 @@
   function playSingleChord(notes) { stopPlayback(); playChordNotes(notes, 1.0); }
 
   // =====================================================================
-  // MIDI – WORKING FEEDBACK
+  // MIDI – WITH CONSOLE LOGGING
   // =====================================================================
   let midiInput = null;
   let connected = false;
@@ -632,7 +622,7 @@
   }
 
   // =====================================================================
-  // VALIDATION – PITCH-CLASS COMPARISON
+  // VALIDATION – WITH CONSOLE LOGS
   // =====================================================================
   function setCurrentChord(index) {
     if (!currentSequence || index >= currentSequence.length) {
@@ -649,6 +639,7 @@
     const displayName = currentMode === 'absolute' ? item.symbol : item.display;
     feedbackMsg.textContent = `🎯 Play: ${displayName}`;
     feedbackMsg.className = 'msg waiting';
+    console.log('🎯 Set current chord:', displayName, 'expected notes:', currentExpectedNotes.map(n=>noteLabel(n)).join(' '));
 
     const items = document.querySelectorAll('.seq-item');
     items.forEach(el => el.classList.remove('playing'));
@@ -665,23 +656,31 @@
   }
 
   function checkChord() {
+    console.log('🔍 checkChord() called');
     if (!currentExpectedNotes || currentExpectedNotes.length === 0) {
       feedbackMsg.textContent = 'No chord to check. Generate a sequence first.';
       feedbackMsg.className = 'msg waiting';
+      console.warn('❌ No currentExpectedNotes');
       return;
     }
     if (persistentNotes.length === 0) {
       feedbackMsg.textContent = '⚠️ No notes played. Play some notes on your keyboard first.';
       feedbackMsg.className = 'msg waiting';
+      console.warn('⚠️ No persistentNotes');
       return;
     }
 
     const expectedSet = pitchClassSet(currentExpectedNotes);
     const playedSet = pitchClassSet(persistentNotes);
 
+    console.log('📊 Expected pitch classes:', [...expectedSet].map(pc => getNoteNames()[pc]).join(' '));
+    console.log('📊 Played pitch classes:', [...playedSet].map(pc => getNoteNames()[pc]).join(' '));
+
     const allPresent = expectedSet.size === playedSet.size && expectedSet.every(pc => playedSet.has(pc));
     const extra = [...playedSet].filter(pc => !expectedSet.has(pc));
     const missing = [...expectedSet].filter(pc => !playedSet.has(pc));
+
+    console.log('✅ allPresent:', allPresent, 'missing:', missing.map(pc=>getNoteNames()[pc]).join(' '), 'extra:', extra.map(pc=>getNoteNames()[pc]).join(' '));
 
     const items = document.querySelectorAll('.seq-item');
     const currentItem = items[currentIndex];
@@ -692,10 +691,13 @@
         if (degSpan) {
           const clean = degSpan.textContent.replace(/[✅❌]\s*/, '');
           degSpan.textContent = marker + ' ' + clean;
+          console.log('🔧 Updated degSpan to:', degSpan.textContent);
         }
         currentItem.style.borderLeftColor = color;
         currentItem.style.background = bg;
         currentItem.classList.remove('playing');
+      } else {
+        console.warn('⚠️ currentItem not found for index', currentIndex);
       }
     }
 
@@ -709,6 +711,7 @@
       feedbackMsg.innerHTML = `✅ Correct!`;
       feedbackMsg.className = 'msg correct';
       updateItem('✅', '#2f7d48', '#e8f5e9');
+      console.log('✅ Correct!');
 
       persistentNotes = [];
       playedDisplay.textContent = '🎹 notes: none';
@@ -732,6 +735,7 @@
       feedbackMsg.innerHTML = msg;
       feedbackMsg.className = 'msg wrong';
       updateItem('❌', '#ba3e4b', '#fbe9e7');
+      console.log('❌ Wrong:', msg);
 
       persistentNotes = [];
       playedDisplay.textContent = '🎹 notes: none';
@@ -756,9 +760,10 @@
     if (chordCheckTimeout) clearTimeout(chordCheckTimeout);
     chordCheckTimeout = setTimeout(() => {
       if (listenMode && persistentNotes.length > 0) {
+        console.log('⏱️ Auto-check triggered');
         checkChord();
       }
-    }, 500);
+    }, 700);
   }
 
   // =====================================================================
@@ -844,7 +849,9 @@
     }
   });
 
+  // Manual Check Now button
   document.getElementById('check-now').addEventListener('click', () => {
+    console.log('👆 Manual Check Now clicked');
     if (persistentNotes.length === 0) {
       feedbackMsg.textContent = '⚠️ No notes played. Play some notes on your keyboard first.';
       feedbackMsg.className = 'msg waiting';
@@ -1144,7 +1151,7 @@
   });
 
   generate();
-  logDebug('🚀 App loaded. Feedback working – pitch‑class comparison.', 'success');
+  logDebug('🚀 App loaded. Check console for logs.', 'success');
 </script>
 </body>
 </html>
