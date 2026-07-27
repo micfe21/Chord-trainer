@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Chord Trainer – Borrowed Chords</title>
+  <title>Chord Trainer – Fixed Modulating</title>
   <style>
-    /* --- same styles as before, with a toggle added --- */
+    /* --- same styles as before, kept minimal --- */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -180,7 +180,7 @@
 <div class="app">
   <div class="shell">
     <h1>🎵 Chord Trainer</h1>
-    <div class="sub">Borrowed chords + clean Roman notation</div>
+    <div class="sub">Modulating works – clean Roman notation</div>
 
     <div class="mode-selector" id="mode-selector" role="tablist">
       <button class="active" data-mode="roman" role="tab">Roman</button>
@@ -252,7 +252,7 @@
 
 <script>
   // =====================================================================
-  // THEORY – with borrowed chords support
+  // THEORY – with borrowed chords and fixed modulating
   // =====================================================================
   const NOTE_NAMES_MIXED = ['C','Db','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
   const NOTE_NAMES_SHARP = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
@@ -319,13 +319,11 @@
   // ROMAN NUMERAL WITH BORROWED CHORDS
   // =====================================================================
   function getRomanNumeral(keyRoot, chordRoot, typeKey, inversion) {
-    // Compute interval from key root to chord root (in semitones)
     const keyPc = pitchClass(keyRoot);
     const chordPc = pitchClass(chordRoot);
     let interval = (chordPc - keyPc + 12) % 12;
 
-    // Map interval to scale degree (1-7) with accidentals
-    const diatonic = [0,2,4,5,7,9,11]; // major scale intervals
+    const diatonic = [0,2,4,5,7,9,11];
     let degree = 0;
     let accidental = '';
     let found = false;
@@ -350,7 +348,6 @@
     }
 
     if (!found) {
-      // Fallback: find closest scale degree
       let minDist = Infinity;
       for (let i = 0; i < 7; i++) {
         let dist = Math.min((interval - diatonic[i] + 12) % 12, (diatonic[i] - interval + 12) % 12);
@@ -362,27 +359,18 @@
       }
     }
 
-    // Get the chord quality info
     const chordInfo = CHORD_TYPES[typeKey];
     const degInfo = DEGREE_MAP[degree] || { label: degree.toString() };
 
-    // Determine if borrowed (non-diatonic)
-    const isBorrowed = accidental !== '' || (interval !== diatonic[degree - 1] && interval !== (diatonic[degree - 1] + 12) % 12);
-
-    // Build the label
     let label = accidental + degInfo.label;
-
-    // Add chord suffix
     let suffix = '';
     if (chordInfo) {
       if (typeKey === 'maj' || typeKey === 'maj7' || typeKey === 'maj9') {
-        // Major: uppercase already, add symbol if not plain
         if (typeKey === 'maj7') suffix = 'maj7';
         else if (typeKey === 'maj9') suffix = 'maj9';
         else if (typeKey === '6') suffix = '6';
         else if (typeKey === 'aug') suffix = '+';
       } else if (typeKey === 'min' || typeKey === 'min7' || typeKey === 'min9' || typeKey === 'm6') {
-        // Minor: use lowercase label
         label = accidental + degInfo.label.toLowerCase();
         if (typeKey === 'min7') suffix = '7';
         else if (typeKey === 'min9') suffix = '9';
@@ -407,24 +395,14 @@
       }
     }
 
-    // For major triads/sevenths, ensure uppercase (already uppercase)
-    // For minor, we already lowercased the label
-
-    // Add inversion info
     const invNames = ['', ' (1st)', ' (2nd)', ' (3rd)'];
     const invLabel = inversion > 0 ? invNames[inversion] : '';
 
-    // Clean up: if label is already lowercase, keep it; if suffix contains 'maj' etc.
-    let result = label + suffix + invLabel;
-
-    // For borrowed chords, add a marker or just rely on the accidental
-    // The accidental already indicates borrowed status
-
-    return result;
+    return label + suffix + invLabel;
   }
 
   // =====================================================================
-  // SEQUENCE GENERATOR (with borrowed chords)
+  // SEQUENCE GENERATOR – FIXED MODULATING MODE
   // =====================================================================
   function generateSequence(keyRoot, length, filter, keyMode, invMode) {
     const degrees = [1,2,3,4,5,6,7];
@@ -441,12 +419,12 @@
       if (useBorrowed && Math.random() < 0.25) {
         // Pick a random root from all 12
         chordRoot = ALL_ROOTS[Math.floor(Math.random() * ALL_ROOTS.length)];
-        chordKeyRoot = parseInt(keyRoot, 10);
-        // Determine the scale degree relative to key
+        // In modulating mode, each chord has its own key
+        chordKeyRoot = keyMode === 'modulating' ? ALL_ROOTS[Math.floor(Math.random() * ALL_ROOTS.length)] : parseInt(keyRoot, 10);
+        // Determine the scale degree relative to the chord's key
         const keyPc = pitchClass(chordKeyRoot);
         const chordPc = pitchClass(chordRoot);
         let interval = (chordPc - keyPc + 12) % 12;
-        // Find closest scale degree
         const diatonic = [0,2,4,5,7,9,11];
         let minDist = Infinity;
         let bestDeg = 1;
@@ -471,7 +449,6 @@
       // Determine chord quality
       let typeKey;
       if (isBorrowed && filter !== 'diatonic' && filter !== 'all') {
-        // For borrowed chords, use the filter if it's a specific category
         const available = allowedTypes.filter(t => t !== 'slash');
         typeKey = available.length ? available[Math.floor(Math.random() * available.length)] : 'maj';
       } else {
@@ -484,8 +461,6 @@
         } else {
           typeKey = 'maj';
         }
-        // If the filter is specific and doesn't include the diatonic quality, we might override
-        // But we'll keep the diatonic quality if possible
       }
 
       const chordInfo = CHORD_TYPES[typeKey];
@@ -533,7 +508,7 @@
       const notes = buildChord(chordRoot, typeKey, inv);
 
       // Get the Roman numeral display
-      const romanDisplay = getRomanNumeral(chordKeyRoot || parseInt(keyRoot, 10), chordRoot, typeKey, inv);
+      const romanDisplay = getRomanNumeral(chordKeyRoot, chordRoot, typeKey, inv);
 
       // For absolute mode, we still need the symbol
       const symbol = getChordSymbol(chordRoot, typeKey);
@@ -544,7 +519,7 @@
         typeKey: typeKey,
         inversion: inv,
         chordRoot: chordRoot,
-        chordKeyRoot: chordKeyRoot || parseInt(keyRoot, 10),
+        chordKeyRoot: chordKeyRoot,
         notes: notes,
         symbol: symbol,
         display: currentMode === 'absolute' ? symbol : romanDisplay,
@@ -894,7 +869,7 @@
   document.getElementById('check-now').addEventListener('click', checkChord);
 
   // =====================================================================
-  // UI
+  // UI – FIXED DUPLICATE DISPLAY
   // =====================================================================
   const keySelect = document.getElementById('key-select');
   const keyModeSelect = document.getElementById('key-mode-select');
@@ -987,6 +962,9 @@
     return info.intervals.length === 3 ? '3' : '7';
   }
 
+  // =====================================================================
+  // RENDER SEQUENCE – FIXED DUPLICATE
+  // =====================================================================
   function renderSequence(seq) {
     container.innerHTML = '';
     if (!seq || seq.length === 0) {
@@ -1001,15 +979,23 @@
       div.addEventListener('click', () => { playSingleChord(item.notes); });
       const topRow = document.createElement('div'); topRow.className = 'top-row';
       const degSpan = document.createElement('span'); degSpan.className = 'deg';
-      if (currentMode === 'roman' || item._mode === 'roman') degSpan.textContent = `${idx+1}. ${item.degreeLabel || '?'}`;
-      else degSpan.textContent = `${idx+1}.`;
+      // Show just the number (1., 2., etc.) – no duplicate roman numeral
+      degSpan.textContent = `${idx+1}.`;
       const nameSpan = document.createElement('span'); nameSpan.className = 'name';
-      if (currentMode === 'mixed' && item._mode) nameSpan.textContent = item._mode === 'roman' ? item.display : item.symbol;
-      else if (currentMode === 'roman') nameSpan.textContent = item.display;
-      else nameSpan.textContent = item.symbol;
+      // Show the full chord symbol (which already contains the roman numeral)
+      if (currentMode === 'mixed' && item._mode) {
+        nameSpan.textContent = item._mode === 'roman' ? item.display : item.symbol;
+      } else if (currentMode === 'roman') {
+        nameSpan.textContent = item.display;
+      } else {
+        nameSpan.textContent = item.symbol;
+      }
       const keyLabel = document.createElement('span'); keyLabel.className = 'key-label';
-      if (currentMode === 'roman' || (currentMode === 'mixed' && item._mode === 'roman')) keyLabel.textContent = noteLabel(item.chordKeyRoot);
-      else keyLabel.textContent = '';
+      if (currentMode === 'roman' || (currentMode === 'mixed' && item._mode === 'roman')) {
+        keyLabel.textContent = noteLabel(item.chordKeyRoot);
+      } else {
+        keyLabel.textContent = '';
+      }
       if (currentMode === 'mixed' && item._mode) {
         const mb = document.createElement('span'); mb.className = 'badge'; mb.style.background = item._mode === 'roman' ? '#d4e2f0' : '#f0e8d4'; mb.textContent = item._mode === 'roman' ? 'R' : 'A'; topRow.append(mb);
       }
@@ -1180,7 +1166,7 @@
   });
 
   generate();
-  logDebug('🚀 App loaded. Borrowed chords: ON', 'success');
+  logDebug('🚀 App loaded. Modulating mode works. Duplicate display fixed.', 'success');
 </script>
 </body>
 </html>
