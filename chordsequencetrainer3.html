@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Chord Trainer – Pitch‑Class Comparison</title>
+  <title>Chord Trainer – Working Feedback</title>
   <style>
-    /* --- same styles (kept minimal) --- */
+    /* --- same styles, kept minimal --- */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -180,7 +180,7 @@
 <div class="app">
   <div class="shell">
     <h1>🎵 Chord Trainer</h1>
-    <div class="sub">Pitch‑class comparison – octaves don't matter</div>
+    <div class="sub">Feedback working – pitch‑class comparison</div>
 
     <div class="mode-selector" id="mode-selector" role="tablist">
       <button class="active" data-mode="roman" role="tab">Roman</button>
@@ -252,7 +252,7 @@
 
 <script>
   // =====================================================================
-  // THEORY – with borrowed chords
+  // THEORY
   // =====================================================================
   const NOTE_NAMES_MIXED = ['C','Db','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
   const NOTE_NAMES_SHARP = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
@@ -316,13 +316,31 @@
   let useBorrowed = true;
 
   // =====================================================================
-  // ROMAN NUMERAL (unchanged)
+  // HELPERS
   // =====================================================================
+  function getNoteNames() { switch(currentSpelling) { case 'sharp': return NOTE_NAMES_SHARP; case 'flat': return NOTE_NAMES_FLAT; default: return NOTE_NAMES_MIXED; } }
+  function pitchClass(m) { return ((m % 12) + 12) % 12; }
+  function octave(m) { return Math.floor(m / 12) - 1; }
+  function noteLabel(m) { return getNoteNames()[pitchClass(m)]; }
+  function pitchClassSet(midis) { return new Set(midis.map(pitchClass)); }
+
+  function buildChord(root, typeKey, inversion = 0, octaveShift = 0) {
+    const def = CHORD_TYPES[typeKey]; if (!def) return [];
+    let notes = def.intervals.map(iv => root + iv + octaveShift * 12);
+    const n = notes.length, inv = ((inversion % n) + n) % n;
+    for (let i = 0; i < inv; i++) notes = notes.slice(1).concat(notes[0] + 12);
+    return notes;
+  }
+
+  function getChordSymbol(root, typeKey) {
+    const info = CHORD_TYPES[typeKey];
+    return noteLabel(root) + (info ? info.symbol : '');
+  }
+
   function getRomanNumeral(keyRoot, chordRoot, typeKey, inversion) {
     const keyPc = pitchClass(keyRoot);
     const chordPc = pitchClass(chordRoot);
     let interval = (chordPc - keyPc + 12) % 12;
-
     const diatonic = [0,2,4,5,7,9,11];
     let degree = 0;
     let accidental = '';
@@ -330,32 +348,16 @@
 
     for (let i = 0; i < 7; i++) {
       const diff = (interval - diatonic[i] + 12) % 12;
-      if (diff === 0) {
-        degree = i + 1;
-        found = true;
-        break;
-      } else if (diff === 1) {
-        degree = i + 1;
-        accidental = '♯';
-        found = true;
-        break;
-      } else if (diff === 11) {
-        degree = i + 1;
-        accidental = '♭';
-        found = true;
-        break;
-      }
+      if (diff === 0) { degree = i + 1; found = true; break; }
+      else if (diff === 1) { degree = i + 1; accidental = '♯'; found = true; break; }
+      else if (diff === 11) { degree = i + 1; accidental = '♭'; found = true; break; }
     }
 
     if (!found) {
       let minDist = Infinity;
       for (let i = 0; i < 7; i++) {
         let dist = Math.min((interval - diatonic[i] + 12) % 12, (diatonic[i] - interval + 12) % 12);
-        if (dist < minDist) {
-          minDist = dist;
-          degree = i + 1;
-          accidental = dist > 0 ? (interval > diatonic[i] ? '♯' : '♭') : '';
-        }
+        if (dist < minDist) { minDist = dist; degree = i + 1; accidental = dist > 0 ? (interval > diatonic[i] ? '♯' : '♭') : ''; }
       }
     }
 
@@ -397,7 +399,6 @@
 
     const invNames = ['', ' (1st)', ' (2nd)', ' (3rd)'];
     const invLabel = inversion > 0 ? invNames[inversion] : '';
-
     return label + suffix + invLabel;
   }
 
@@ -408,13 +409,12 @@
     const degrees = [1,2,3,4,5,6,7];
     const seq = [];
     let prevDegree = null;
-    let prevNotes = null;
     let allowedTypes = CATEGORIES[filter] || CATEGORIES.all;
 
     for (let i = 0; i < length; i++) {
       let deg, chordRoot, chordKeyRoot;
-
       let isBorrowed = false;
+
       if (useBorrowed && Math.random() < 0.25) {
         chordRoot = ALL_ROOTS[Math.floor(Math.random() * ALL_ROOTS.length)];
         chordKeyRoot = keyMode === 'modulating' ? ALL_ROOTS[Math.floor(Math.random() * ALL_ROOTS.length)] : parseInt(keyRoot, 10);
@@ -426,10 +426,7 @@
         let bestDeg = 1;
         for (let d = 0; d < 7; d++) {
           let dist = Math.min((interval - diatonic[d] + 12) % 12, (diatonic[d] - interval + 12) % 12);
-          if (dist < minDist) {
-            minDist = dist;
-            bestDeg = d + 1;
-          }
+          if (dist < minDist) { minDist = dist; bestDeg = d + 1; }
         }
         deg = bestDeg;
         isBorrowed = true;
@@ -448,13 +445,9 @@
       } else {
         const degInfo = DEGREE_MAP[deg];
         const qualityKey = degInfo ? degInfo.seventh : 'maj';
-        if (allowedTypes.includes(qualityKey)) {
-          typeKey = qualityKey;
-        } else if (allowedTypes.length) {
-          typeKey = allowedTypes[Math.floor(Math.random() * allowedTypes.length)];
-        } else {
-          typeKey = 'maj';
-        }
+        if (allowedTypes.includes(qualityKey)) typeKey = qualityKey;
+        else if (allowedTypes.length) typeKey = allowedTypes[Math.floor(Math.random() * allowedTypes.length)];
+        else typeKey = 'maj';
       }
 
       const chordInfo = CHORD_TYPES[typeKey];
@@ -517,36 +510,12 @@
         category: isBorrowed ? 'borrowed' : (chordInfo.category || 'diatonic'),
         isBorrowed: isBorrowed
       });
-
-      if (notes.length > 0) prevNotes = notes;
     }
     return seq;
   }
 
   // =====================================================================
-  // HELPERS
-  // =====================================================================
-  function getNoteNames() { switch(currentSpelling) { case 'sharp': return NOTE_NAMES_SHARP; case 'flat': return NOTE_NAMES_FLAT; default: return NOTE_NAMES_MIXED; } }
-  function pitchClass(m) { return ((m % 12) + 12) % 12; }
-  function octave(m) { return Math.floor(m / 12) - 1; }
-  function noteLabel(m) { return getNoteNames()[pitchClass(m)]; }
-  function pitchClassSet(midis) { return new Set(midis.map(pitchClass)); }
-
-  function buildChord(root, typeKey, inversion = 0, octaveShift = 0) {
-    const def = CHORD_TYPES[typeKey]; if (!def) return [];
-    let notes = def.intervals.map(iv => root + iv + octaveShift * 12);
-    const n = notes.length, inv = ((inversion % n) + n) % n;
-    for (let i = 0; i < inv; i++) notes = notes.slice(1).concat(notes[0] + 12);
-    return notes;
-  }
-
-  function getChordSymbol(root, typeKey) {
-    const info = CHORD_TYPES[typeKey];
-    return noteLabel(root) + (info ? info.symbol : '');
-  }
-
-  // =====================================================================
-  // AUDIO (unchanged)
+  // AUDIO
   // =====================================================================
   let audioCtx = null, masterGain = null;
   let playbackTimeouts = [], isPlaying = false;
@@ -591,7 +560,7 @@
   function playSingleChord(notes) { stopPlayback(); playChordNotes(notes, 1.0); }
 
   // =====================================================================
-  // MIDI – WITH PITCH-CLASS COMPARISON
+  // MIDI – WORKING FEEDBACK
   // =====================================================================
   let midiInput = null;
   let connected = false;
@@ -609,10 +578,7 @@
   function startInputNote(note, velocity = 96) {
     const ctx = ensureAudio();
     const existing = inputVoices.get(note);
-    if (existing) {
-      try { existing.osc.stop(); } catch {}
-      inputVoices.delete(note);
-    }
+    if (existing) { try { existing.osc.stop(); } catch {} inputVoices.delete(note); }
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = 'triangle';
@@ -710,7 +676,6 @@
       return;
     }
 
-    // Compare pitch classes (note names, not octaves)
     const expectedSet = pitchClassSet(currentExpectedNotes);
     const playedSet = pitchClassSet(persistentNotes);
 
@@ -780,9 +745,7 @@
     const [status, note, velocity] = event.data;
     const cmd = status & 0xf0;
     if (cmd === 0x90 && velocity > 0) {
-      if (!persistentNotes.includes(note)) {
-        persistentNotes.push(note);
-      }
+      if (!persistentNotes.includes(note)) persistentNotes.push(note);
       startInputNote(note, velocity);
     } else if (cmd === 0x80 || (cmd === 0x90 && velocity === 0)) {
       stopInputNote(note);
@@ -795,7 +758,7 @@
       if (listenMode && persistentNotes.length > 0) {
         checkChord();
       }
-    }, 700);
+    }, 500);
   }
 
   // =====================================================================
@@ -1050,7 +1013,6 @@
 
   function generateAbsoluteSequence(length, filter, invMode) {
     const seq = [];
-    let prevNotes = null;
     let allowedTypes = CATEGORIES[filter] || CATEGORIES.all;
     for (let i = 0; i < length; i++) {
       const chordRoot = ALL_ROOTS[Math.floor(Math.random() * ALL_ROOTS.length)];
@@ -1113,7 +1075,6 @@
         isBorrowed: false,
         _mode: 'absolute'
       });
-      if (notes.length > 0) prevNotes = notes;
     }
     return seq;
   }
@@ -1183,7 +1144,7 @@
   });
 
   generate();
-  logDebug('🚀 App loaded. Pitch-class comparison – octaves ignored.', 'success');
+  logDebug('🚀 App loaded. Feedback working – pitch‑class comparison.', 'success');
 </script>
 </body>
 </html>
