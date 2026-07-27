@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Chord Trainer – Fixed Feedback</title>
+  <title>Chord Trainer – Pitch‑Class Comparison</title>
   <style>
     /* --- same styles (kept minimal) --- */
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -180,7 +180,7 @@
 <div class="app">
   <div class="shell">
     <h1>🎵 Chord Trainer</h1>
-    <div class="sub">Feedback fixed – no note accumulation</div>
+    <div class="sub">Pitch‑class comparison – octaves don't matter</div>
 
     <div class="mode-selector" id="mode-selector" role="tablist">
       <button class="active" data-mode="roman" role="tab">Roman</button>
@@ -524,12 +524,13 @@
   }
 
   // =====================================================================
-  // HELPERS (unchanged)
+  // HELPERS
   // =====================================================================
   function getNoteNames() { switch(currentSpelling) { case 'sharp': return NOTE_NAMES_SHARP; case 'flat': return NOTE_NAMES_FLAT; default: return NOTE_NAMES_MIXED; } }
   function pitchClass(m) { return ((m % 12) + 12) % 12; }
   function octave(m) { return Math.floor(m / 12) - 1; }
   function noteLabel(m) { return getNoteNames()[pitchClass(m)]; }
+  function pitchClassSet(midis) { return new Set(midis.map(pitchClass)); }
 
   function buildChord(root, typeKey, inversion = 0, octaveShift = 0) {
     const def = CHORD_TYPES[typeKey]; if (!def) return [];
@@ -545,7 +546,7 @@
   }
 
   // =====================================================================
-  // AUDIO (unchanged, working)
+  // AUDIO (unchanged)
   // =====================================================================
   let audioCtx = null, masterGain = null;
   let playbackTimeouts = [], isPlaying = false;
@@ -590,14 +591,12 @@
   function playSingleChord(notes) { stopPlayback(); playChordNotes(notes, 1.0); }
 
   // =====================================================================
-  // MIDI – FIXED: clear persistentNotes properly
+  // MIDI – WITH PITCH-CLASS COMPARISON
   // =====================================================================
   let midiInput = null;
   let connected = false;
   let chordCheckTimeout = null;
   const inputVoices = new Map();
-
-  // This is the ONLY place we store notes for checking
   let persistentNotes = [];
 
   const feedbackArea = document.getElementById('feedback-area');
@@ -667,7 +666,7 @@
   }
 
   // =====================================================================
-  // VALIDATION – WITH EXPLICIT CLEARING
+  // VALIDATION – PITCH-CLASS COMPARISON
   // =====================================================================
   function setCurrentChord(index) {
     if (!currentSequence || index >= currentSequence.length) {
@@ -695,10 +694,8 @@
       items[index].style.background = '';
     }
 
-    // CRITICAL: Clear persistent notes for new chord
     persistentNotes = [];
     playedDisplay.textContent = '🎹 notes: none';
-    console.log('🔄 New chord loaded. Persistent notes cleared.');
   }
 
   function checkChord() {
@@ -713,16 +710,13 @@
       return;
     }
 
-    const expected = [...currentExpectedNotes].sort((a,b)=>a-b);
-    const played = [...persistentNotes].sort((a,b)=>a-b);
-    const elapsed = Date.now() - chordStartTime;
+    // Compare pitch classes (note names, not octaves)
+    const expectedSet = pitchClassSet(currentExpectedNotes);
+    const playedSet = pitchClassSet(persistentNotes);
 
-    console.log('🔍 Expected:', expected.map(n=>noteLabel(n)).join(' '));
-    console.log('🔍 Played:', played.map(n=>noteLabel(n)).join(' '));
-
-    const allPresent = expected.every(n => played.includes(n));
-    const extra = played.filter(n => !expected.includes(n));
-    const missing = expected.filter(n => !played.includes(n));
+    const allPresent = expectedSet.size === playedSet.size && expectedSet.every(pc => playedSet.has(pc));
+    const extra = [...playedSet].filter(pc => !expectedSet.has(pc));
+    const missing = [...expectedSet].filter(pc => !playedSet.has(pc));
 
     const items = document.querySelectorAll('.seq-item');
     const currentItem = items[currentIndex];
@@ -745,13 +739,12 @@
       stats.streak++;
       if (stats.streak > stats.bestStreak) stats.bestStreak = stats.streak;
       stats.total++;
-      stats.times.push(elapsed);
+      stats.times.push(Date.now() - chordStartTime);
       updateStats();
-      feedbackMsg.innerHTML = `✅ Correct! (${elapsed}ms)`;
+      feedbackMsg.innerHTML = `✅ Correct!`;
       feedbackMsg.className = 'msg correct';
       updateItem('✅', '#2f7d48', '#e8f5e9');
 
-      // CRITICAL: Clear persistent notes on correct answer
       persistentNotes = [];
       playedDisplay.textContent = '🎹 notes: none';
 
@@ -769,45 +762,37 @@
       stats.total++;
       updateStats();
       let msg = '❌ ';
-      if (missing.length > 0) msg += `Missing: ${missing.map(n=>noteLabel(n)).join(' ')} `;
-      if (extra.length > 0) msg += `Extra: ${extra.map(n=>noteLabel(n)).join(' ')} `;
-      if (missing.length === 0 && extra.length === 0 && !allPresent) msg = '❌ Wrong notes played';
+      if (missing.length > 0) msg += `Missing: ${missing.map(pc => getNoteNames()[pc]).join(' ')} `;
+      if (extra.length > 0) msg += `Extra: ${extra.map(pc => getNoteNames()[pc]).join(' ')} `;
       feedbackMsg.innerHTML = msg;
       feedbackMsg.className = 'msg wrong';
       updateItem('❌', '#ba3e4b', '#fbe9e7');
 
-      // CRITICAL: Clear persistent notes on wrong answer too
-      // so the user can try again without accumulation
       persistentNotes = [];
       playedDisplay.textContent = '🎹 notes: none';
-      console.log('🔁 Wrong answer. Persistent notes cleared.');
     }
   }
 
   // =====================================================================
-  // MIDI HANDLER – adds notes to persistentNotes
+  // MIDI HANDLER
   // =====================================================================
   function handleMIDIMessage(event) {
     const [status, note, velocity] = event.data;
     const cmd = status & 0xf0;
     if (cmd === 0x90 && velocity > 0) {
-      // Add to persistentNotes (if not already there)
       if (!persistentNotes.includes(note)) {
         persistentNotes.push(note);
       }
       startInputNote(note, velocity);
     } else if (cmd === 0x80 || (cmd === 0x90 && velocity === 0)) {
       stopInputNote(note);
-      // Do NOT remove from persistentNotes – we want to keep them for checking
     }
     const notes = [...persistentNotes].sort((a,b)=>a-b);
     playedDisplay.textContent = notes.length ? `🎹 ${notes.map(n=>noteLabel(n)).join(' ')}` : '🎹 notes: none';
 
-    // Auto-check after debounce
     if (chordCheckTimeout) clearTimeout(chordCheckTimeout);
     chordCheckTimeout = setTimeout(() => {
       if (listenMode && persistentNotes.length > 0) {
-        console.log('⏱️ Auto-check triggered');
         checkChord();
       }
     }, 700);
@@ -906,7 +891,7 @@
   });
 
   // =====================================================================
-  // UI (unchanged)
+  // UI
   // =====================================================================
   const keySelect = document.getElementById('key-select');
   const keyModeSelect = document.getElementById('key-mode-select');
@@ -1198,7 +1183,7 @@
   });
 
   generate();
-  logDebug('🚀 App loaded. Feedback fixed – persistent notes cleared properly.', 'success');
+  logDebug('🚀 App loaded. Pitch-class comparison – octaves ignored.', 'success');
 </script>
 </body>
 </html>
