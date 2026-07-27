@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Chord Trainer – Fixed Modulating</title>
+  <title>Chord Trainer – Fixed Feedback</title>
   <style>
-    /* --- same styles as before, kept minimal --- */
+    /* --- same styles (kept minimal) --- */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
@@ -180,7 +180,7 @@
 <div class="app">
   <div class="shell">
     <h1>🎵 Chord Trainer</h1>
-    <div class="sub">Modulating works – clean Roman notation</div>
+    <div class="sub">Feedback fixed – no note accumulation</div>
 
     <div class="mode-selector" id="mode-selector" role="tablist">
       <button class="active" data-mode="roman" role="tab">Roman</button>
@@ -252,7 +252,7 @@
 
 <script>
   // =====================================================================
-  // THEORY – with borrowed chords and fixed modulating
+  // THEORY – with borrowed chords
   // =====================================================================
   const NOTE_NAMES_MIXED = ['C','Db','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
   const NOTE_NAMES_SHARP = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
@@ -316,7 +316,7 @@
   let useBorrowed = true;
 
   // =====================================================================
-  // ROMAN NUMERAL WITH BORROWED CHORDS
+  // ROMAN NUMERAL (unchanged)
   // =====================================================================
   function getRomanNumeral(keyRoot, chordRoot, typeKey, inversion) {
     const keyPc = pitchClass(keyRoot);
@@ -402,7 +402,7 @@
   }
 
   // =====================================================================
-  // SEQUENCE GENERATOR – FIXED MODULATING MODE
+  // SEQUENCE GENERATOR
   // =====================================================================
   function generateSequence(keyRoot, length, filter, keyMode, invMode) {
     const degrees = [1,2,3,4,5,6,7];
@@ -414,14 +414,10 @@
     for (let i = 0; i < length; i++) {
       let deg, chordRoot, chordKeyRoot;
 
-      // Determine if we use a borrowed chord (if enabled)
       let isBorrowed = false;
       if (useBorrowed && Math.random() < 0.25) {
-        // Pick a random root from all 12
         chordRoot = ALL_ROOTS[Math.floor(Math.random() * ALL_ROOTS.length)];
-        // In modulating mode, each chord has its own key
         chordKeyRoot = keyMode === 'modulating' ? ALL_ROOTS[Math.floor(Math.random() * ALL_ROOTS.length)] : parseInt(keyRoot, 10);
-        // Determine the scale degree relative to the chord's key
         const keyPc = pitchClass(chordKeyRoot);
         const chordPc = pitchClass(chordRoot);
         let interval = (chordPc - keyPc + 12) % 12;
@@ -438,7 +434,6 @@
         deg = bestDeg;
         isBorrowed = true;
       } else {
-        // Diatonic chord
         do { deg = degrees[Math.floor(Math.random() * degrees.length)]; } while (deg === prevDegree && length > 3);
         prevDegree = deg;
         const scale = [0,2,4,5,7,9,11];
@@ -446,7 +441,6 @@
         chordRoot = chordKeyRoot + scale[deg - 1];
       }
 
-      // Determine chord quality
       let typeKey;
       if (isBorrowed && filter !== 'diatonic' && filter !== 'all') {
         const available = allowedTypes.filter(t => t !== 'slash');
@@ -506,11 +500,7 @@
       }
 
       const notes = buildChord(chordRoot, typeKey, inv);
-
-      // Get the Roman numeral display
       const romanDisplay = getRomanNumeral(chordKeyRoot, chordRoot, typeKey, inv);
-
-      // For absolute mode, we still need the symbol
       const symbol = getChordSymbol(chordRoot, typeKey);
 
       seq.push({
@@ -534,7 +524,7 @@
   }
 
   // =====================================================================
-  // THEORY HELPERS (unchanged)
+  // HELPERS (unchanged)
   // =====================================================================
   function getNoteNames() { switch(currentSpelling) { case 'sharp': return NOTE_NAMES_SHARP; case 'flat': return NOTE_NAMES_FLAT; default: return NOTE_NAMES_MIXED; } }
   function pitchClass(m) { return ((m % 12) + 12) % 12; }
@@ -600,13 +590,16 @@
   function playSingleChord(notes) { stopPlayback(); playChordNotes(notes, 1.0); }
 
   // =====================================================================
-  // MIDI (unchanged, with persistent notes and auto-check)
+  // MIDI – FIXED: clear persistentNotes properly
   // =====================================================================
   let midiInput = null;
   let connected = false;
   let chordCheckTimeout = null;
   const inputVoices = new Map();
+
+  // This is the ONLY place we store notes for checking
   let persistentNotes = [];
+
   const feedbackArea = document.getElementById('feedback-area');
 
   function flashFeedback() {
@@ -673,7 +666,16 @@
     `;
   }
 
+  // =====================================================================
+  // VALIDATION – WITH EXPLICIT CLEARING
+  // =====================================================================
   function setCurrentChord(index) {
+    if (!currentSequence || index >= currentSequence.length) {
+      feedbackMsg.innerHTML = '🎉 Complete! Generate a new sequence.';
+      feedbackMsg.className = 'msg correct';
+      listenMode = false;
+      return;
+    }
     const item = currentSequence[index];
     if (!item) return;
     currentExpectedNotes = [...item.notes];
@@ -682,6 +684,7 @@
     const displayName = currentMode === 'absolute' ? item.symbol : item.display;
     feedbackMsg.textContent = `🎯 Play: ${displayName}`;
     feedbackMsg.className = 'msg waiting';
+
     const items = document.querySelectorAll('.seq-item');
     items.forEach(el => el.classList.remove('playing'));
     if (items[index]) {
@@ -691,8 +694,11 @@
       items[index].style.borderLeftColor = '#d97706';
       items[index].style.background = '';
     }
+
+    // CRITICAL: Clear persistent notes for new chord
     persistentNotes = [];
     playedDisplay.textContent = '🎹 notes: none';
+    console.log('🔄 New chord loaded. Persistent notes cleared.');
   }
 
   function checkChord() {
@@ -710,6 +716,9 @@
     const expected = [...currentExpectedNotes].sort((a,b)=>a-b);
     const played = [...persistentNotes].sort((a,b)=>a-b);
     const elapsed = Date.now() - chordStartTime;
+
+    console.log('🔍 Expected:', expected.map(n=>noteLabel(n)).join(' '));
+    console.log('🔍 Played:', played.map(n=>noteLabel(n)).join(' '));
 
     const allPresent = expected.every(n => played.includes(n));
     const extra = played.filter(n => !expected.includes(n));
@@ -741,8 +750,11 @@
       feedbackMsg.innerHTML = `✅ Correct! (${elapsed}ms)`;
       feedbackMsg.className = 'msg correct';
       updateItem('✅', '#2f7d48', '#e8f5e9');
+
+      // CRITICAL: Clear persistent notes on correct answer
       persistentNotes = [];
       playedDisplay.textContent = '🎹 notes: none';
+
       currentIndex++;
       if (currentIndex < currentSequence.length) {
         setCurrentChord(currentIndex);
@@ -757,35 +769,53 @@
       stats.total++;
       updateStats();
       let msg = '❌ ';
-      if (missing.length) msg += `Missing: ${missing.map(n=>noteLabel(n)).join(' ')} `;
-      if (extra.length) msg += `Extra: ${extra.map(n=>noteLabel(n)).join(' ')} `;
+      if (missing.length > 0) msg += `Missing: ${missing.map(n=>noteLabel(n)).join(' ')} `;
+      if (extra.length > 0) msg += `Extra: ${extra.map(n=>noteLabel(n)).join(' ')} `;
+      if (missing.length === 0 && extra.length === 0 && !allPresent) msg = '❌ Wrong notes played';
       feedbackMsg.innerHTML = msg;
       feedbackMsg.className = 'msg wrong';
       updateItem('❌', '#ba3e4b', '#fbe9e7');
+
+      // CRITICAL: Clear persistent notes on wrong answer too
+      // so the user can try again without accumulation
+      persistentNotes = [];
+      playedDisplay.textContent = '🎹 notes: none';
+      console.log('🔁 Wrong answer. Persistent notes cleared.');
     }
   }
 
+  // =====================================================================
+  // MIDI HANDLER – adds notes to persistentNotes
+  // =====================================================================
   function handleMIDIMessage(event) {
     const [status, note, velocity] = event.data;
     const cmd = status & 0xf0;
     if (cmd === 0x90 && velocity > 0) {
+      // Add to persistentNotes (if not already there)
       if (!persistentNotes.includes(note)) {
         persistentNotes.push(note);
       }
       startInputNote(note, velocity);
     } else if (cmd === 0x80 || (cmd === 0x90 && velocity === 0)) {
       stopInputNote(note);
+      // Do NOT remove from persistentNotes – we want to keep them for checking
     }
     const notes = [...persistentNotes].sort((a,b)=>a-b);
     playedDisplay.textContent = notes.length ? `🎹 ${notes.map(n=>noteLabel(n)).join(' ')}` : '🎹 notes: none';
+
+    // Auto-check after debounce
     if (chordCheckTimeout) clearTimeout(chordCheckTimeout);
     chordCheckTimeout = setTimeout(() => {
       if (listenMode && persistentNotes.length > 0) {
+        console.log('⏱️ Auto-check triggered');
         checkChord();
       }
-    }, 500);
+    }, 700);
   }
 
+  // =====================================================================
+  // CONNECT MIDI
+  // =====================================================================
   async function connectMIDI() {
     try {
       if (!navigator.requestMIDIAccess) {
@@ -866,10 +896,17 @@
     }
   });
 
-  document.getElementById('check-now').addEventListener('click', checkChord);
+  document.getElementById('check-now').addEventListener('click', () => {
+    if (persistentNotes.length === 0) {
+      feedbackMsg.textContent = '⚠️ No notes played. Play some notes on your keyboard first.';
+      feedbackMsg.className = 'msg waiting';
+      return;
+    }
+    checkChord();
+  });
 
   // =====================================================================
-  // UI – FIXED DUPLICATE DISPLAY
+  // UI (unchanged)
   // =====================================================================
   const keySelect = document.getElementById('key-select');
   const keyModeSelect = document.getElementById('key-mode-select');
@@ -962,9 +999,6 @@
     return info.intervals.length === 3 ? '3' : '7';
   }
 
-  // =====================================================================
-  // RENDER SEQUENCE – FIXED DUPLICATE
-  // =====================================================================
   function renderSequence(seq) {
     container.innerHTML = '';
     if (!seq || seq.length === 0) {
@@ -979,10 +1013,8 @@
       div.addEventListener('click', () => { playSingleChord(item.notes); });
       const topRow = document.createElement('div'); topRow.className = 'top-row';
       const degSpan = document.createElement('span'); degSpan.className = 'deg';
-      // Show just the number (1., 2., etc.) – no duplicate roman numeral
       degSpan.textContent = `${idx+1}.`;
       const nameSpan = document.createElement('span'); nameSpan.className = 'name';
-      // Show the full chord symbol (which already contains the roman numeral)
       if (currentMode === 'mixed' && item._mode) {
         nameSpan.textContent = item._mode === 'roman' ? item.display : item.symbol;
       } else if (currentMode === 'roman') {
@@ -1166,7 +1198,7 @@
   });
 
   generate();
-  logDebug('🚀 App loaded. Modulating mode works. Duplicate display fixed.', 'success');
+  logDebug('🚀 App loaded. Feedback fixed – persistent notes cleared properly.', 'success');
 </script>
 </body>
 </html>
