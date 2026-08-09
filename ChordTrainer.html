@@ -1,0 +1,34 @@
+// Hotfix: replace the broken checkChord function
+const originalCheck = checkChord;
+checkChord = function() {
+  try {
+    if (!currentExpectedNotes || currentExpectedNotes.length === 0) {
+      feedbackMsg.textContent = 'Generate a sequence first.';
+      feedbackMsg.className = 'msg waiting';
+      return;
+    }
+    if (persistentNotes.length === 0) {
+      feedbackMsg.textContent = '⚠️ No notes played. Play some notes on your keyboard first.';
+      feedbackMsg.className = 'msg waiting';
+      return;
+    }
+    const expectedSet = new Set(currentExpectedNotes.map(pitchClass));
+    const playedSet = new Set(persistentNotes.map(pitchClass));
+    const allPresent = expectedSet.size === playedSet.size &&
+                       [...expectedSet].every(pc => playedSet.has(pc));
+    const extra = [...playedSet].filter(pc => !expectedSet.has(pc));
+    const missing = [...expectedSet].filter(pc => !playedSet.has(pc));
+    // ... rest of the logic from the fixed version
+    if (allPresent && extra.length === 0 && missing.length === 0) {
+      stats.correct++;
+      stats.streak++;
+      if (stats.streak > stats.bestStreak) stats.bestStreak = stats.streak;
+      stats.total++;
+      stats.times.push(Date.now() - chordStartTime);
+      updateStats();
+      feedbackMsg.innerHTML = '✅ Correct!';
+      feedbackMsg.className = 'msg correct';
+      // ... etc
+    }
+  } catch(e) { console.error(e); }
+};
