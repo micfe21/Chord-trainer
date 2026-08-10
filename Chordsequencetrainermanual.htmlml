@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chord Trainer – User Manual</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
+            background: #f8f6f2;
+            color: #1f1c18;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .manual {
+            max-width: 900px;
+            width: 100%;
+            background: #fcfaf7;
+            padding: 48px 56px;
+            border-radius: 20px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+        }
+        h1 { font-size: 2.4rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 4px; }
+        .subtitle { font-size: 1.1rem; color: #6e6a62; margin-bottom: 32px; border-bottom: 2px solid #e4ded4; padding-bottom: 16px; }
+        h2 { font-size: 1.5rem; font-weight: 700; margin-top: 32px; margin-bottom: 12px; color: #0b6d73; }
+        h3 { font-size: 1.1rem; font-weight: 700; margin-top: 20px; margin-bottom: 6px; }
+        p { line-height: 1.6; margin-bottom: 12px; color: #2d2a24; }
+        ul, ol { margin: 8px 0 16px 24px; line-height: 1.6; }
+        li { margin-bottom: 4px; }
+        .highlight { background: #edebe6; padding: 2px 8px; border-radius: 4px; font-weight: 600; }
+        .badge { display: inline-block; background: #0b6d73; color: white; font-size: 0.7rem; font-weight: 700; padding: 1px 10px; border-radius: 20px; margin-right: 4px; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12px 0 20px 0;
+            font-size: 0.9rem;
+        }
+        th, td {
+            border: 1px solid #d7d2c8;
+            padding: 8px 12px;
+            text-align: left;
+            vertical-align: top;
+        }
+        th { background: #edebe6; font-weight: 700; }
+        .color-dot { display: inline-block; width: 14px; height: 14px; border-radius: 4px; margin-right: 6px; vertical-align: middle; }
+        .dot-green { background: #81c784; }
+        .dot-red { background: #ef9a9a; }
+        .dot-blue { background: #90caf9; }
+        .footer { margin-top: 40px; padding-top: 16px; border-top: 2px solid #e4ded4; font-size: 0.85rem; color: #6e6a62; text-align: center; }
+        @media (max-width: 600px) {
+            .manual { padding: 24px 18px; }
+            h1 { font-size: 1.8rem; }
+            table { font-size: 0.75rem; }
+            th, td { padding: 4px 8px; }
+        }
+        @media print {
+            body { padding: 0; background: white; }
+            .manual { box-shadow: none; padding: 40px; border-radius: 0; }
+            .badge { background: #0b6d73 !important; color: white !important; }
+        }
+    </style>
+</head>
+<body>
+<div class="manual">
+
+    <h1>🎵 Chord Trainer</h1>
+    <div class="subtitle">User Manual – Practice Tool for Musicians</div>
+
+    <!-- ─── WHAT IS THIS APP? ─── -->
+    <h2>What is this app?</h2>
+    <p>
+        This is a <strong>practice tool for musicians</strong> who want to get better at recognising and playing chords instantly.
+        Instead of just showing you chords on a page, it:
+    </p>
+    <ul>
+        <li><strong>Shows you a chord symbol</strong> (like <span class="highlight">F#m7</span> or <span class="highlight">V7</span>)</li>
+        <li><strong>You play it</strong> on a real MIDI keyboard or the on‑screen piano</li>
+        <li><strong>It checks</strong> if you played it correctly</li>
+        <li><strong>Then moves on</strong> to the next chord</li>
+    </ul>
+    <p>
+        The goal is to train your brain to translate a chord symbol into the right notes <em>without thinking</em> —
+        exactly what you need for jazz, accompanying, or sight‑reading.
+    </p>
+
+    <!-- ─── QUICK START ─── -->
+    <h2>Quick Start (5 seconds)</h2>
+    <ol>
+        <li><strong>Open the app</strong> in your browser.</li>
+        <li>Tap <span class="highlight">"Start Audio"</span> (orange button) – this turns on the sound.</li>
+        <li>Tap <span class="highlight">"Generate"</span> – this creates a chord sequence.</li>
+        <li><strong>Read the chord</strong> shown in the big display (e.g., <span class="highlight">V7</span>).</li>
+        <li><strong>Play it</strong> on your keyboard or the on‑screen piano.</li>
+        <li><strong>Get feedback</strong> – green = correct, red/blue = wrong.</li>
+        <li><strong>Repeat</strong> – it automatically moves to the next chord.</li>
+    </ol>
+    <p>That's it. You're practising.</p>
+
+    <!-- ─── THE MAIN SCREEN ─── -->
+    <h2>The Main Screen – What's What</h2>
+
+    <h3>1. The Big Chord Display</h3>
+    <ul>
+        <li>Shows the chord you need to play right now.</li>
+        <li>The badge (e.g., <span class="highlight">Roman</span>) tells you what <em>mode</em> you're in.</li>
+    </ul>
+
+    <h3>2. The Progress Indicator</h3>
+    <ul>
+        <li>Shows <span class="highlight">2 / 6</span> – you're on chord 2 of 6.</li>
+        <li>Turns green when you finish the whole sequence.</li>
+    </ul>
+
+    <h3>3. The On‑Screen Keyboard</h3>
+    <ul>
+        <li>Two octaves of piano keys.</li>
+        <li>Tap them with your mouse or finger.</li>
+        <li>They light up when you play (green = correct, red = wrong, blue = missing).</li>
+    </ul>
+
+    <h3>4. The Sequence Bar</h3>
+    <ul>
+        <li>Shows all the chords in your current sequence.</li>
+        <li>The <em>current</em> chord is highlighted in gold.</li>
+        <li>Tap any chord to hear it.</li>
+    </ul>
+
+    <h3>5. The Controls (top row)</h3>
+    <table>
+        <tr><th>Control</th><th>What it does</th></tr>
+        <tr><td><strong>Key</strong></td><td>The key of the sequence (e.g., C, F, Eb). Only used in Roman/Mixed modes.</td></tr>
+        <tr><td><strong>Mode</strong></td><td>How chords are displayed: <strong>Roman</strong> (<span class="highlight">iiø7</span>), <strong>Absolute</strong> (<span class="highlight">F#m7</span>), or <strong>Mixed</strong> (both).</td></tr>
+        <tr><td><strong>Length</strong></td><td>How many chords in the sequence (4, 6, 8, 10).</td></tr>
+        <tr><td><strong>Triads / Sevenths / Both</strong></td><td>Whether to include 3‑note chords (triads), 4‑note chords (7ths), or both.</td></tr>
+        <tr><td><strong>Voice Leading</strong></td><td>When enabled, chords are inverted so your hand moves as little as possible between chords.</td></tr>
+        <tr><td><strong>Generate</strong></td><td>Creates a new random sequence.</td></tr>
+        <tr><td><strong>🎲 New</strong></td><td>Creates a new sequence with random settings (key, length, etc.).</td></tr>
+    </table>
+
+    <h3>6. The Filter Rows</h3>
+    <p><strong>Filter Row (All / Diatonic / Extended / Altered / Sus / Aug / °7 / Slash)</strong></p>
+    <ul>
+        <li>Limits which <em>types</em> of chords appear in the sequence.</li>
+    </ul>
+    <p><strong>Practice Library Row (Major / Minor / Dominant 7 / Major 7 / ...)</strong></p>
+    <ul>
+        <li>Limits which <em>families</em> of chords appear.</li>
+        <li>Great for drilling a specific chord type.</li>
+    </ul>
+    <p><strong>Borrowed Chords</strong></p>
+    <ul>
+        <li>When "On", the generator occasionally uses chords from other keys (e.g., ♭VII).</li>
+        <li>This makes progressions more interesting and trains you to handle unexpected chords.</li>
+    </ul>
+
+    <h3>7. The MIDI Button</h3>
+    <ul>
+        <li>Tap to connect your Bluetooth or USB MIDI keyboard.</li>
+        <li>If you don't have one, use the on‑screen keyboard instead.</li>
+    </ul>
+
+    <h3>8. The Sound Toggle</h3>
+    <ul>
+        <li><strong>Internal</strong> – the app makes sound (warm piano‑like tone with reverb).</li>
+        <li><strong>MIDI Thru</strong> – the app <em>mutes</em> its own sound so you can use an external synth (like Pianoteq) while still getting chord feedback.</li>
+    </ul>
+
+    <h3>9. The Action Buttons (bottom row)</h3>
+    <table>
+        <tr><th>Button</th><th>What it does</th></tr>
+        <tr><td><strong>Start Audio</strong></td><td>Turns on the sound. <em>Tap this first if you hear nothing.</em></td></tr>
+        <tr><td><strong>▶ Play</strong></td><td>Plays the whole sequence so you can hear how it sounds.</td></tr>
+        <tr><td><strong>⏹ Stop</strong></td><td>Stops playback.</td></tr>
+        <tr><td><strong>🔍 Check</strong></td><td>Manually checks your current chord (auto‑check usually does this for you).</td></tr>
+        <tr><td><strong>Show Notes</strong></td><td>Shows the actual note names under each chord in the sequence bar.</td></tr>
+        <tr><td><strong>✖ Clear</strong></td><td>Clears the current sequence.</td></tr>
+    </table>
+
+    <h3>10. The Stats Row</h3>
+    <ul>
+        <li><strong>✅ Correct</strong> – number of chords you got right.</li>
+        <li><strong>❌ Wrong</strong> – number of chords you got wrong.</li>
+        <li><strong>🔥 Streak</strong> – your current consecutive correct streak.</li>
+        <li><strong>⚡ Time</strong> – your average response time in milliseconds.</li>
+    </ul>
+
+    <!-- ─── HOW TO PRACTISE ─── -->
+    <h2>How to Practise</h2>
+
+    <h3>Basic Practice</h3>
+    <ol>
+        <li>Tap <strong>Generate</strong>.</li>
+        <li>Read the chord symbol.</li>
+        <li>Play it on your keyboard or the on‑screen piano.</li>
+        <li>The app tells you if you're right or wrong.</li>
+        <li>Repeat until the sequence is complete.</li>
+    </ol>
+
+    <h3>Focused Practice (Practice Library)</h3>
+    <p>If you want to drill a specific chord type:</p>
+    <ol>
+        <li>Tap one of the <strong>library buttons</strong> (e.g., "Dominant 7").</li>
+        <li>Tap <strong>Generate</strong>.</li>
+        <li>Now <em>only</em> dominant 7th chords will appear.</li>
+        <li>Perfect for mastering a weak spot.</li>
+    </ol>
+
+    <h3>Voice Leading Practice</h3>
+    <ol>
+        <li>Tap the <strong>"Voice Leading"</strong> button (it turns green and shows ✓).</li>
+        <li>Tap <strong>Generate</strong>.</li>
+        <li>Each chord will be inverted so your hand moves as little as possible between chords.</li>
+        <li>This is excellent for practising smooth, musical voice‑leading.</li>
+    </ol>
+
+    <h3>Sight‑Reading Preparation</h3>
+    <ol>
+        <li>Set <strong>Length</strong> to 10 or more.</li>
+        <li>Disable <strong>Borrowed Chords</strong> (so the key stays stable).</li>
+        <li>Try to play each chord as quickly as possible.</li>
+        <li>The auto‑check will move you forward when you're correct.</li>
+        <li>Increase speed by trying to play <em>before</em> the auto‑check triggers.</li>
+    </ol>
+
+    <!-- ─── FEEDBACK SYSTEM ─── -->
+    <h2>The Feedback System – What the Colours Mean</h2>
+    <table>
+        <tr><th>Colour</th><th>Meaning</th></tr>
+        <tr><td><span class="color-dot dot-green"></span> Green</td><td>You played a note that belongs in the chord.</td></tr>
+        <tr><td><span class="color-dot dot-red"></span> Red</td><td>You played a note that <em>doesn't</em> belong in the chord (extra note).</td></tr>
+        <tr><td><span class="color-dot dot-blue"></span> Blue</td><td>A note that belongs in the chord hasn't been played yet (missing note).</td></tr>
+    </table>
+    <p>The feedback clears after 1.5 seconds so you can try again.</p>
+
+    <!-- ─── TIPS ─── -->
+    <h2>Tips for Best Experience</h2>
+
+    <h3>On an iPad / Tablet</h3>
+    <ul>
+        <li>Rotate to <strong>landscape</strong> for the best keyboard size.</li>
+        <li>Use <strong>Web MIDI Browser</strong> (free from the App Store) for Bluetooth MIDI.</li>
+        <li>Tap <strong>"Start Audio"</strong> first – this is required on iOS.</li>
+    </ul>
+
+    <h3>On a Desktop (Windows / Mac)</h3>
+    <ul>
+        <li>Use <strong>Chrome</strong> or <strong>Edge</strong> for the best Web MIDI support.</li>
+        <li>Connect your keyboard via <strong>USB</strong> for the most reliable connection.</li>
+    </ul>
+
+    <h3>If you hear no sound</h3>
+    <ul>
+        <li>Tap <strong>"Start Audio"</strong> (orange button).</li>
+        <li>Make sure <strong>Sound</strong> is set to <strong>"Internal"</strong> (not "MIDI Thru").</li>
+        <li>Check your device volume.</li>
+    </ul>
+
+    <h3>If you get a "No notes played" message</h3>
+    <ul>
+        <li>Hold the notes for at least 500ms – the auto‑check needs a moment.</li>
+        <li>Or tap <strong>"Check"</strong> manually.</li>
+    </ul>
+
+    <!-- ─── KEYBOARD SHORTCUTS ─── -->
+    <h2>Keyboard Shortcuts</h2>
+    <table>
+        <tr><th>Key</th><th>Action</th></tr>
+        <tr><td><strong>Space</strong></td><td>Manually checks your current chord (same as "Check" button).</td></tr>
+    </table>
+
+    <!-- ─── WHAT THE APP DOES NOT DO ─── -->
+    <h2>What the App Does <em>Not</em> Do</h2>
+    <ul>
+        <li>❌ It doesn't teach you music theory from scratch.</li>
+        <li>❌ It doesn't show you the answer on the keyboard before you play (that would defeat the purpose).</li>
+        <li>❌ It doesn't record your progress across sessions (yet – coming soon).</li>
+    </ul>
+
+    <!-- ─── TROUBLESHOOTING ─── -->
+    <h2>Troubleshooting</h2>
+    <table>
+        <tr><th>Problem</th><th>Solution</th></tr>
+        <tr><td><strong>No sound</strong></td><td>Tap <strong>"Start Audio"</strong>. Make sure volume is up.</td></tr>
+        <tr><td><strong>MIDI not connecting</strong></td><td>Tap the MIDI button. If your device appears, select it. If not, double‑tap the MIDI status text to refresh.</td></tr>
+        <tr><td><strong>On‑screen keyboard doesn't work</strong></td><td>Try tapping the keys. If nothing happens, tap "Start Audio" first.</td></tr>
+        <tr><td><strong>Chords don't advance</strong></td><td>Play the chord and hold it for a moment. Auto‑check needs about 500ms.</td></tr>
+        <tr><td><strong>App feels slow</strong></td><td>Try a shorter sequence (4 or 6 chords).</td></tr>
+        <tr><td><strong>Too much reverb</strong></td><td>That can be adjusted — contact the developer.</td></tr>
+    </table>
+
+    <!-- ─── WHAT'S NEXT ─── -->
+    <h2>What's Next (Planned Features)</h2>
+    <ul>
+        <li><strong>Sight‑Reading Mode</strong> – continuous chords at a chosen tempo.</li>
+        <li><strong>Progress Tracking</strong> – stats saved across sessions.</li>
+        <li><strong>Dark Mode</strong> – for late‑night practice.</li>
+    </ul>
+
+    <!-- ─── FOOTER ─── -->
+    <div class="footer">
+        Enjoy practising! 🎹<br />
+        <span style="font-size:0.7rem;">Chord Trainer – Version 8 (Clean Reverb)</span>
+    </div>
+
+</div>
+</body>
+</html>
