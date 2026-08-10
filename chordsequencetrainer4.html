@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Chord Trainer – Fixed (v3 MIDI + v4 UI)</title>
+  <title>Chord Trainer – Fixed (v3 MIDI)</title>
   <style>
     /* ─── RESET & BASE ─── */
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -809,7 +809,7 @@ function generateMixedSequence(keyRoot, length, filter, keyMode, invMode) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-//  2. AUDIO
+//  2. AUDIO (from version 3 – working)
 // ═══════════════════════════════════════════════════════════════════════
 
 let audioCtx = null;
@@ -1013,7 +1013,7 @@ window.addEventListener('resize', () => {
 window.addEventListener('orientationchange', () => setTimeout(buildPiano, 300));
 
 // ═══════════════════════════════════════════════════════════════════════
-//  5. NOTE HANDLING & CHORD CHECK (from version 3 – working)
+//  5. NOTE HANDLING & CHORD CHECK
 // ═══════════════════════════════════════════════════════════════════════
 
 function handleNoteOn(note, velocity = 80) {
@@ -1208,14 +1208,53 @@ function updateStats() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-//  6. MIDI (EXACTLY from version 3 – working)
+//  6. MIDI – EXACTLY AS IN VERSION 3 (copied verbatim)
 // ═══════════════════════════════════════════════════════════════════════
 
+// MIDI state (from version 3)
 let midiInput = null;
 let connected = false;
+let chordCheckTimeoutMidi = null;
+const inputVoices = new Map();
+
+// MIDI note functions (from version 3)
+function startInputNote(note, velocity = 96) {
+  const ctx = ensureAudio();
+  const existing = inputVoices.get(note);
+  if (existing) { try { existing.osc.stop(); } catch {} inputVoices.delete(note); }
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = 'triangle';
+  osc.frequency.value = 440 * Math.pow(2, (note - 69) / 12);
+  const amp = Math.max(0.02, Math.min(0.25, (velocity / 127) * 0.25));
+  gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(amp, ctx.currentTime + 0.02);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(ctx.currentTime);
+  inputVoices.set(note, { osc, gain });
+}
+
+function stopInputNote(note) {
+  const voice = inputVoices.get(note);
+  if (!voice) return;
+  const ctx = ensureAudio();
+  voice.gain.gain.cancelScheduledValues(ctx.currentTime);
+  voice.gain.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.03);
+  try { voice.osc.stop(ctx.currentTime + 0.12); } catch {}
+  inputVoices.delete(note);
+}
+
+function clearInputVoices() {
+  for (const note of inputVoices.keys()) { stopInputNote(note); }
+  inputVoices.clear();
+}
+
+// MIDI status display (from version 3)
 const midiStatus = document.getElementById('midiStatus');
 const midiBtn = document.getElementById('midiBtn');
 
+// MIDI message handler (EXACTLY as in version 3)
 function handleMIDIMessage(event) {
   const [status, note, velocity] = event.data;
   const cmd = status & 0xf0;
@@ -1223,17 +1262,23 @@ function handleMIDIMessage(event) {
   if (cmd === 0x90 && velocity > 0) {
     if (!persistentNotes.includes(note)) {
       persistentNotes.push(note);
+      // version 3 uses this logging style
+      console.log(`➕ Added note: ${noteLabel(note)} (${note})`);
     }
-    playNote(note, velocity, 0.3);
+    startInputNote(note, velocity);
+    // Also update the on-screen keyboard and schedule check
     updatePlayedDisplay();
     scheduleCheck();
   } else if (cmd === 0x80 || (cmd === 0x90 && velocity === 0)) {
+    stopInputNote(note);
     persistentNotes = persistentNotes.filter(n => n !== note);
+    console.log(`➖ Released note: ${noteLabel(note)} (${note})`);
     updatePlayedDisplay();
     scheduleCheck();
   }
 }
 
+// MIDI connect/disconnect (EXACTLY as in version 3)
 async function connectMIDI() {
   try {
     if (connected) {
@@ -1263,7 +1308,7 @@ async function connectMIDI() {
       return;
     }
 
-    // Prefer Bluetooth devices
+    // Prefer Bluetooth devices (same as version 3)
     let selectedInput = inputs.find(input =>
       input.name.toLowerCase().includes('bluetooth') ||
       input.name.toLowerCase().includes('ble')
@@ -1441,6 +1486,7 @@ document.getElementById('clearBtn').addEventListener('click', () => {
   listenMode = false;
   persistentNotes = [];
   updatePlayedDisplay();
+  clearInputVoices();
   keyElements.forEach(el => el.classList.remove('correct', 'wrong', 'missing', 'pressed'));
   feedbackMsg.textContent = 'Cleared – generate a new sequence.';
   feedbackMsg.className = 'feedback-msg idle';
@@ -1467,9 +1513,9 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-console.log('🎵 Chord Trainer – Fixed (v3 MIDI + v4 UI) loaded.');
+console.log('🎵 Chord Trainer – Fixed with v3 MIDI implementation.');
 console.log('🔌 Click the MIDI button to connect your Casio.');
-console.log('✅ This uses the SAME MIDI handling as version 3.');
+console.log('✅ This uses the EXACT SAME MIDI code as version 3.');
 </script>
 </body>
 </html>
