@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Chord Trainer – V2</title>
+  <title>Chord Trainer – Enhanced + MIDI</title>
   <style>
     /* ─── RESET & BASE ─── */
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -486,7 +486,7 @@
 
 <script>
 // ═══════════════════════════════════════════════════════════════════════
-//  1. THEORY ENGINE (complete)
+//  1. THEORY ENGINE
 // ═══════════════════════════════════════════════════════════════════════
 
 const NOTE_NAMES_MIXED = ['C','Db','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
@@ -1223,7 +1223,7 @@ function updateStats() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-//  6. MIDI with device selector
+//  6. MIDI – works exactly like version 3, plus device selector
 // ═══════════════════════════════════════════════════════════════════════
 
 let midiInput = null;
@@ -1249,13 +1249,12 @@ function populateMIDIDevices(access) {
     const opt = document.createElement('option');
     opt.value = inp.id;
     opt.textContent = inp.name || 'Unnamed Device';
-    // mark Bluetooth devices
     if (inp.name && (inp.name.toLowerCase().includes('bluetooth') || inp.name.toLowerCase().includes('ble'))) {
       opt.textContent += ' 🔵';
     }
     midiDeviceSelect.appendChild(opt);
   });
-  // Auto-select first Bluetooth device, or fallback to first device
+  // Auto-select first Bluetooth device, or fallback to first
   const btInput = inputs.find(inp => inp.name && (inp.name.toLowerCase().includes('bluetooth') || inp.name.toLowerCase().includes('ble')));
   if (btInput) {
     midiDeviceSelect.value = btInput.id;
@@ -1279,14 +1278,12 @@ async function connectMIDI() {
     midiAccess = access;
     populateMIDIDevices(access);
 
-    // If we have a selected device, connect to it
     const selectedId = midiDeviceSelect.value;
     let device = null;
     access.inputs.forEach(inp => {
       if (inp.id === selectedId) device = inp;
     });
     if (!device && access.inputs.size > 0) {
-      // fallback to first
       const it = access.inputs.values();
       device = it.next().value;
     }
@@ -1347,19 +1344,13 @@ function handleMIDIMessage(e) {
   }
 }
 
-// MIDI button: toggle connection
 midiBtn.addEventListener('click', connectMIDI);
-
-// Device selector: when changed, reconnect
 midiDeviceSelect.addEventListener('change', () => {
   if (midiConnected) {
-    // Reconnect with new device
     disconnectMIDI();
     setTimeout(connectMIDI, 200);
   }
 });
-
-// Option to refresh devices – double-click MIDI status
 midiStatus.addEventListener('dblclick', refreshMIDIDevices);
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -1536,9 +1527,9 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-console.log('🎵 Chord Trainer V2 loaded with MIDI device selector.');
-console.log('📖 To select a MIDI device, use the dropdown next to the MIDI button.');
-console.log('🔌 Your Bluetooth keyboard should appear in the list if paired.');
+console.log('🎵 Chord Trainer Enhanced + MIDI loaded.');
+console.log('🔌 MIDI: click the MIDI button to connect.');
+console.log('📱 Select your Casio from the dropdown.');
 </script>
 </body>
 </html>
