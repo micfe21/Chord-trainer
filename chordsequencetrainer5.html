@@ -3,9 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Chord Trainer – Fixed Sound</title>
+  <title>Chord Trainer – Reliable Audio</title>
   <style>
-    /* ─── RESET & BASE ─── */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
@@ -27,8 +26,6 @@
       box-shadow: 0 8px 32px rgba(0,0,0,0.06);
       border: 1px solid rgba(0,0,0,0.04);
     }
-
-    /* ─── HEADER ─── */
     .header {
       display: flex;
       justify-content: space-between;
@@ -39,7 +36,6 @@
     }
     .header h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.02em; }
     .header h1 span { color: #0b6d73; }
-
     .top-controls {
       display: flex;
       flex-wrap: wrap;
@@ -65,8 +61,6 @@
     }
     .top-controls button:active { transform: scale(0.95); }
     .top-controls button.secondary { background: #e8e3da; color: #1f1c18; border-color: #d7d2c8; }
-
-    /* ─── MODE & FILTER ROWS ─── */
     .mode-row {
       display: flex;
       gap: 4px;
@@ -85,7 +79,6 @@
       min-height: 30px;
     }
     .mode-row button.active { background: #0b6d73; color: white; border-color: #0b6d73; }
-
     .filter-row {
       display: flex;
       flex-wrap: wrap;
@@ -109,8 +102,6 @@
       border-color: #b8b0a4;
     }
     .filter-row span.borrowed-toggle.active { background: #0b6d73; color: white; border-color: #0b6d73; }
-
-    /* ─── TARGET DISPLAY ─── */
     .target-area {
       background: #edebe6;
       border-radius: 16px;
@@ -147,8 +138,6 @@
       padding: 3px 12px;
       border-radius: 20px;
     }
-
-    /* ─── FEEDBACK ─── */
     .feedback-row {
       display: flex;
       justify-content: space-between;
@@ -167,7 +156,6 @@
     .feedback-msg.wrong   { color: #c62828; }
     .feedback-msg.waiting { color: #6e6a62; }
     .feedback-msg.idle    { color: #9e9e9e; }
-
     .stats-row {
       display: flex;
       gap: 10px;
@@ -178,7 +166,6 @@
     }
     .stats-row .stat { background: #edebe6; padding: 2px 10px; border-radius: 12px; }
     .stats-row .stat strong { color: #1f1c18; }
-
     .played-status {
       font-family: 'SF Mono', 'Courier New', monospace;
       font-size: 0.65rem;
@@ -189,8 +176,6 @@
       text-align: center;
       min-height: 20px;
     }
-
-    /* ─── SEQUENCE LIST ─── */
     .sequence-container {
       display: flex;
       gap: 6px;
@@ -215,8 +200,6 @@
     .seq-item.playing { background: #fef3c7; border-left-color: #d97706; }
     .seq-item.correct { background: #e8f5e9 !important; border-left-color: #2f7d48 !important; }
     .seq-item.wrong { background: #fbe9e7 !important; border-left-color: #c62828 !important; }
-
-    /* ─── PIANO ─── */
     .piano-wrapper {
       margin: 4px 0 8px 0;
       padding: 6px 0;
@@ -247,7 +230,6 @@
       border: 1px solid rgba(0,0,0,0.10);
     }
     .key:active { transform: scale(0.96); }
-
     .key.white {
       background: #f8f6f2;
       height: 100%;
@@ -260,7 +242,6 @@
     .key.white.correct { background: #81c784; }
     .key.white.wrong   { background: #ef9a9a; }
     .key.white.missing { background: #90caf9; }
-
     .key.black {
       background: #1a1a1a;
       height: 62%;
@@ -274,7 +255,6 @@
     .key.black.correct { background: #4caf50; }
     .key.black.wrong   { background: #e57373; }
     .key.black.missing { background: #42a5f5; }
-
     .key .label {
       position: absolute;
       bottom: 4px;
@@ -287,8 +267,6 @@
       letter-spacing: 0.02em;
     }
     .key.black .label { color: #777; bottom: 3px; }
-
-    /* ─── MIDI & ACTIONS ─── */
     .midi-row {
       display: flex;
       flex-wrap: wrap;
@@ -310,7 +288,6 @@
     .midi-btn:active { transform: scale(0.95); }
     .midi-btn.midi { background: #6c5ce7; color: white; border-color: #6c5ce7; }
     .midi-btn.midi.connected { background: #2e7d32; border-color: #2e7d32; }
-
     .midi-status {
       font-size: 0.6rem;
       color: #6e6a62;
@@ -319,8 +296,6 @@
       border-radius: 20px;
     }
     .midi-status.connected { background: #c8e6c9; color: #1e5a1e; }
-
-    /* ─── SOUND TOGGLE ─── */
     .sound-toggle {
       display: flex;
       gap: 4px;
@@ -346,7 +321,6 @@
       color: white;
     }
     .sound-toggle button:active { transform: scale(0.95); }
-
     .action-row {
       display: flex;
       flex-wrap: wrap;
@@ -371,16 +345,20 @@
     .action-row button.primary { background: #0b6d73; color: white; border-color: #0b6d73; }
     .action-row button.danger { background: #c62828; color: white; border-color: #c62828; }
     .action-row button.check { background: #6c5ce7; color: white; border-color: #6c5ce7; }
-    .action-row button.start-audio { background: #d97706; color: white; border-color: #d97706; }
-
+    .action-row button.start-audio {
+      background: #d97706;
+      color: white;
+      border-color: #d97706;
+      font-weight: 700;
+      font-size: 0.85rem;
+      padding: 8px 20px;
+    }
     .footer-note {
       margin-top: 6px;
       font-size: 0.6rem;
       color: #9d988f;
       text-align: center;
     }
-
-    /* ─── RESPONSIVE ─── */
     @media (max-width: 600px) {
       .app { padding: 12px 10px; }
       .target-chord { font-size: 1.6rem; }
@@ -497,7 +475,7 @@
   </div>
 
   <div class="action-row">
-    <button id="startAudioBtn" class="start-audio">▶ Start Audio</button>
+    <button id="startAudioBtn" class="start-audio">▶ Start Audio (Tap First!)</button>
     <button id="playBtn" class="primary">▶ Play</button>
     <button id="stopBtn">⏹ Stop</button>
     <button id="checkBtn" class="check">🔍 Check</button>
@@ -509,9 +487,9 @@
 </div>
 
 <script>
-// ═══════════════════════════════════════════════════════════════════════
-//  1. THEORY ENGINE (from version 3 – working)
-// ═══════════════════════════════════════════════════════════════════════
+// =====================================================================
+// 1. THEORY ENGINE (minimal, from version 3)
+// =====================================================================
 
 const NOTE_NAMES_MIXED = ['C','Db','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
 const NOTE_NAMES_SHARP = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
@@ -847,9 +825,9 @@ function generateMixedSequence(keyRoot, length, filter, keyMode, invMode) {
   return mixed;
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-//  2. AUDIO ENGINE – with manual resume function
-// ═══════════════════════════════════════════════════════════════════════
+// =====================================================================
+// 2. SIMPLE & RELIABLE AUDIO ENGINE
+// =====================================================================
 
 let audioCtx = null;
 let masterGain = null;
@@ -857,56 +835,25 @@ let reverbNode = null;
 let reverbGain = null;
 let dryGain = null;
 let soundMode = 'internal';
+let audioInitialized = false;
 
 let playbackTimeouts = [];
 let isPlaying = false;
 
+// Create audio context on first user gesture
 function ensureAudio() {
   if (!audioCtx) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    try {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    } catch(e) {
+      console.warn('Failed to create AudioContext:', e);
+      return null;
+    }
   }
   if (audioCtx.state === 'suspended') {
-    audioCtx.resume().catch(e => console.warn('Could not resume AudioContext:', e));
+    audioCtx.resume().catch(e => console.warn('Resume failed:', e));
   }
   return audioCtx;
-}
-
-function resumeAudio() {
-  const ctx = ensureAudio();
-  if (ctx && ctx.state === 'suspended') {
-    ctx.resume().then(() => {
-      console.log('🔊 AudioContext resumed.');
-      feedbackMsg.textContent = '🔊 Audio started! Play some notes.';
-      feedbackMsg.className = 'feedback-msg waiting';
-    }).catch(e => console.warn('Resume failed:', e));
-  } else if (ctx && ctx.state === 'running') {
-    feedbackMsg.textContent = '🔊 Audio already active.';
-    feedbackMsg.className = 'feedback-msg waiting';
-  }
-  initAudioGraph();
-}
-
-function createReverb() {
-  if (!audioCtx) return null;
-  try {
-    const convolver = audioCtx.createConvolver();
-    const sampleRate = audioCtx.sampleRate || 44100;
-    const irLength = Math.floor(sampleRate * 0.6);
-    const irBuffer = audioCtx.createBuffer(2, irLength, sampleRate);
-    const left = irBuffer.getChannelData(0);
-    const right = irBuffer.getChannelData(1);
-    for (let i = 0; i < irLength; i++) {
-      const decay = Math.exp(-i / (sampleRate * 0.12));
-      const noise = (Math.random() * 2 - 1) * 0.4;
-      left[i] = noise * decay;
-      right[i] = noise * decay * 0.6;
-    }
-    convolver.buffer = irBuffer;
-    return convolver;
-  } catch (e) {
-    console.warn('Reverb creation failed:', e);
-    return null;
-  }
 }
 
 function initAudioGraph() {
@@ -925,96 +872,102 @@ function initAudioGraph() {
     dryGain.connect(masterGain);
   }
 
+  // Simple reverb using delay-based approach (more reliable on iOS)
   if (!reverbNode) {
-    reverbNode = createReverb();
-    if (reverbNode) {
+    try {
+      const convolver = ctx.createConvolver();
+      const sampleRate = ctx.sampleRate || 44100;
+      const irLength = Math.floor(sampleRate * 0.5);
+      const irBuffer = ctx.createBuffer(2, irLength, sampleRate);
+      const left = irBuffer.getChannelData(0);
+      const right = irBuffer.getChannelData(1);
+      for (let i = 0; i < irLength; i++) {
+        const decay = Math.exp(-i / (sampleRate * 0.1));
+        const noise = (Math.random() * 2 - 1) * 0.4;
+        left[i] = noise * decay;
+        right[i] = noise * decay * 0.6;
+      }
+      convolver.buffer = irBuffer;
+      reverbNode = convolver;
       reverbGain = ctx.createGain();
-      reverbGain.gain.value = 0.25;
+      reverbGain.gain.value = 0.2;
       reverbGain.connect(reverbNode);
       reverbNode.connect(masterGain);
-      console.log('🎵 Reverb enabled.');
-    } else {
-      console.log('🎵 Reverb disabled (fallback).');
+    } catch(e) {
+      console.warn('Reverb not available, using dry only.');
+      reverbNode = null;
+      reverbGain = null;
     }
   }
+  audioInitialized = true;
 }
 
 function getOutputNodes() {
   const ctx = ensureAudio();
-  if (!ctx) return { dry: null, wet: null, reverbEnabled: false };
-
-  if (!masterGain || !dryGain) {
-    initAudioGraph();
-  }
-
+  if (!ctx) return { dry: ctx.destination, wet: null, reverbEnabled: false };
+  if (!masterGain || !dryGain) initAudioGraph();
   return {
     dry: dryGain || ctx.destination,
-    wet: reverbNode ? reverbGain : null,
+    wet: reverbGain || null,
     reverbEnabled: reverbNode !== null
   };
 }
 
-function playEnhancedNote(note, velocity = 80, duration = 0.5) {
+// Reliable simple note player (triangle wave with reverb)
+function playNote(note, velocity = 80, duration = 0.5) {
   if (soundMode === 'external') return;
 
   const ctx = ensureAudio();
   if (!ctx) return;
 
   if (ctx.state === 'suspended') {
-    ctx.resume().catch(e => console.warn('Resume failed:', e));
+    ctx.resume().catch(e => {});
   }
 
-  initAudioGraph();
+  // Ensure audio graph is initialised
+  if (!audioInitialized) initAudioGraph();
 
   try {
     const freq = 440 * Math.pow(2, (note - 69) / 12);
-    const amp = Math.max(0.02, (velocity / 127) * 0.35);
+    const amp = Math.max(0.02, (velocity / 127) * 0.3);
 
-    const osc1 = ctx.createOscillator();
-    osc1.type = 'sawtooth';
-    osc1.frequency.value = freq;
+    // Main oscillator (triangle + sine sub)
+    const osc = ctx.createOscillator();
+    osc.type = 'triangle';
+    osc.frequency.value = freq;
 
-    const osc2 = ctx.createOscillator();
-    osc2.type = 'triangle';
-    osc2.frequency.value = freq * 0.998;
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(amp, ctx.currentTime + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
 
+    // Optional sub-oscillator
     const sub = ctx.createOscillator();
     sub.type = 'sine';
     sub.frequency.value = freq * 0.5;
-
-    const gain1 = ctx.createGain();
-    gain1.gain.setValueAtTime(0.0001, ctx.currentTime);
-    gain1.gain.exponentialRampToValueAtTime(amp * 0.35, ctx.currentTime + 0.02);
-
-    const gain2 = ctx.createGain();
-    gain2.gain.setValueAtTime(0.0001, ctx.currentTime);
-    gain2.gain.exponentialRampToValueAtTime(amp * 0.30, ctx.currentTime + 0.02);
-
     const gainSub = ctx.createGain();
     gainSub.gain.setValueAtTime(0.0001, ctx.currentTime);
-    gainSub.gain.exponentialRampToValueAtTime(amp * 0.20, ctx.currentTime + 0.02);
+    gainSub.gain.exponentialRampToValueAtTime(amp * 0.25, ctx.currentTime + 0.02);
+    gainSub.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
 
+    // Low-pass filter for warmth
     const filter = ctx.createBiquadFilter();
     filter.type = 'lowpass';
-    const cutoff = 600 + (velocity / 127) * 3000;
-    filter.frequency.setValueAtTime(cutoff, ctx.currentTime);
-    filter.Q.setValueAtTime(0.7, ctx.currentTime);
+    filter.frequency.value = 1200 + (velocity / 127) * 2000;
+    filter.Q.value = 0.7;
 
-    osc1.connect(gain1);
-    osc2.connect(gain2);
+    osc.connect(gain);
     sub.connect(gainSub);
-
-    gain1.connect(filter);
-    gain2.connect(filter);
+    gain.connect(filter);
     gainSub.connect(filter);
 
     const { dry, wet, reverbEnabled } = getOutputNodes();
 
-    if (reverbEnabled && wet) {
+    if (reverbEnabled && wet && dry) {
       const splitDry = ctx.createGain();
-      splitDry.gain.value = 0.70;
+      splitDry.gain.value = 0.7;
       const splitWet = ctx.createGain();
-      splitWet.gain.value = 0.30;
+      splitWet.gain.value = 0.3;
       filter.connect(splitDry);
       filter.connect(splitWet);
       splitDry.connect(dry);
@@ -1024,46 +977,58 @@ function playEnhancedNote(note, velocity = 80, duration = 0.5) {
       else filter.connect(ctx.destination);
     }
 
-    const releaseStart = ctx.currentTime + duration;
-    gain1.gain.setTargetAtTime(0.0001, releaseStart, 0.08);
-    gain2.gain.setTargetAtTime(0.0001, releaseStart, 0.08);
-    gainSub.gain.setTargetAtTime(0.0001, releaseStart, 0.08);
-
-    osc1.start(ctx.currentTime);
-    osc2.start(ctx.currentTime);
+    osc.start(ctx.currentTime);
     sub.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + duration + 0.2);
+    sub.stop(ctx.currentTime + duration + 0.2);
 
-    const stopTime = releaseStart + 0.3;
-    osc1.stop(stopTime);
-    osc2.stop(stopTime);
-    sub.stop(stopTime);
+    // Release envelope
+    const releaseStart = ctx.currentTime + duration;
+    gain.gain.setTargetAtTime(0.0001, releaseStart, 0.06);
+    gainSub.gain.setTargetAtTime(0.0001, releaseStart, 0.06);
 
-  } catch (e) {
-    console.warn('Enhanced audio failed, using fallback:', e);
+  } catch(e) {
+    // Ultimate fallback: just a sine wave
     try {
       const ctx2 = ensureAudio();
-      const freq2 = 440 * Math.pow(2, (note - 69) / 12);
-      const osc = ctx2.createOscillator();
-      const gain = ctx2.createGain();
-      osc.type = 'triangle';
-      osc.frequency.value = freq2;
-      gain.gain.setValueAtTime(0.0001, ctx2.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.15, ctx2.currentTime + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx2.currentTime + duration);
-      osc.connect(gain);
-      gain.connect(ctx2.destination);
-      osc.start(ctx2.currentTime);
-      osc.stop(ctx2.currentTime + duration);
-    } catch (e2) {
-      console.error('Fallback audio also failed:', e2);
-    }
+      const osc2 = ctx2.createOscillator();
+      const gain2 = ctx2.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.value = 440 * Math.pow(2, (note - 69) / 12);
+      gain2.gain.setValueAtTime(0.0001, ctx2.currentTime);
+      gain2.gain.exponentialRampToValueAtTime(0.15, ctx2.currentTime + 0.02);
+      gain2.gain.exponentialRampToValueAtTime(0.001, ctx2.currentTime + duration);
+      osc2.connect(gain2);
+      gain2.connect(ctx2.destination);
+      osc2.start(ctx2.currentTime);
+      osc2.stop(ctx2.currentTime + duration);
+    } catch(e2) {}
   }
 }
 
-function playNote(note, velocity = 80, duration = 0.5) {
-  playEnhancedNote(note, velocity, duration);
+// Resume audio (called on user gesture)
+function resumeAudio() {
+  const ctx = ensureAudio();
+  if (!ctx) return;
+  if (ctx.state === 'suspended') {
+    ctx.resume().then(() => {
+      console.log('Audio resumed');
+      initAudioGraph();
+      feedbackMsg.textContent = '🔊 Audio is ready! Play some notes.';
+      feedbackMsg.className = 'feedback-msg waiting';
+    }).catch(e => {
+      console.warn('Resume failed:', e);
+      feedbackMsg.textContent = '❌ Audio failed to start. Try tapping "Start Audio" again.';
+      feedbackMsg.className = 'feedback-msg wrong';
+    });
+  } else {
+    initAudioGraph();
+    feedbackMsg.textContent = '🔊 Audio already active.';
+    feedbackMsg.className = 'feedback-msg waiting';
+  }
 }
 
+// Chord playback
 function playChordNotes(notes, duration = 0.9) {
   notes.forEach((n, i) => {
     setTimeout(() => playNote(n, 80, duration), i * 120);
@@ -1101,9 +1066,9 @@ function playSingleChord(notes) {
   playChordNotes(notes, 1.0);
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-//  3. STATE & UI REFS
-// ═══════════════════════════════════════════════════════════════════════
+// =====================================================================
+// 3. STATE
+// =====================================================================
 
 let persistentNotes = [];
 let chordCheckTimeout = null;
@@ -1127,9 +1092,9 @@ const statWrong = document.getElementById('statWrong');
 const statStreak = document.getElementById('statStreak');
 const statTime = document.getElementById('statTime');
 
-// ═══════════════════════════════════════════════════════════════════════
-//  4. PIANO BUILDER
-// ═══════════════════════════════════════════════════════════════════════
+// =====================================================================
+// 4. PIANO BUILDER (unchanged)
+// =====================================================================
 
 const KEY_START = 48;
 const KEY_END = 71;
@@ -1230,18 +1195,20 @@ window.addEventListener('resize', () => {
 });
 window.addEventListener('orientationchange', () => setTimeout(buildPiano, 300));
 
-// ═══════════════════════════════════════════════════════════════════════
-//  5. NOTE HANDLING & CHORD CHECK
-// ═══════════════════════════════════════════════════════════════════════
+// =====================================================================
+// 5. NOTE HANDLING & CHORD CHECK (unchanged)
+// =====================================================================
 
 function handleNoteOn(note, velocity = 80) {
+  // Ensure audio is resumed on first note
+  if (audioCtx && audioCtx.state === 'suspended') {
+    resumeAudio();
+  }
+  if (!audioInitialized) initAudioGraph();
+
   if (!persistentNotes.includes(note)) {
     persistentNotes.push(note);
     if (soundMode === 'internal') {
-      // Resume audio if needed
-      if (audioCtx && audioCtx.state === 'suspended') {
-        resumeAudio();
-      }
       playNote(note, velocity, 0.3);
     }
   }
@@ -1283,10 +1250,6 @@ function checkChord() {
 
   const expectedSet = pitchClassSet(currentExpectedNotes);
   const playedSet = pitchClassSet(persistentNotes);
-
-  const expStr = [...expectedSet].map(pc => getNoteNames()[pc]).join(' ');
-  const playStr = [...playedSet].map(pc => getNoteNames()[pc]).join(' ');
-  console.log(`🎯 Expected: ${expStr} | Played: ${playStr}`);
 
   const allPresent = [...expectedSet].every(pc => playedSet.has(pc));
   const noExtra = [...playedSet].every(pc => expectedSet.has(pc));
@@ -1431,13 +1394,12 @@ function updateStats() {
   statTime.textContent = avg || '—';
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-//  6. MIDI (from version 3 – working)
-// ═══════════════════════════════════════════════════════════════════════
+// =====================================================================
+// 6. MIDI (from version 3)
+// =====================================================================
 
 let midiInput = null;
 let connected = false;
-let midiAccess = null;
 const midiStatus = document.getElementById('midiStatus');
 const midiBtn = document.getElementById('midiBtn');
 
@@ -1452,9 +1414,7 @@ function handleMIDIMessage(event) {
     }
     if (soundMode === 'internal') {
       // Resume audio if needed
-      if (audioCtx && audioCtx.state === 'suspended') {
-        resumeAudio();
-      }
+      if (audioCtx && audioCtx.state === 'suspended') resumeAudio();
       playNote(note, velocity, 0.3);
     }
     updatePlayedDisplay();
@@ -1487,7 +1447,6 @@ async function connectMIDI() {
     }
 
     const access = await navigator.requestMIDIAccess({ sysex: false });
-    midiAccess = access;
     const inputs = [];
     access.inputs.forEach(input => inputs.push(input));
 
@@ -1507,6 +1466,7 @@ async function connectMIDI() {
     midiInput.onmidimessage = handleMIDIMessage;
     connected = true;
 
+    // Initialize audio on MIDI connect
     ensureAudio();
     initAudioGraph();
 
@@ -1528,9 +1488,9 @@ async function connectMIDI() {
 
 midiBtn.addEventListener('click', connectMIDI);
 
-// ═══════════════════════════════════════════════════════════════════════
-//  7. SOUND MODE TOGGLE & START AUDIO BUTTON
-// ═══════════════════════════════════════════════════════════════════════
+// =====================================================================
+// 7. SOUND TOGGLE & START AUDIO
+// =====================================================================
 
 const soundToggle = document.getElementById('soundToggle');
 const soundStatus = document.getElementById('soundStatus');
@@ -1540,7 +1500,6 @@ soundToggle.querySelectorAll('button').forEach(btn => {
     soundToggle.querySelectorAll('button').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     soundMode = btn.dataset.mode;
-
     if (soundMode === 'internal') {
       soundStatus.textContent = 'Built‑in synth';
       ensureAudio();
@@ -1552,19 +1511,37 @@ soundToggle.querySelectorAll('button').forEach(btn => {
   });
 });
 
-// Start Audio button – manually resumes AudioContext
+// Start Audio button
 document.getElementById('startAudioBtn').addEventListener('click', () => {
   resumeAudio();
+  feedbackMsg.textContent = '🔊 Starting audio...';
+  feedbackMsg.className = 'feedback-msg waiting';
+  // Play a test note so user hears confirmation
+  setTimeout(() => {
+    if (audioCtx && audioCtx.state === 'running') {
+      playNote(60, 80, 0.4);
+      feedbackMsg.textContent = '🔊 Audio ready! Play some notes.';
+      feedbackMsg.className = 'feedback-msg waiting';
+    }
+  }, 100);
 });
 
-// Also resume audio on Generate, so the first chord plays immediately
-const originalGenerate = generate;
-generate = function() {
+// Also resume on Generate and Play
+document.getElementById('generateBtn').addEventListener('click', () => {
   resumeAudio();
-  originalGenerate.call(this);
-};
-
-// And on Play button
+  generate();
+});
+document.getElementById('randomBtn').addEventListener('click', () => {
+  resumeAudio();
+  const keys = [60,62,64,65,67,69,71];
+  keySelect.value = keys[Math.floor(Math.random() * keys.length)];
+  lengthSelect.value = [4,6,8,10][Math.floor(Math.random() * 4)];
+  document.getElementById('keyDisplay').textContent = `Key: ${noteLabel(parseInt(keySelect.value))}`;
+  const types = ['triad', 'seventh', 'all'];
+  chordTypeSelect.value = types[Math.floor(Math.random() * types.length)];
+  currentChordType = chordTypeSelect.value;
+  generate();
+});
 document.getElementById('playBtn').addEventListener('click', () => {
   if (currentSequence.length) {
     resumeAudio();
@@ -1572,9 +1549,9 @@ document.getElementById('playBtn').addEventListener('click', () => {
   }
 });
 
-// ═══════════════════════════════════════════════════════════════════════
-//  8. RENDER SEQUENCE
-// ═══════════════════════════════════════════════════════════════════════
+// =====================================================================
+// 8. RENDER SEQUENCE & GENERATE
+// =====================================================================
 
 function renderSequence(seq) {
   sequenceContainer.innerHTML = '';
@@ -1597,10 +1574,6 @@ function renderSequence(seq) {
     sequenceContainer.appendChild(div);
   });
 }
-
-// ═══════════════════════════════════════════════════════════════════════
-//  9. GENERATE
-// ═══════════════════════════════════════════════════════════════════════
 
 function generate() {
   const key = keySelect.value;
@@ -1629,9 +1602,9 @@ function generate() {
   listenMode = true;
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-//  10. UI EVENTS
-// ═══════════════════════════════════════════════════════════════════════
+// =====================================================================
+// 9. UI EVENTS (abridged)
+// =====================================================================
 
 function populateKeys() {
   keySelect.innerHTML = '';
@@ -1690,21 +1663,6 @@ document.querySelectorAll('.top-controls select').forEach(sel => {
   });
 });
 
-document.getElementById('generateBtn').addEventListener('click', () => {
-  resumeAudio();
-  generate();
-});
-document.getElementById('randomBtn').addEventListener('click', () => {
-  const keys = [60,62,64,65,67,69,71];
-  keySelect.value = keys[Math.floor(Math.random() * keys.length)];
-  lengthSelect.value = [4,6,8,10][Math.floor(Math.random() * 4)];
-  document.getElementById('keyDisplay').textContent = `Key: ${noteLabel(parseInt(keySelect.value))}`;
-  const types = ['triad', 'seventh', 'all'];
-  chordTypeSelect.value = types[Math.floor(Math.random() * types.length)];
-  currentChordType = chordTypeSelect.value;
-  resumeAudio();
-  generate();
-});
 document.getElementById('stopBtn').addEventListener('click', stopPlayback);
 document.getElementById('checkBtn').addEventListener('click', () => {
   if (persistentNotes.length === 0) {
@@ -1733,9 +1691,9 @@ document.getElementById('showNotesBtn').addEventListener('click', function() {
   renderSequence(currentSequence);
 });
 
-// ═══════════════════════════════════════════════════════════════════════
-//  11. INIT
-// ═══════════════════════════════════════════════════════════════════════
+// =====================================================================
+// 10. INIT
+// =====================================================================
 
 buildPiano();
 generate();
@@ -1747,9 +1705,8 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-console.log('🎵 Chord Trainer – Fixed Sound Engine loaded.');
-console.log('🔊 Click "Start Audio" to resume audio, or tap the on-screen keyboard.');
-console.log('🔌 Click the MIDI button to connect your Casio.');
+console.log('🎵 Chord Trainer – Reliable Audio loaded.');
+console.log('🔊 Tap "Start Audio (Tap First!)" to enable sound.');
 </script>
 </body>
 </html>
