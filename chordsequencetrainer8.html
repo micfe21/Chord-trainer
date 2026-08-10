@@ -137,12 +137,6 @@
       color: white;
       border-color: #0b6d73;
     }
-    .library-row span .label {
-      font-weight: 400;
-      color: #9d988f;
-      margin-right: 2px;
-    }
-    .library-row span.active .label { color: rgba(255,255,255,0.7); }
     .target-area {
       background: #edebe6;
       border-radius: 16px;
@@ -547,7 +541,7 @@
 
 <script>
 // ═══════════════════════════════════════════════════════════════════════
-// 1. THEORY ENGINE
+// 1. THEORY ENGINE (abridged – full version)
 // ═══════════════════════════════════════════════════════════════════════
 
 const NOTE_NAMES_MIXED = ['C','Db','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
@@ -649,7 +643,8 @@ function pitchClass(n) { return ((n % 12) + 12) % 12; }
 function noteLabel(n) { return getNoteNames()[pitchClass(n)]; }
 function pitchClassSet(midis) { return new Set(midis.map(pitchClass)); }
 
-function buildChord(root, typeKey, inversion = 0) {
+function buildChord(root, typeKey, inversion) {
+  inversion = inversion || 0;
   const def = CHORD_TYPES[typeKey];
   if (!def) return [];
   let notes = def.intervals.map(iv => root + iv);
@@ -665,6 +660,7 @@ function getChordSymbol(root, typeKey) {
 }
 
 function getRomanNumeral(keyRoot, chordRoot, typeKey, inversion) {
+  inversion = inversion || 0;
   const keyPc = pitchClass(keyRoot);
   const chordPc = pitchClass(chordRoot);
   let interval = (chordPc - keyPc + 12) % 12;
@@ -954,7 +950,7 @@ function generateMixedSequence(keyRoot, length, filter, keyMode, invMode) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// 2. CLEAN AUDIO ENGINE (1.8s decay, 10% wet reverb)
+// 2. CLEAN AUDIO ENGINE
 // ═══════════════════════════════════════════════════════════════════════
 
 let audioCtx = null;
@@ -983,7 +979,9 @@ function ensureAudio() {
   return audioCtx;
 }
 
-function createReverbIR(decaySeconds = 1.8, preDelayMs = 20) {
+function createReverbIR(decaySeconds, preDelayMs) {
+  decaySeconds = decaySeconds || 1.8;
+  preDelayMs = preDelayMs || 20;
   if (!audioCtx) return null;
   try {
     const sampleRate = audioCtx.sampleRate || 44100;
@@ -1060,7 +1058,9 @@ function getOutputNodes() {
   };
 }
 
-function playNote(note, velocity = 80, duration = 0.5) {
+function playNote(note, velocity, duration) {
+  velocity = velocity || 80;
+  duration = duration || 0.5;
   if (soundMode === 'external') return;
 
   const ctx = ensureAudio();
@@ -1169,7 +1169,8 @@ function playNote(note, velocity = 80, duration = 0.5) {
   }
 }
 
-function playChordNotes(notes, duration = 1.2) {
+function playChordNotes(notes, duration) {
+  duration = duration || 1.2;
   notes.forEach((n, i) => {
     setTimeout(() => playNote(n, 80, duration + 0.3), i * 100);
   });
@@ -1356,7 +1357,8 @@ window.addEventListener('orientationchange', () => setTimeout(buildPiano, 300));
 // 4. NOTE HANDLING & CHORD CHECK
 // ═══════════════════════════════════════════════════════════════════════
 
-function handleNoteOn(note, velocity = 80) {
+function handleNoteOn(note, velocity) {
+  velocity = velocity || 80;
   if (audioCtx && audioCtx.state === 'suspended') resumeAudio();
   if (!audioInitialized) initAudioGraph();
 
