@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Chord Trainer – Enhanced Sound</title>
+  <title>Chord Trainer – Fixed Sound</title>
   <style>
     /* ─── RESET & BASE ─── */
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -320,6 +320,7 @@
     }
     .midi-status.connected { background: #c8e6c9; color: #1e5a1e; }
 
+    /* ─── SOUND TOGGLE ─── */
     .sound-toggle {
       display: flex;
       gap: 4px;
@@ -370,6 +371,7 @@
     .action-row button.primary { background: #0b6d73; color: white; border-color: #0b6d73; }
     .action-row button.danger { background: #c62828; color: white; border-color: #c62828; }
     .action-row button.check { background: #6c5ce7; color: white; border-color: #6c5ce7; }
+    .action-row button.start-audio { background: #d97706; color: white; border-color: #d97706; }
 
     .footer-note {
       margin-top: 6px;
@@ -478,14 +480,13 @@
     <div class="piano" id="piano"></div>
   </div>
 
-  <!-- MIDI & ACTIONS -->
+  <!-- MIDI & SOUND -->
   <div class="midi-row">
     <button class="midi-btn midi" id="midiBtn">🔌 MIDI</button>
     <span class="midi-status" id="midiStatus">idle</span>
     <span style="flex:1;text-align:right;font-size:0.65rem;color:#6e6a62;" id="keyDisplay">Key: C</span>
   </div>
 
-  <!-- SOUND MODE TOGGLE -->
   <div class="midi-row" style="margin-top:2px;border-top:1px solid #e4ded4;padding-top:6px;">
     <span style="font-size:0.6rem;font-weight:600;color:#6e6a62;margin-right:4px;">🔊 Sound</span>
     <div class="sound-toggle" id="soundToggle">
@@ -496,6 +497,7 @@
   </div>
 
   <div class="action-row">
+    <button id="startAudioBtn" class="start-audio">▶ Start Audio</button>
     <button id="playBtn" class="primary">▶ Play</button>
     <button id="stopBtn">⏹ Stop</button>
     <button id="checkBtn" class="check">🔍 Check</button>
@@ -508,12 +510,8 @@
 
 <script>
 // ═══════════════════════════════════════════════════════════════════════
-//  1. THEORY ENGINE (unchanged – same as version 3)
+//  1. THEORY ENGINE (from version 3 – working)
 // ═══════════════════════════════════════════════════════════════════════
-
-// [Full theory engine from version 3 – included but collapsed for brevity]
-// ─── The full theory code is identical to the previous version ───
-// I'm including it here in the final output.
 
 const NOTE_NAMES_MIXED = ['C','Db','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
 const NOTE_NAMES_SHARP = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
@@ -850,41 +848,56 @@ function generateMixedSequence(keyRoot, length, filter, keyMode, invMode) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-//  2. ENHANCED AUDIO ENGINE – with MIDI Thru support
+//  2. AUDIO ENGINE – with manual resume function
 // ═══════════════════════════════════════════════════════════════════════
 
 let audioCtx = null;
-let playbackTimeouts = [];
-let isPlaying = false;
-
-// Sound mode: 'internal' or 'external' (MIDI Thru)
-let soundMode = 'internal';
-
-// ─── Reverb ───
+let masterGain = null;
 let reverbNode = null;
 let reverbGain = null;
 let dryGain = null;
-let reverbEnabled = true;
+let soundMode = 'internal';
 
-// ─── Sustain ───
-let sustainPedal = false;
-const sustainedNotes = new Map();
+let playbackTimeouts = [];
+let isPlaying = false;
+
+function ensureAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume().catch(e => console.warn('Could not resume AudioContext:', e));
+  }
+  return audioCtx;
+}
+
+function resumeAudio() {
+  const ctx = ensureAudio();
+  if (ctx && ctx.state === 'suspended') {
+    ctx.resume().then(() => {
+      console.log('🔊 AudioContext resumed.');
+      feedbackMsg.textContent = '🔊 Audio started! Play some notes.';
+      feedbackMsg.className = 'feedback-msg waiting';
+    }).catch(e => console.warn('Resume failed:', e));
+  } else if (ctx && ctx.state === 'running') {
+    feedbackMsg.textContent = '🔊 Audio already active.';
+    feedbackMsg.className = 'feedback-msg waiting';
+  }
+  initAudioGraph();
+}
 
 function createReverb() {
-  if (!audioCtx) return;
+  if (!audioCtx) return null;
   try {
-    // Create a simple delay-based reverb
     const convolver = audioCtx.createConvolver();
-    // Generate a short impulse response
     const sampleRate = audioCtx.sampleRate || 44100;
-    const irLength = Math.floor(sampleRate * 0.8); // 800ms
+    const irLength = Math.floor(sampleRate * 0.6);
     const irBuffer = audioCtx.createBuffer(2, irLength, sampleRate);
     const left = irBuffer.getChannelData(0);
     const right = irBuffer.getChannelData(1);
-    // Exponential decay
     for (let i = 0; i < irLength; i++) {
-      const decay = Math.exp(-i / (sampleRate * 0.15));
-      const noise = (Math.random() * 2 - 1) * 0.5;
+      const decay = Math.exp(-i / (sampleRate * 0.12));
+      const noise = (Math.random() * 2 - 1) * 0.4;
       left[i] = noise * decay;
       right[i] = noise * decay * 0.6;
     }
@@ -897,86 +910,78 @@ function createReverb() {
 }
 
 function initAudioGraph() {
-  if (!audioCtx) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const ctx = ensureAudio();
+  if (!ctx) return;
+
+  if (!masterGain) {
+    masterGain = ctx.createGain();
+    masterGain.gain.value = 0.9;
+    masterGain.connect(ctx.destination);
   }
-  if (audioCtx.state === 'suspended') audioCtx.resume();
 
-  if (reverbNode) return;
+  if (!dryGain) {
+    dryGain = ctx.createGain();
+    dryGain.gain.value = 0.85;
+    dryGain.connect(masterGain);
+  }
 
-  // Create reverb
-  reverbNode = createReverb();
-  if (!reverbNode) return;
-
-  // Create gain nodes
-  reverbGain = audioCtx.createGain();
-  reverbGain.gain.value = 0.25;
-
-  dryGain = audioCtx.createGain();
-  dryGain.gain.value = 0.85;
-
-  const outputGain = audioCtx.createGain();
-  outputGain.gain.value = 0.9;
-
-  // Connect: reverbGain → reverbNode → outputGain
-  reverbGain.connect(reverbNode);
-  reverbNode.connect(outputGain);
-
-  // Connect dry signal directly
-  dryGain.connect(outputGain);
-
-  // Save the master output
-  outputGain.connect(audioCtx.destination);
+  if (!reverbNode) {
+    reverbNode = createReverb();
+    if (reverbNode) {
+      reverbGain = ctx.createGain();
+      reverbGain.gain.value = 0.25;
+      reverbGain.connect(reverbNode);
+      reverbNode.connect(masterGain);
+      console.log('🎵 Reverb enabled.');
+    } else {
+      console.log('🎵 Reverb disabled (fallback).');
+    }
+  }
 }
 
 function getOutputNodes() {
-  if (!audioCtx) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  }
-  if (audioCtx.state === 'suspended') audioCtx.resume();
+  const ctx = ensureAudio();
+  if (!ctx) return { dry: null, wet: null, reverbEnabled: false };
 
-  if (!reverbNode) {
+  if (!masterGain || !dryGain) {
     initAudioGraph();
   }
 
-  // Return connections for a voice
-  const dry = dryGain || audioCtx.destination;
-  const wet = reverbNode ? reverbGain : null;
-
-  return { dry, wet, reverbEnabled: reverbNode !== null };
+  return {
+    dry: dryGain || ctx.destination,
+    wet: reverbNode ? reverbGain : null,
+    reverbEnabled: reverbNode !== null
+  };
 }
 
-// ─── Enhanced note playback ───
-
 function playEnhancedNote(note, velocity = 80, duration = 0.5) {
-  if (soundMode === 'external') {
-    // MIDI Thru mode – don't play internal sound
-    // (MIDI Thru is handled separately)
-    return;
+  if (soundMode === 'external') return;
+
+  const ctx = ensureAudio();
+  if (!ctx) return;
+
+  if (ctx.state === 'suspended') {
+    ctx.resume().catch(e => console.warn('Resume failed:', e));
   }
 
+  initAudioGraph();
+
   try {
-    const ctx = ensureAudio();
-    initAudioGraph();
-
     const freq = 440 * Math.pow(2, (note - 69) / 12);
-    const amp = Math.max(0.02, (velocity / 127) * 0.3);
+    const amp = Math.max(0.02, (velocity / 127) * 0.35);
 
-    // ─── Main oscillator (sawtooth + triangle blend) ───
     const osc1 = ctx.createOscillator();
     osc1.type = 'sawtooth';
     osc1.frequency.value = freq;
 
     const osc2 = ctx.createOscillator();
     osc2.type = 'triangle';
-    osc2.frequency.value = freq * 0.999; // slight detune for warmth
+    osc2.frequency.value = freq * 0.998;
 
-    // ─── Sub-oscillator (one octave down) ───
     const sub = ctx.createOscillator();
     sub.type = 'sine';
     sub.frequency.value = freq * 0.5;
 
-    // ─── Gain nodes ───
     const gain1 = ctx.createGain();
     gain1.gain.setValueAtTime(0.0001, ctx.currentTime);
     gain1.gain.exponentialRampToValueAtTime(amp * 0.35, ctx.currentTime + 0.02);
@@ -989,62 +994,41 @@ function playEnhancedNote(note, velocity = 80, duration = 0.5) {
     gainSub.gain.setValueAtTime(0.0001, ctx.currentTime);
     gainSub.gain.exponentialRampToValueAtTime(amp * 0.20, ctx.currentTime + 0.02);
 
-    // ─── Filter (brightness varies with velocity) ───
     const filter = ctx.createBiquadFilter();
     filter.type = 'lowpass';
-    const cutoff = 800 + (velocity / 127) * 3200;
+    const cutoff = 600 + (velocity / 127) * 3000;
     filter.frequency.setValueAtTime(cutoff, ctx.currentTime);
     filter.Q.setValueAtTime(0.7, ctx.currentTime);
 
-    // ─── Connect oscillators to gains ───
     osc1.connect(gain1);
     osc2.connect(gain2);
     sub.connect(gainSub);
 
-    // ─── Mix gains to filter ───
     gain1.connect(filter);
     gain2.connect(filter);
     gainSub.connect(filter);
 
-    // ─── Filter to dry/wet split ───
     const { dry, wet, reverbEnabled } = getOutputNodes();
 
     if (reverbEnabled && wet) {
-      // Split signal: 70% dry, 30% wet
       const splitDry = ctx.createGain();
       splitDry.gain.value = 0.70;
       const splitWet = ctx.createGain();
       splitWet.gain.value = 0.30;
-
       filter.connect(splitDry);
       filter.connect(splitWet);
-
       splitDry.connect(dry);
       splitWet.connect(wet);
     } else {
-      filter.connect(dry);
+      if (dry) filter.connect(dry);
+      else filter.connect(ctx.destination);
     }
 
-    // ─── ADSR envelope ───
-    const releaseTime = duration * 1.2;
-
-    // Attack: already ramped above
-    // Decay: slight decay after attack
-    setTimeout(() => {
-      try {
-        gain1.gain.exponentialRampToValueAtTime(amp * 0.25, ctx.currentTime + 0.1);
-        gain2.gain.exponentialRampToValueAtTime(amp * 0.20, ctx.currentTime + 0.1);
-        gainSub.gain.exponentialRampToValueAtTime(amp * 0.12, ctx.currentTime + 0.1);
-      } catch (e) {}
-    }, 50);
-
-    // ─── Release ───
     const releaseStart = ctx.currentTime + duration;
     gain1.gain.setTargetAtTime(0.0001, releaseStart, 0.08);
     gain2.gain.setTargetAtTime(0.0001, releaseStart, 0.08);
     gainSub.gain.setTargetAtTime(0.0001, releaseStart, 0.08);
 
-    // ─── Start and stop ───
     osc1.start(ctx.currentTime);
     osc2.start(ctx.currentTime);
     sub.start(ctx.currentTime);
@@ -1055,48 +1039,25 @@ function playEnhancedNote(note, velocity = 80, duration = 0.5) {
     sub.stop(stopTime);
 
   } catch (e) {
-    // Fallback to simple oscillator if enhanced fails
+    console.warn('Enhanced audio failed, using fallback:', e);
     try {
-      const ctx = ensureAudio();
-      const freq = 440 * Math.pow(2, (note - 69) / 12);
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
+      const ctx2 = ensureAudio();
+      const freq2 = 440 * Math.pow(2, (note - 69) / 12);
+      const osc = ctx2.createOscillator();
+      const gain = ctx2.createGain();
       osc.type = 'triangle';
-      osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0.0001, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.15, ctx.currentTime + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+      osc.frequency.value = freq2;
+      gain.gain.setValueAtTime(0.0001, ctx2.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.15, ctx2.currentTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx2.currentTime + duration);
       osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + duration);
-    } catch (e2) { /* ignore */ }
+      gain.connect(ctx2.destination);
+      osc.start(ctx2.currentTime);
+      osc.stop(ctx2.currentTime + duration);
+    } catch (e2) {
+      console.error('Fallback audio also failed:', e2);
+    }
   }
-}
-
-// ─── MIDI Thru ───
-
-let midiThruInput = null;
-let midiThruEnabled = false;
-let midiThruOutputs = [];
-
-function setupMIDIThru(access) {
-  if (!access) return;
-  // We'll forward MIDI messages to external apps via the same MIDI access
-  // This is done by creating a virtual output (if available) or simply
-  // by not blocking MIDI messages from passing through.
-  // For now, we'll just log that MIDI Thru is active.
-  console.log('MIDI Thru mode active – messages will be forwarded to external apps.');
-}
-
-// ─── Audio utilities ───
-
-function ensureAudio() {
-  if (!audioCtx) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  }
-  if (audioCtx.state === 'suspended') audioCtx.resume();
-  return audioCtx;
 }
 
 function playNote(note, velocity = 80, duration = 0.5) {
@@ -1138,24 +1099,6 @@ function stopPlayback() {
 function playSingleChord(notes) {
   stopPlayback();
   playChordNotes(notes, 1.0);
-}
-
-// ─── Sustain pedal support ───
-
-function handleSustainPedal(value) {
-  sustainPedal = value >= 64;
-  if (!sustainPedal) {
-    // Release all sustained notes
-    const now = audioCtx ? audioCtx.currentTime : 0;
-    sustainedNotes.forEach((info, note) => {
-      if (info.gain) {
-        try {
-          info.gain.gain.setTargetAtTime(0.0001, now, 0.05);
-        } catch (e) {}
-      }
-      sustainedNotes.delete(note);
-    });
-  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -1294,8 +1237,11 @@ window.addEventListener('orientationchange', () => setTimeout(buildPiano, 300));
 function handleNoteOn(note, velocity = 80) {
   if (!persistentNotes.includes(note)) {
     persistentNotes.push(note);
-    // Play sound (internal or external)
     if (soundMode === 'internal') {
+      // Resume audio if needed
+      if (audioCtx && audioCtx.state === 'suspended') {
+        resumeAudio();
+      }
       playNote(note, velocity, 0.3);
     }
   }
@@ -1495,46 +1441,22 @@ let midiAccess = null;
 const midiStatus = document.getElementById('midiStatus');
 const midiBtn = document.getElementById('midiBtn');
 
-function startInputNote(note, velocity = 96) {
-  if (soundMode === 'external') {
-    // In MIDI Thru mode, we still play the note internally for the on-screen keyboard
-    // But we also forward the MIDI message (handled in handleMIDIMessage)
-    return;
-  }
-  // For internal mode, we use the enhanced synth
-  playNote(note, velocity, 0.3);
-}
-
-function stopInputNote(note) {
-  // For internal mode, we don't need to stop the note explicitly
-  // because the envelope handles release
-}
-
-function clearInputVoices() {
-  // Nothing to clear for the new synth
-}
-
 function handleMIDIMessage(event) {
   const [status, note, velocity] = event.data;
   const cmd = status & 0xf0;
-
-  // ─── Sustain pedal (CC64) ───
-  if (status === 0xb0 && note === 64) {
-    handleSustainPedal(velocity);
-    return;
-  }
 
   if (cmd === 0x90 && velocity > 0) {
     if (!persistentNotes.includes(note)) {
       persistentNotes.push(note);
       console.log(`➕ Added note: ${noteLabel(note)} (${note})`);
     }
-    // Play sound based on mode
     if (soundMode === 'internal') {
+      // Resume audio if needed
+      if (audioCtx && audioCtx.state === 'suspended') {
+        resumeAudio();
+      }
       playNote(note, velocity, 0.3);
     }
-    // In external mode, we still update the UI and forward MIDI
-    // (the browser handles forwarding automatically if we don't block it)
     updatePlayedDisplay();
     scheduleCheck();
   } else if (cmd === 0x80 || (cmd === 0x90 && velocity === 0)) {
@@ -1593,11 +1515,6 @@ async function connectMIDI() {
     midiBtn.textContent = '🔌 Disconnect';
     midiBtn.classList.add('connected');
 
-    // Setup MIDI Thru if enabled
-    if (soundMode === 'external') {
-      setupMIDIThru(access);
-    }
-
     if (currentSequence.length > 0) {
       setCurrentChord(0);
       feedbackMsg.textContent = '🎯 MIDI ready – play the chord!';
@@ -1612,7 +1529,7 @@ async function connectMIDI() {
 midiBtn.addEventListener('click', connectMIDI);
 
 // ═══════════════════════════════════════════════════════════════════════
-//  7. SOUND MODE TOGGLE
+//  7. SOUND MODE TOGGLE & START AUDIO BUTTON
 // ═══════════════════════════════════════════════════════════════════════
 
 const soundToggle = document.getElementById('soundToggle');
@@ -1626,15 +1543,33 @@ soundToggle.querySelectorAll('button').forEach(btn => {
 
     if (soundMode === 'internal') {
       soundStatus.textContent = 'Built‑in synth';
+      ensureAudio();
+      initAudioGraph();
     } else {
       soundStatus.textContent = 'MIDI Thru (external)';
-      // If MIDI is connected, we might want to re-route
-      if (connected && midiAccess) {
-        setupMIDIThru(midiAccess);
-      }
     }
     console.log(`🔊 Sound mode changed to: ${soundMode}`);
   });
+});
+
+// Start Audio button – manually resumes AudioContext
+document.getElementById('startAudioBtn').addEventListener('click', () => {
+  resumeAudio();
+});
+
+// Also resume audio on Generate, so the first chord plays immediately
+const originalGenerate = generate;
+generate = function() {
+  resumeAudio();
+  originalGenerate.call(this);
+};
+
+// And on Play button
+document.getElementById('playBtn').addEventListener('click', () => {
+  if (currentSequence.length) {
+    resumeAudio();
+    playSequence(currentSequence);
+  }
 });
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -1755,7 +1690,10 @@ document.querySelectorAll('.top-controls select').forEach(sel => {
   });
 });
 
-document.getElementById('generateBtn').addEventListener('click', generate);
+document.getElementById('generateBtn').addEventListener('click', () => {
+  resumeAudio();
+  generate();
+});
 document.getElementById('randomBtn').addEventListener('click', () => {
   const keys = [60,62,64,65,67,69,71];
   keySelect.value = keys[Math.floor(Math.random() * keys.length)];
@@ -1764,10 +1702,8 @@ document.getElementById('randomBtn').addEventListener('click', () => {
   const types = ['triad', 'seventh', 'all'];
   chordTypeSelect.value = types[Math.floor(Math.random() * types.length)];
   currentChordType = chordTypeSelect.value;
+  resumeAudio();
   generate();
-});
-document.getElementById('playBtn').addEventListener('click', () => {
-  if (currentSequence.length) playSequence(currentSequence);
 });
 document.getElementById('stopBtn').addEventListener('click', stopPlayback);
 document.getElementById('checkBtn').addEventListener('click', () => {
@@ -1811,10 +1747,9 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-console.log('🎵 Chord Trainer – Enhanced Sound Engine loaded.');
-console.log('🔊 Sound modes: Internal (built‑in) | External (MIDI Thru)');
+console.log('🎵 Chord Trainer – Fixed Sound Engine loaded.');
+console.log('🔊 Click "Start Audio" to resume audio, or tap the on-screen keyboard.');
 console.log('🔌 Click the MIDI button to connect your Casio.');
-console.log('🎹 The sound is now much warmer with reverb and sustain pedal support.');
 </script>
 </body>
 </html>
