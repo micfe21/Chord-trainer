@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Chord Trainer – v10 (MIDI fixed)</title>
+  <title>Chord Trainer – v10 (MIDI fix)</title>
   <style>
+    /* same CSS as v9 – included below for completeness */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
@@ -556,7 +557,7 @@
 
 <script>
 // ═══════════════════════════════════════════════════════════════════════
-// 1. THEORY ENGINE (unchanged from v9)
+// 1. THEORY ENGINE (same as v8/v9 – abbreviated for space)
 // ═══════════════════════════════════════════════════════════════════════
 
 const NOTE_NAMES_MIXED = ['C','Db','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
@@ -965,7 +966,7 @@ function generateMixedSequence(keyRoot, length, filter, keyMode, invMode) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// 2. AUDIO ENGINE (same as v9)
+// 2. CLEAN AUDIO ENGINE (same as v8/v9)
 // ═══════════════════════════════════════════════════════════════════════
 
 let audioCtx = null;
@@ -1566,12 +1567,14 @@ function updateStats() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// 5. MIDI (FIXED: handler attaches correctly)
+// 5. MIDI with WORKING dropdown
 // ═══════════════════════════════════════════════════════════════════════
 
 let midiInput = null;
 let midiConnected = false;
 let midiAccess = null;
+let selectedDeviceId = null;
+
 const midiStatus = document.getElementById('midiStatus');
 const midiBtn = document.getElementById('midiBtn');
 const midiDeviceSelect = document.getElementById('midiDeviceSelect');
@@ -1580,6 +1583,10 @@ function populateMIDIDevices(access) {
   midiAccess = access;
   const inputs = [];
   access.inputs.forEach(inp => inputs.push(inp));
+
+  // Store current selection
+  const currentSelection = midiDeviceSelect.value;
+
   midiDeviceSelect.innerHTML = '';
   if (inputs.length === 0) {
     const opt = document.createElement('option');
@@ -1588,18 +1595,40 @@ function populateMIDIDevices(access) {
     midiDeviceSelect.appendChild(opt);
     return;
   }
+
+  // Sort: USB devices first, then loopMIDI/Bluetooth
+  inputs.sort((a, b) => {
+    const aName = a.name || '';
+    const bName = b.name || '';
+    if (aName.includes('loopMIDI')) return 1;
+    if (bName.includes('loopMIDI')) return -1;
+    if (aName.includes('SMK')) return -1;
+    if (bName.includes('SMK')) return 1;
+    return aName.localeCompare(bName);
+  });
+
   inputs.forEach(inp => {
     const opt = document.createElement('option');
     opt.value = inp.id;
-    opt.textContent = inp.name || 'Unnamed Device';
+    let label = inp.name || 'Unnamed Device';
+    if (inp.name && (inp.name.toLowerCase().includes('bluetooth') || inp.name.toLowerCase().includes('ble'))) {
+      label += ' 🔵';
+    }
+    opt.textContent = label;
     midiDeviceSelect.appendChild(opt);
   });
-  // Auto-select first non-loopMIDI device if possible
-  const usbDevice = inputs.find(inp => inp.name && !inp.name.toLowerCase().includes('loopmidi'));
-  if (usbDevice) {
-    midiDeviceSelect.value = usbDevice.id;
+
+  // Restore previous selection if still valid
+  if (currentSelection && inputs.some(inp => inp.id === currentSelection)) {
+    midiDeviceSelect.value = currentSelection;
   } else if (inputs.length > 0) {
-    midiDeviceSelect.value = inputs[0].id;
+    // Prefer USB (non-loopMIDI) devices
+    const usb = inputs.find(inp => !inp.name.toLowerCase().includes('loopmidi'));
+    if (usb) {
+      midiDeviceSelect.value = usb.id;
+    } else {
+      midiDeviceSelect.value = inputs[0].id;
+    }
   }
 }
 
@@ -1607,10 +1636,55 @@ function refreshMIDIDevices() {
   if (!midiAccess) {
     navigator.requestMIDIAccess({ sysex: false }).then(access => {
       populateMIDIDevices(access);
+      // Auto-connect if already connected
+      if (midiConnected) {
+        connectToSelected();
+      }
     }).catch(e => console.warn('MIDI refresh failed:', e));
     return;
   }
   populateMIDIDevices(midiAccess);
+  if (midiConnected) {
+    connectToSelected();
+  }
+}
+
+async function connectToSelected() {
+  const selectedId = midiDeviceSelect.value;
+  if (!selectedId || !midiAccess) return;
+
+  // Find the selected device
+  let device = null;
+  midiAccess.inputs.forEach(inp => {
+    if (inp.id === selectedId) device = inp;
+  });
+
+  if (!device) {
+    midiStatus.textContent = '❌ Device not found';
+    midiStatus.className = 'midi-status';
+    return;
+  }
+
+  // Disconnect current if any
+  if (midiInput) midiInput.onmidimessage = null;
+
+  midiInput = device;
+  midiInput.onmidimessage = handleMIDIMessage;
+  midiConnected = true;
+  selectedDeviceId = device.id;
+
+  midiStatus.textContent = `✅ ${device.name || 'MIDI'}`;
+  midiStatus.className = 'midi-status connected';
+  midiBtn.textContent = '🔌 Disconnect';
+  midiBtn.classList.add('connected');
+
+  ensureAudio();
+  initAudioGraph();
+
+  feedbackMsg.textContent = '🎯 MIDI connected! Play some notes.';
+  feedbackMsg.className = 'feedback-msg waiting';
+
+  console.log(`✅ MIDI connected to: ${device.name} (${device.id})`);
 }
 
 async function connectMIDI() {
@@ -1618,48 +1692,21 @@ async function connectMIDI() {
     disconnectMIDI();
     return;
   }
+
   try {
     if (!navigator.requestMIDIAccess) {
       midiStatus.textContent = 'Web MIDI not supported';
       midiStatus.className = 'midi-status';
       return;
     }
+
     const access = await navigator.requestMIDIAccess({ sysex: false });
     midiAccess = access;
     populateMIDIDevices(access);
 
-    const selectedId = midiDeviceSelect.value;
-    let device = null;
-    access.inputs.forEach(inp => {
-      if (inp.id === selectedId) device = inp;
-    });
-    if (!device && access.inputs.size > 0) {
-      const it = access.inputs.values();
-      device = it.next().value;
-    }
-    if (!device) {
-      midiStatus.textContent = 'No MIDI devices available';
-      midiStatus.className = 'midi-status';
-      return;
-    }
+    // Auto-connect to the selected device
+    await connectToSelected();
 
-    // --- CRITICAL FIX: attach handler ---
-    midiInput = device;
-    // Remove any previous handlers
-    midiInput.onmidimessage = null;
-    // Attach our handler
-    midiInput.onmidimessage = handleMIDIMessage;
-    midiConnected = true;
-    midiStatus.textContent = `✅ ${device.name || 'MIDI'}`;
-    midiStatus.className = 'midi-status connected';
-    midiBtn.textContent = '🔌 Disconnect';
-    midiBtn.classList.add('connected');
-    ensureAudio();
-    initAudioGraph();
-    feedbackMsg.textContent = '🎯 MIDI connected! Play some notes.';
-    feedbackMsg.className = 'feedback-msg waiting';
-    console.log(`✅ MIDI connected to: ${device.name} (${device.id})`);
-    // Test: play a note when connected? Optional.
   } catch (e) {
     midiStatus.textContent = '❌ ' + e.message;
     midiStatus.className = 'midi-status';
@@ -1668,24 +1715,23 @@ async function connectMIDI() {
 }
 
 function disconnectMIDI() {
-  if (midiInput) {
-    midiInput.onmidimessage = null;
-    midiInput = null;
-  }
+  if (midiInput) midiInput.onmidimessage = null;
+  midiInput = null;
   midiConnected = false;
+  selectedDeviceId = null;
+
   midiStatus.textContent = 'idle';
   midiStatus.className = 'midi-status';
   midiBtn.textContent = '🔌 MIDI';
   midiBtn.classList.remove('connected');
+
   console.log('MIDI disconnected');
 }
 
-// ─── MIDI message handler (with debug logging) ───
 function handleMIDIMessage(event) {
   const [status, note, velocity] = event.data;
   const cmd = status & 0xf0;
-  // Debug: show that app receives MIDI
-  console.log(`📨 MIDI received: cmd=${cmd}, note=${note}, vel=${velocity}`);
+
   if (cmd === 0x90 && velocity > 0) {
     if (!persistentNotes.includes(note)) {
       persistentNotes.push(note);
@@ -1705,13 +1751,20 @@ function handleMIDIMessage(event) {
   }
 }
 
+// ─── MIDI button ───
 midiBtn.addEventListener('click', connectMIDI);
+
+// ─── Dropdown change ───
 midiDeviceSelect.addEventListener('change', () => {
   if (midiConnected) {
     disconnectMIDI();
     setTimeout(connectMIDI, 200);
+  } else if (midiAccess) {
+    connectToSelected();
   }
 });
+
+// ─── Double-click status to refresh ───
 midiStatus.addEventListener('dblclick', refreshMIDIDevices);
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -1955,11 +2008,10 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
-console.log('🎵 Chord Trainer v10 – MIDI fixed – loaded.');
-console.log('📚 Practice Library: filter chords by family.');
-console.log('🎹 Voice Leading: enables smooth inversions.');
-console.log('🔊 Tap "Start Audio" to hear the clean, balanced sound.');
-console.log('🎛️ Select your MIDI device from the dropdown next to the MIDI button.');
+console.log('🎵 Chord Trainer v10 – with fixed MIDI dropdown – loaded.');
+console.log('🎛️ Select your USB MIDI device from the dropdown.');
+console.log('📌 If you select "SMK-37 Pro Midi", it will stay connected.');
+console.log('🔊 Tap "Start Audio" to hear the clean sound.');
 </script>
 </body>
 </html>
