@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chord Trainer – Setup Guide</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
+            background: #f8f6f2;
+            color: #1f1c18;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .manual {
+            max-width: 900px;
+            width: 100%;
+            background: #fcfaf7;
+            padding: 48px 56px;
+            border-radius: 20px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+        }
+        h1 { font-size: 2.4rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 4px; }
+        .subtitle { font-size: 1.1rem; color: #6e6a62; margin-bottom: 32px; border-bottom: 2px solid #e4ded4; padding-bottom: 16px; }
+        h2 { font-size: 1.5rem; font-weight: 700; margin-top: 32px; margin-bottom: 12px; color: #0b6d73; }
+        h3 { font-size: 1.1rem; font-weight: 700; margin-top: 20px; margin-bottom: 6px; }
+        p { line-height: 1.6; margin-bottom: 12px; }
+        ul, ol { margin: 8px 0 16px 24px; line-height: 1.6; }
+        li { margin-bottom: 4px; }
+        .highlight { background: #edebe6; padding: 2px 8px; border-radius: 4px; font-weight: 600; }
+        .badge { display: inline-block; background: #0b6d73; color: white; font-size: 0.7rem; font-weight: 700; padding: 1px 10px; border-radius: 20px; margin-right: 4px; }
+        .step { background: #f0f0ec; border-left: 4px solid #0b6d73; padding: 12px 16px; margin: 12px 0; border-radius: 4px; }
+        .step strong { color: #0b6d73; }
+        .note { background: #fcf1d6; border-left: 4px solid #d97706; padding: 10px 14px; margin: 12px 0; border-radius: 4px; }
+        .trouble { background: #fde8e8; border-left: 4px solid #c62828; padding: 10px 14px; margin: 12px 0; border-radius: 4px; }
+        .success { background: #e8f5e9; border-left: 4px solid #2e7d32; padding: 10px 14px; margin: 12px 0; border-radius: 4px; }
+        .platform-tab {
+            display: inline-block;
+            background: #e4ded4;
+            padding: 4px 14px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: #1f1c18;
+            margin-right: 8px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12px 0 20px 0;
+            font-size: 0.9rem;
+        }
+        th, td {
+            border: 1px solid #d7d2c8;
+            padding: 8px 12px;
+            text-align: left;
+            vertical-align: top;
+        }
+        th { background: #edebe6; font-weight: 700; }
+        .footer { margin-top: 40px; padding-top: 16px; border-top: 2px solid #e4ded4; font-size: 0.85rem; color: #6e6a62; text-align: center; }
+        .icon { font-size: 1.2rem; margin-right: 6px; }
+        @media (max-width: 600px) {
+            .manual { padding: 24px 18px; }
+            h1 { font-size: 1.8rem; }
+            table { font-size: 0.75rem; }
+            th, td { padding: 4px 8px; }
+        }
+        @media print {
+            body { padding: 0; background: white; }
+            .manual { box-shadow: none; padding: 40px; border-radius: 0; }
+            .badge { background: #0b6d73 !important; color: white !important; }
+        }
+        a { color: #0b6d73; text-decoration: underline; }
+        a:hover { text-decoration: none; }
+    </style>
+</head>
+<body>
+<div class="manual">
+
+    <h1>🎵 Chord Trainer – Setup Guide</h1>
+    <div class="subtitle">Connect your MIDI keyboard on Apple, Windows, and Android</div>
+
+    <p>
+        This guide will help you set up the <strong>Chord Trainer</strong> app with your MIDI keyboard on any platform.
+        Whether you're using <strong>USB</strong> or <strong>Bluetooth (BLE) MIDI</strong>, follow the steps for your device.
+    </p>
+
+    <!-- ─── QUICK START ─── -->
+    <h2>Quick Start – Universal Steps</h2>
+    <ol>
+        <li><strong>Open the app</strong> in your browser:
+            <ul>
+                <li><strong>Windows:</strong> Chrome or Edge</li>
+                <li><strong>Apple (iOS/iPadOS):</strong> Web MIDI Browser (from the App Store)</li>
+                <li><strong>Android:</strong> Chrome or Web MIDI Browser (from the Play Store)</li>
+            </ul>
+        </li>
+        <li><strong>Connect your keyboard</strong> via USB or Bluetooth (see platform-specific steps below).</li>
+        <li><strong>Tap the MIDI button</strong> in the app and select your keyboard from the dropdown.</li>
+        <li><strong>Tap the orange "Start Audio" button</strong> – this is essential to hear sound.</li>
+        <li><strong>Generate a sequence</strong> and start practising!</li>
+    </ol>
+
+    <div class="note">
+        <strong>💡 Important:</strong> If you hear no sound, tap <strong>"Start Audio"</strong> again. This resumes the audio context, which is required on all platforms.
+    </div>
+
+    <!-- ─── PLATFORM GUIDES ─── -->
+    <h2>Platform-Specific Guides</h2>
+
+    <!-- ─── WINDOWS ─── -->
+    <h3><span class="platform-tab">🪟 Windows</span> USB MIDI (Recommended)</h3>
+    <ol>
+        <li><strong>Plug it in</strong> – connect your keyboard to your PC using a <strong>data‑sync USB cable</strong> (not a charge‑only cable).</li>
+        <li><strong>Turn it on</strong> – power on your keyboard.</li>
+        <li><strong>Open the app</strong> in Chrome or Edge.</li>
+        <li><strong>Tap the MIDI button</strong> – your keyboard should appear in the dropdown (e.g., <span class="highlight">SMK-37 Pro Midi</span>).</li>
+        <li><strong>Select it</strong> – the status will change to <span class="highlight">"MIDI connected"</span>.</li>
+        <li><strong>Tap "Start Audio"</strong> and play!</li>
+    </ol>
+
+    <h3><span class="platform-tab">🪟 Windows</span> Bluetooth MIDI</h3>
+    <p>Windows does not natively support BLE MIDI. You need two free tools:</p>
+    <ul>
+        <li><strong>loopMIDI</strong> – creates a virtual MIDI port. <a href="https://www.tobias-erichsen.de/software/loopmidi.html" target="_blank">Download loopMIDI</a></li>
+        <li><strong>MIDIberry</strong> – receives Bluetooth MIDI and forwards it. <a href="https://apps.microsoft.com/detail/9n5n2sds4r4t" target="_blank">MIDIberry on Microsoft Store</a></li>
+    </ul>
+    <ol>
+        <li><strong>Pair your keyboard</strong> in Windows Bluetooth settings.</li>
+        <li><strong>Open loopMIDI</strong> and create a new port (e.g., <span class="highlight">ChordTrainer Port</span>).</li>
+        <li><strong>Open MIDIberry</strong> – enable your keyboard as <strong>Input</strong> and the loopMIDI port as <strong>Output</strong>.</li>
+        <li><strong>In the app</strong>, select the loopMIDI port from the MIDI dropdown.</li>
+        <li><strong>Tap "Start Audio"</strong> and play!</li>
+    </ol>
+
+    <!-- ─── APPLE ─── -->
+    <h3><span class="platform-tab">🍏 Apple (iOS/iPadOS)</span> Bluetooth MIDI (Recommended)</h3>
+    <ol>
+        <li><strong>Download Web MIDI Browser</strong> from the App Store (free).</li>
+        <li><strong>Pair your keyboard</strong> in iOS Settings → Bluetooth.</li>
+        <li><strong>Open the app</strong> in Web MIDI Browser.</li>
+        <li><strong>Tap the MIDI button</strong> – your keyboard should appear in the dropdown.</li>
+        <li><strong>Select it</strong> – the status will change to <span class="highlight">"MIDI connected"</span>.</li>
+        <li><strong>Tap "Start Audio"</strong> and play!</li>
+    </ol>
+    <div class="note">
+        <strong>📱 Note:</strong> Safari and Chrome on iOS do <strong>not</strong> support Web MIDI. You <strong>must</strong> use <strong>Web MIDI Browser</strong> or a similar app.
+    </div>
+
+    <h3><span class="platform-tab">🍏 Apple (iOS/iPadOS)</span> USB MIDI</h3>
+    <ol>
+        <li>Connect your keyboard via USB (use a <strong>USB‑C to USB‑B</strong> cable, or a <strong>Camera Connection Kit</strong> for older iPads).</li>
+        <li>Open the app in <strong>Web MIDI Browser</strong>.</li>
+        <li>Tap the MIDI button – your keyboard should appear in the dropdown.</li>
+        <li>Select it, tap <strong>"Start Audio"</strong>, and play.</li>
+    </ol>
+
+    <!-- ─── ANDROID ─── -->
+    <h3><span class="platform-tab">🤖 Android</span> USB MIDI (Recommended)</h3>
+    <ol>
+        <li><strong>Connect your keyboard</strong> via USB using a <strong>USB‑C OTG</strong> adapter or cable.</li>
+        <li><strong>Open the app</strong> in <strong>Chrome</strong> (or Web MIDI Browser from the Play Store).</li>
+        <li><strong>Grant permission</strong> if Android asks for USB access.</li>
+        <li><strong>Tap the MIDI button</strong> – your keyboard should appear in the dropdown.</li>
+        <li><strong>Select it</strong>, tap <strong>"Start Audio"</strong>, and play!</li>
+    </ol>
+    <div class="note">
+        <strong>🧪 If Chrome doesn't see your USB keyboard:</strong><br />
+        Go to <span class="highlight">chrome://flags</span>, search for <strong>"Web MIDI"</strong>, and enable it. Then restart Chrome.
+    </div>
+
+    <h3><span class="platform-tab">🤖 Android</span> Bluetooth MIDI</h3>
+    <ol>
+        <li><strong>Pair your keyboard</strong> in Android Settings → Bluetooth.</li>
+        <li><strong>Open the app</strong> in <strong>Chrome</strong> (or Web MIDI Browser).</li>
+        <li><strong>Tap the MIDI button</strong> – your keyboard should appear in the dropdown.</li>
+        <li><strong>Select it</strong>, tap <strong>"Start Audio"</strong>, and play!</li>
+    </ol>
+    <div class="note">
+        <strong>🧪 If Chrome doesn't see your Bluetooth keyboard:</strong><br />
+        Try <strong>Web MIDI Browser</strong> from the Play Store – it often has better BLE MIDI support on Android.
+    </div>
+
+    <!-- ─── TROUBLESHOOTING ─── -->
+    <h2>🔧 Troubleshooting</h2>
+
+    <div class="trouble">
+        <strong>❌ No sound from the app</strong><br />
+        → Tap the orange <strong>"Start Audio"</strong> button. This is required on <strong>all platforms</strong>.<br />
+        → Make sure the <strong>Sound</strong> toggle is set to <strong>"Internal"</strong> (not "MIDI Thru").<br />
+        → Check your system volume.
+    </div>
+
+    <div class="trouble">
+        <strong>❌ Keyboard not appearing in the dropdown</strong><br />
+        → <strong>Double‑tap the MIDI status text</strong> to refresh the device list.<br />
+        → Make sure your keyboard is <strong>turned on</strong> and connected.<br />
+        → Try a <strong>different USB cable</strong> – many cables are charge‑only and don't transfer data.
+    </div>
+
+    <div class="trouble">
+        <strong>❌ MIDI connects but keys don't light up</strong><br />
+        → Make sure you've <strong>generated a sequence</strong> (tap "Generate").<br />
+        → The app only listens for notes when a chord is displayed.<br />
+        → Try tapping <strong>"Check"</strong> manually.
+    </div>
+
+    <div class="trouble">
+        <strong>❌ Web MIDI not supported</strong><br />
+        → <strong>Windows/Mac:</strong> Use Chrome or Edge.<br />
+        → <strong>iOS:</strong> Use <strong>Web MIDI Browser</strong> from the App Store.<br />
+        → <strong>Android:</strong> Use Chrome or Web MIDI Browser from the Play Store.
+    </div>
+
+    <!-- ─── TESTING ANDROID ─── -->
+    <h2>🧪 Testing Android (If you haven't yet)</h2>
+    <p>
+        If you're testing Android for the first time, follow these steps:
+    </p>
+    <ol>
+        <li><strong>Open the app</strong> in Chrome on your Android device.</li>
+        <li><strong>Connect your keyboard</strong> via USB (recommended) or Bluetooth.</li>
+        <li><strong>Tap the MIDI button</strong> – if your keyboard appears, select it and tap "Start Audio".</li>
+        <li>If the app works, you're all set!</li>
+        <li>If Chrome doesn't detect the keyboard, try:
+            <ul>
+                <li>Enabling <strong>Web MIDI</strong> in <span class="highlight">chrome://flags</span>.</li>
+                <li>Using <strong>Web MIDI Browser</strong> from the Play Store instead of Chrome.</li>
+            </ul>
+        </li>
+    </ol>
+    <div class="success">
+        <strong>✅ Once Android works:</strong> You now have the app working on all three major platforms – Apple, Windows, and Android!
+    </div>
+
+    <!-- ─── WHAT'S NEXT ─── -->
+    <h2>What's Next?</h2>
+    <ul>
+        <li><strong>Practise daily</strong> – use the Practice Library to focus on weak chord types.</li>
+        <li><strong>Enable Voice Leading</strong> – smooth, musical progressions.</li>
+        <li><strong>Share with friends</strong> – the app works on any device with a browser.</li>
+        <li><strong>Future features</strong> – Sight‑Reading Mode, Progress Tracking, and Dark Mode are coming.</li>
+    </ul>
+
+    <!-- ─── FOOTER ─── -->
+    <div class="footer">
+        Chord Trainer – Setup Guide<br />
+        <span style="font-size:0.7rem;">Version 10 – Last updated August 2026</span>
+    </div>
+
+</div>
+</body>
+</html>
