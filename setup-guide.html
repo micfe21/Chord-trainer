@@ -34,6 +34,7 @@
         .step { background: #f0f0ec; border-left: 4px solid #0b6d73; padding: 12px 16px; margin: 12px 0; border-radius: 4px; }
         .step strong { color: #0b6d73; }
         .note { background: #fcf1d6; border-left: 4px solid #d97706; padding: 10px 14px; margin: 12px 0; border-radius: 4px; }
+        .warning { background: #fde8e8; border-left: 4px solid #c62828; padding: 10px 14px; margin: 12px 0; border-radius: 4px; font-weight: 500; }
         .success { background: #e8f5e9; border-left: 4px solid #2e7d32; padding: 10px 14px; margin: 12px 0; border-radius: 4px; }
         .platform-tab {
             display: inline-block;
@@ -60,6 +61,15 @@
         th { background: #edebe6; font-weight: 700; }
         .footer { margin-top: 40px; padding-top: 16px; border-top: 2px solid #e4ded4; font-size: 0.85rem; color: #6e6a62; text-align: center; }
         .icon { font-size: 1.2rem; margin-right: 6px; }
+        .cable-warning {
+            background: #fff3e0;
+            border-left: 6px solid #e65100;
+            padding: 16px 20px;
+            margin: 16px 0;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+        .cable-warning strong { color: #bf360c; }
         @media (max-width: 600px) {
             .manual { padding: 24px 18px; }
             h1 { font-size: 1.8rem; }
@@ -86,6 +96,16 @@
         We recommend <strong>USB MIDI</strong> wherever possible – it's simpler, more reliable, and works immediately.
     </p>
 
+    <!-- ⚠️ CRITICAL USB CABLE WARNING -->
+    <div class="cable-warning">
+        <strong>⚠️ CRITICAL – Use a DATA‑SYNC USB cable</strong><br />
+        Many USB cables are <strong>charge‑only</strong> and do NOT transmit data.
+        If your keyboard powers on but doesn't appear in the app, <strong>try a different cable</strong> – preferably the one that came with your keyboard or one labelled for data transfer.
+        <br /><br />
+        ✅ <strong>Works:</strong> "Data‑sync", "Data transfer", "USB 2.0/3.0" cables<br />
+        ❌ <strong>Does NOT work:</strong> "Charge‑only", "Charging cable" (usually thin or cheap)
+    </div>
+
     <!-- ─── QUICK START ─── -->
     <h2>Quick Start – Universal Steps</h2>
     <ol>
@@ -93,7 +113,7 @@
             <ul>
                 <li><strong>Windows:</strong> Chrome or Edge</li>
                 <li><strong>Apple (iOS/iPadOS):</strong> Web MIDI Browser (from the App Store)</li>
-                <li><strong>Android:</strong> Chrome or Edge, with <strong>USB MIDI</strong></li>
+                <li><strong>Android:</strong> Chrome or Edge (with <strong>USB MIDI</strong>)</li>
             </ul>
         </li>
         <li><strong>Connect your keyboard</strong> via USB or Bluetooth (see platform-specific steps below).</li>
@@ -119,6 +139,9 @@
         <li><strong>Select it</strong> – the status will change to <span class="highlight">"MIDI connected"</span>.</li>
         <li><strong>Tap "Start Audio"</strong> and play!</li>
     </ol>
+    <div class="warning">
+        <strong>⚠️ If your keyboard doesn't appear:</strong> Try a <strong>different USB cable</strong>. Many cables are charge‑only. Use the cable that came with your keyboard.
+    </div>
 
     <h3><span class="platform-tab">🪟 Windows</span> Bluetooth MIDI (Alternative)</h3>
     <p>Windows does not natively support BLE MIDI. You need two free tools:</p>
@@ -155,11 +178,16 @@
         <li>Tap the MIDI button – your keyboard should appear in the dropdown.</li>
         <li>Select it, tap <strong>"Start Audio"</strong>, and play.</li>
     </ol>
+    <div class="warning">
+        <strong>⚠️ If your keyboard doesn't appear:</strong> Try a <strong>different USB cable</strong> – charge‑only cables won't work for MIDI.
+    </div>
 
     <!-- ─── ANDROID ─── -->
     <h3><span class="platform-tab">🤖 Android</span> USB MIDI (Recommended – Works perfectly)</h3>
+    <p><strong>Web MIDI Browser is not available on Android</strong> – use <strong>Chrome</strong> or <strong>Edge</strong> instead.</p>
     <ol>
         <li><strong>Connect your keyboard</strong> via USB using a <strong>USB‑C OTG</strong> adapter or cable.</li>
+        <li><strong>Make sure the USB cable is data‑sync capable</strong> (not charge‑only). If your keyboard powers on but doesn't appear in the app, <strong>try a different cable</strong>.</li>
         <li><strong>Open the app</strong> in <strong>Chrome</strong> or <strong>Edge</strong> (both work well).</li>
         <li><strong>Grant permission</strong> if Android asks for USB access.</li>
         <li><strong>Tap the MIDI button</strong> – your keyboard should appear in the dropdown (e.g., <span class="highlight">SMK-37 Pro Midi</span>).</li>
@@ -167,6 +195,12 @@
     </ol>
     <div class="success">
         <strong>✅ USB MIDI on Android is plug‑and‑play.</strong> No extra software, no bridge apps, no drivers – just connect and play.
+    </div>
+    <div class="warning">
+        <strong>⚠️ If your keyboard doesn't appear:</strong><br />
+        → <strong>Try a different USB cable.</strong> This is the #1 cause of "keyboard not detected" on Android.<br />
+        → Use the cable that came with your keyboard, or one clearly marked for <strong>"data transfer"</strong>.<br />
+        → Charge‑only cables will power the keyboard but <strong>will NOT transmit MIDI data</strong>.
     </div>
     <div class="note">
         <strong>🔊 If sound disappears when you plug in USB:</strong><br />
@@ -177,17 +211,18 @@
     <h2>🔧 Troubleshooting</h2>
 
     <div class="step">
+        <strong>❌ Keyboard not appearing in the dropdown</strong><br />
+        → <strong>First: try a different USB cable!</strong> Charge‑only cables are the most common cause of this issue.<br />
+        → <strong>Double‑tap the MIDI status text</strong> to refresh the device list.<br />
+        → Make sure your keyboard is <strong>turned on</strong> and connected.<br />
+        → Try a <strong>different USB port</strong> on your computer.
+    </div>
+
+    <div class="step">
         <strong>❌ No sound from the app</strong><br />
         → Tap the orange <strong>"Start Audio"</strong> button. This is required on <strong>all platforms</strong>.<br />
         → Make sure the <strong>Sound</strong> toggle is set to <strong>"Internal"</strong> (not "MIDI Thru").<br />
         → Check your system volume.
-    </div>
-
-    <div class="step">
-        <strong>❌ Keyboard not appearing in the dropdown</strong><br />
-        → <strong>Double‑tap the MIDI status text</strong> to refresh the device list.<br />
-        → Make sure your keyboard is <strong>turned on</strong> and connected.<br />
-        → Try a <strong>different USB cable</strong> – many cables are charge‑only and don't transfer data.
     </div>
 
     <div class="step">
@@ -217,7 +252,7 @@
         <tr><th>Platform</th><th>Recommended MIDI</th><th>Notes</th></tr>
         <tr><td><strong>Windows</strong></td><td>USB MIDI (plug and play)</td><td>Bluetooth works with loopMIDI + MIDIberry</td></tr>
         <tr><td><strong>Apple iOS</strong></td><td>Bluetooth MIDI (Web MIDI Browser)</td><td>USB also works</td></tr>
-        <tr><td><strong>Android</strong></td><td><strong>USB MIDI</strong> (only recommended method)</td><td>Bluetooth is not supported – use USB</td></tr>
+        <tr><td><strong>Android</strong></td><td><strong>USB MIDI</strong> (only recommended method)</td><td>Use Chrome or Edge – Web MIDI Browser is not available</td></tr>
     </table>
 
     <!-- ─── WHAT'S NEXT ─── -->
@@ -231,8 +266,8 @@
 
     <!-- ─── FOOTER ─── -->
     <div class="footer">
-        Chord Trainer – Setup Guide (v3)<br />
-        <span style="font-size:0.7rem;">Last updated August 2026 – Android Bluetooth support removed for reliability</span>
+        Chord Trainer – Setup Guide (v5)<br />
+        <span style="font-size:0.7rem;">Last updated August 2026 – Critical USB cable warning added</span>
     </div>
 
 </div>
