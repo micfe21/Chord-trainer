@@ -34,7 +34,7 @@
         .step { background: #f0f0ec; border-left: 4px solid #0b6d73; padding: 12px 16px; margin: 12px 0; border-radius: 4px; }
         .step strong { color: #0b6d73; }
         .note { background: #fcf1d6; border-left: 4px solid #d97706; padding: 10px 14px; margin: 12px 0; border-radius: 4px; }
-        .trouble { background: #fde8e8; border-left: 4px solid #c62828; padding: 10px 14px; margin: 12px 0; border-radius: 4px; }
+        .warning { background: #fde8e8; border-left: 4px solid #c62828; padding: 10px 14px; margin: 12px 0; border-radius: 4px; }
         .success { background: #e8f5e9; border-left: 4px solid #2e7d32; padding: 10px 14px; margin: 12px 0; border-radius: 4px; }
         .platform-tab {
             display: inline-block;
@@ -61,6 +61,7 @@
         th { background: #edebe6; font-weight: 700; }
         .footer { margin-top: 40px; padding-top: 16px; border-top: 2px solid #e4ded4; font-size: 0.85rem; color: #6e6a62; text-align: center; }
         .icon { font-size: 1.2rem; margin-right: 6px; }
+        .success-green { background: #e8f5e9; border-left: 4px solid #2e7d32; padding: 10px 14px; margin: 12px 0; border-radius: 4px; }
         @media (max-width: 600px) {
             .manual { padding: 24px 18px; }
             h1 { font-size: 1.8rem; }
@@ -84,7 +85,7 @@
 
     <p>
         This guide will help you set up the <strong>Chord Trainer</strong> app with your MIDI keyboard on any platform.
-        Whether you're using <strong>USB</strong> or <strong>Bluetooth (BLE) MIDI</strong>, follow the steps for your device.
+        We recommend <strong>USB MIDI</strong> wherever possible – it's simpler, more reliable, and works immediately.
     </p>
 
     <!-- ─── QUICK START ─── -->
@@ -94,7 +95,7 @@
             <ul>
                 <li><strong>Windows:</strong> Chrome or Edge</li>
                 <li><strong>Apple (iOS/iPadOS):</strong> Web MIDI Browser (from the App Store)</li>
-                <li><strong>Android:</strong> Chrome or Web MIDI Browser (from the Play Store)</li>
+                <li><strong>Android:</strong> Chrome or Edge (preferred), with <strong>USB MIDI</strong></li>
             </ul>
         </li>
         <li><strong>Connect your keyboard</strong> via USB or Bluetooth (see platform-specific steps below).</li>
@@ -121,7 +122,7 @@
         <li><strong>Tap "Start Audio"</strong> and play!</li>
     </ol>
 
-    <h3><span class="platform-tab">🪟 Windows</span> Bluetooth MIDI</h3>
+    <h3><span class="platform-tab">🪟 Windows</span> Bluetooth MIDI (Alternative)</h3>
     <p>Windows does not natively support BLE MIDI. You need two free tools:</p>
     <ul>
         <li><strong>loopMIDI</strong> – creates a virtual MIDI port. <a href="https://www.tobias-erichsen.de/software/loopmidi.html" target="_blank">Download loopMIDI</a></li>
@@ -158,82 +159,86 @@
     </ol>
 
     <!-- ─── ANDROID ─── -->
-    <h3><span class="platform-tab">🤖 Android</span> USB MIDI (Recommended)</h3>
+    <h3><span class="platform-tab">🤖 Android</span> USB MIDI (Recommended – Works perfectly)</h3>
     <ol>
         <li><strong>Connect your keyboard</strong> via USB using a <strong>USB‑C OTG</strong> adapter or cable.</li>
-        <li><strong>Open the app</strong> in <strong>Chrome</strong> (or Web MIDI Browser from the Play Store).</li>
+        <li><strong>Open the app</strong> in <strong>Chrome</strong> or <strong>Edge</strong> (both work well).</li>
         <li><strong>Grant permission</strong> if Android asks for USB access.</li>
-        <li><strong>Tap the MIDI button</strong> – your keyboard should appear in the dropdown.</li>
+        <li><strong>Tap the MIDI button</strong> – your keyboard should appear in the dropdown (e.g., <span class="highlight">SMK-37 Pro Midi</span>).</li>
         <li><strong>Select it</strong>, tap <strong>"Start Audio"</strong>, and play!</li>
     </ol>
+    <div class="success">
+        <strong>✅ USB MIDI on Android is plug‑and‑play.</strong> No extra software, no bridge apps, no drivers – just connect and play.
+    </div>
     <div class="note">
-        <strong>🧪 If Chrome doesn't see your USB keyboard:</strong><br />
-        Go to <span class="highlight">chrome://flags</span>, search for <strong>"Web MIDI"</strong>, and enable it. Then restart Chrome.
+        <strong>🔊 If sound disappears when you plug in USB:</strong><br />
+        Android may route audio to the USB port. To fix: swipe down, open <strong>"Media Output"</strong>, and select <strong>"Speakers"</strong>. Or use <strong>Lesser AudioSwitch</strong> (free) to force audio to phone speakers.
     </div>
 
-    <h3><span class="platform-tab">🤖 Android</span> Bluetooth MIDI</h3>
+    <h3><span class="platform-tab">🤖 Android</span> Bluetooth MIDI (Not Recommended)</h3>
+    <div class="warning">
+        <strong>⚠️ Bluetooth MIDI on Android is unreliable.</strong><br />
+        It often requires a bridge app (MIDI BLE Connect, n‑Track MIDI) and can be inconsistent. Sound routing issues may also occur. <strong>We strongly recommend using USB MIDI on Android.</strong>
+    </div>
+    <p>If you still wish to try Bluetooth:</p>
     <ol>
         <li><strong>Pair your keyboard</strong> in Android Settings → Bluetooth.</li>
-        <li><strong>Open the app</strong> in <strong>Chrome</strong> (or Web MIDI Browser).</li>
-        <li><strong>Tap the MIDI button</strong> – your keyboard should appear in the dropdown.</li>
-        <li><strong>Select it</strong>, tap <strong>"Start Audio"</strong>, and play!</li>
+        <li><strong>Install a bridge app</strong> like <strong>MIDI BLE Connect</strong> (free).</li>
+        <li>Open the bridge app and connect to your keyboard.</li>
+        <li><strong>Open the app</strong> in Chrome or Edge.</li>
+        <li><strong>Tap the MIDI button</strong> – you should see the bridge app name in the dropdown (not the keyboard).</li>
+        <li><strong>Select the bridge app</strong>, tap "Start Audio", and test.</li>
     </ol>
-    <div class="note">
-        <strong>🧪 If Chrome doesn't see your Bluetooth keyboard:</strong><br />
-        Try <strong>Web MIDI Browser</strong> from the Play Store – it often has better BLE MIDI support on Android.
+    <div class="warning">
+        <strong>⚠️ Expect issues:</strong> Many users report that Bluetooth MIDI on Android works intermittently or not at all. <strong>USB is always the safer choice.</strong>
     </div>
 
     <!-- ─── TROUBLESHOOTING ─── -->
     <h2>🔧 Troubleshooting</h2>
 
-    <div class="trouble">
+    <div class="step">
         <strong>❌ No sound from the app</strong><br />
         → Tap the orange <strong>"Start Audio"</strong> button. This is required on <strong>all platforms</strong>.<br />
         → Make sure the <strong>Sound</strong> toggle is set to <strong>"Internal"</strong> (not "MIDI Thru").<br />
         → Check your system volume.
     </div>
 
-    <div class="trouble">
+    <div class="step">
         <strong>❌ Keyboard not appearing in the dropdown</strong><br />
         → <strong>Double‑tap the MIDI status text</strong> to refresh the device list.<br />
         → Make sure your keyboard is <strong>turned on</strong> and connected.<br />
         → Try a <strong>different USB cable</strong> – many cables are charge‑only and don't transfer data.
     </div>
 
-    <div class="trouble">
+    <div class="step">
         <strong>❌ MIDI connects but keys don't light up</strong><br />
         → Make sure you've <strong>generated a sequence</strong> (tap "Generate").<br />
         → The app only listens for notes when a chord is displayed.<br />
         → Try tapping <strong>"Check"</strong> manually.
     </div>
 
-    <div class="trouble">
+    <div class="step">
         <strong>❌ Web MIDI not supported</strong><br />
         → <strong>Windows/Mac:</strong> Use Chrome or Edge.<br />
         → <strong>iOS:</strong> Use <strong>Web MIDI Browser</strong> from the App Store.<br />
-        → <strong>Android:</strong> Use Chrome or Web MIDI Browser from the Play Store.
+        → <strong>Android:</strong> Use Chrome or Edge – both support Web MIDI with USB.
     </div>
 
-    <!-- ─── TESTING ANDROID ─── -->
-    <h2>🧪 Testing Android (If you haven't yet)</h2>
-    <p>
-        If you're testing Android for the first time, follow these steps:
-    </p>
-    <ol>
-        <li><strong>Open the app</strong> in Chrome on your Android device.</li>
-        <li><strong>Connect your keyboard</strong> via USB (recommended) or Bluetooth.</li>
-        <li><strong>Tap the MIDI button</strong> – if your keyboard appears, select it and tap "Start Audio".</li>
-        <li>If the app works, you're all set!</li>
-        <li>If Chrome doesn't detect the keyboard, try:
-            <ul>
-                <li>Enabling <strong>Web MIDI</strong> in <span class="highlight">chrome://flags</span>.</li>
-                <li>Using <strong>Web MIDI Browser</strong> from the Play Store instead of Chrome.</li>
-            </ul>
-        </li>
-    </ol>
-    <div class="success">
-        <strong>✅ Once Android works:</strong> You now have the app working on all three major platforms – Apple, Windows, and Android!
+    <div class="step">
+        <strong>❌ On Android, audio disappears when USB is plugged in</strong><br />
+        → Android may route audio to the USB port.<br />
+        → Swipe down → <strong>"Media Output"</strong> → select <strong>"Speakers"</strong>.<br />
+        → Or install <strong>Lesser AudioSwitch</strong> to force audio to speakers.
     </div>
+
+    <!-- ─── QUICK REFERENCE ─── -->
+    <h2>📋 Quick Reference</h2>
+    <table>
+        <tr><th>Platform</th><th>Recommended MIDI</th><th>Notes</th></tr>
+        <tr><td><strong>Windows</strong></td><td>USB MIDI (plug and play)</td><td>Bluetooth works with loopMIDI + MIDIberry</td></tr>
+        <tr><td><strong>Apple iOS</strong></td><td>Bluetooth MIDI (Web MIDI Browser)</td><td>USB also works</td></tr>
+        <tr><td><strong>Android</strong></td><td><strong>USB MIDI</strong> (highly recommended)</td><td>Bluetooth is unreliable – avoid if possible</td></tr>
+    </table>
 
     <!-- ─── WHAT'S NEXT ─── -->
     <h2>What's Next?</h2>
@@ -246,8 +251,8 @@
 
     <!-- ─── FOOTER ─── -->
     <div class="footer">
-        Chord Trainer – Setup Guide<br />
-        <span style="font-size:0.7rem;">Version 10 – Last updated August 2026</span>
+        Chord Trainer – Setup Guide (v2)<br />
+        <span style="font-size:0.7rem;">Last updated August 2026 – USB MIDI recommended for Android</span>
     </div>
 
 </div>
