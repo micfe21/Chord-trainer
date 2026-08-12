@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Chord Trainer – v14 (Complete)</title>
+    <title>Chord Trainer – v14 (Modulating fixed)</title>
     <style>
+        /* ─── same as v14 ─── */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
@@ -165,6 +166,17 @@
             display: inline-block;
             vertical-align: middle;
         }
+        .target-chord .key-indicator {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #0b6d73;
+            background: rgba(11,109,115,0.12);
+            padding: 2px 10px;
+            border-radius: 12px;
+            margin-right: 6px;
+            display: inline-block;
+            vertical-align: middle;
+        }
         .target-progress {
             font-size: 0.95rem;
             font-weight: 600;
@@ -232,6 +244,11 @@
         }
         .seq-item .deg { font-weight: 700; font-size: 0.7rem; }
         .seq-item .name { font-weight: 500; font-size: 0.85rem; }
+        .seq-item .key-label {
+            font-size: 0.55rem;
+            color: #0b6d73;
+            font-weight: 600;
+        }
         .seq-item.playing { background: #fef3c7; border-left-color: #d97706; }
         .seq-item.correct { background: #e8f5e9 !important; border-left-color: #2f7d48 !important; }
         .seq-item.wrong { background: #fbe9e7 !important; border-left-color: #c62828 !important; }
@@ -438,6 +455,7 @@
             .sound-toggle button { font-size: 0.5rem; padding: 2px 8px; }
             .library-row span { font-size: 0.5rem; padding: 1px 6px; }
             .midi-device-select { max-width: 120px; font-size: 0.6rem; }
+            .target-chord .key-indicator { font-size: 0.7rem; padding: 1px 6px; }
         }
         @media (max-width: 400px) {
             .piano { height: 110px; min-width: 320px; }
@@ -521,6 +539,7 @@
     <div class="target-area">
         <div class="target-chord">
             <span class="badge" id="modeBadge">Roman</span>
+            <span id="targetKeyIndicator" class="key-indicator" style="display:none;"></span>
             <span id="targetDisplay">—</span>
         </div>
         <div class="target-progress" id="progressDisplay">0 / 0</div>
@@ -673,6 +692,8 @@ let currentSequence = [];
 let currentIndex = 0;
 let currentExpectedNotes = [];
 let currentTargetDisplay = '';
+let currentTargetKey = null;
+let currentKeyMode = 'fixed';
 let listenMode = false;
 let chordStartTime = 0;
 
@@ -898,6 +919,8 @@ function generateSequence(keyRoot, length, filter, keyMode, invMode) {
             chordKeyRoot: chordKeyRoot,
             notes: notes,
             symbol: symbol,
+            roman: romanDisplay,
+            symbolOnly: symbol,
             display: currentMode === 'absolute' ? symbol : romanDisplay,
             fullDesc: currentMode === 'absolute' ? symbol : romanDisplay,
             category: isBorrowed ? 'borrowed' : (chordInfo.category || 'diatonic'),
@@ -957,6 +980,7 @@ function generateAbsoluteSequence(length, filter, invMode) {
             chordKeyRoot: chordRoot,
             notes: notes,
             symbol: symbol,
+            symbolOnly: symbol,
             display: symbol,
             fullDesc: symbol,
             category: chordInfo.category || 'diatonic',
@@ -1364,6 +1388,7 @@ let keyElements = new Map();
 
 const pianoEl = document.getElementById('piano');
 const targetDisplay = document.getElementById('targetDisplay');
+const targetKeyIndicator = document.getElementById('targetKeyIndicator');
 const progressDisplay = document.getElementById('progressDisplay');
 const feedbackMsg = document.getElementById('feedbackMsg');
 const playedDisplay = document.getElementById('playedDisplay');
@@ -1377,6 +1402,7 @@ const statCorrect = document.getElementById('statCorrect');
 const statWrong = document.getElementById('statWrong');
 const statStreak = document.getElementById('statStreak');
 const statTime = document.getElementById('statTime');
+const keyModeSelect = document.getElementById('keyModeSelect');
 
 const KEY_START = 48;
 const KEY_END = 71;
@@ -1636,20 +1662,43 @@ function setCurrentChord(index) {
     currentIndex = index;
     chordStartTime = Date.now();
 
+    let displayText = '';
+    let keyName = '';
+
     if (currentMode === 'absolute') {
-        currentTargetDisplay = item.symbol;
+        displayText = item.symbol;
         modeBadge.textContent = 'Absolute';
+        targetKeyIndicator.style.display = 'none';
     } else if (currentMode === 'mixed') {
-        currentTargetDisplay = item._mode === 'roman' ? item.display : item.symbol;
+        displayText = item._mode === 'roman' ? item.display : item.symbol;
         modeBadge.textContent = 'Mixed';
+        if (item._mode === 'roman' && currentKeyMode === 'modulating') {
+            keyName = noteLabel(item.chordKeyRoot);
+            targetKeyIndicator.style.display = 'inline-block';
+            targetKeyIndicator.textContent = keyName + ':';
+        } else {
+            targetKeyIndicator.style.display = 'none';
+        }
     } else {
-        currentTargetDisplay = item.display;
+        // Roman mode
         modeBadge.textContent = 'Roman';
+        if (currentKeyMode === 'modulating') {
+            keyName = noteLabel(item.chordKeyRoot);
+            displayText = item.roman;
+            targetKeyIndicator.style.display = 'inline-block';
+            targetKeyIndicator.textContent = keyName + ':';
+        } else {
+            displayText = item.roman;
+            targetKeyIndicator.style.display = 'none';
+        }
     }
 
-    targetDisplay.textContent = currentTargetDisplay;
+    currentTargetDisplay = displayText;
+    currentTargetKey = keyName || null;
+
+    targetDisplay.textContent = displayText;
     progressDisplay.textContent = `${index+1} / ${currentSequence.length}`;
-    feedbackMsg.textContent = `🎯 Play: ${currentTargetDisplay}`;
+    feedbackMsg.textContent = `🎯 Play: ${displayText}`;
     feedbackMsg.className = 'feedback-msg waiting';
 
     const items = document.querySelectorAll('.seq-item');
@@ -1965,9 +2014,18 @@ function renderSequence(seq) {
         const displayName = currentMode === 'absolute' ? item.symbol : item.display;
         const color = item.category === 'sus' ? '#b66a14' : item.category === 'aug' ? '#ba3e4b' : item.category === 'dim7' ? '#2f7d48' : item.category === 'slash' ? '#1e4d82' : item.category === 'extended' ? '#6b21a5' : item.category === 'altered' ? '#991b1b' : item.category === 'borrowed' ? '#8b6b3d' : '#0b6d73';
         div.style.borderLeftColor = color;
+
+        // Build display with key if modulating
+        let nameText = displayName;
+        let keyText = '';
+        if (currentMode === 'roman' && currentKeyMode === 'modulating' && item.chordKeyRoot) {
+            keyText = noteLabel(item.chordKeyRoot);
+        }
+
         div.innerHTML = `
             <div class="deg">${idx+1}.</div>
-            <div class="name">${displayName}</div>
+            <div class="name">${nameText}</div>
+            ${keyText ? `<div class="key-label">${keyText}</div>` : ''}
         `;
         div.addEventListener('click', () => playSingleChord(item.notes));
         sequenceContainer.appendChild(div);
@@ -1977,16 +2035,16 @@ function renderSequence(seq) {
 function generate() {
     const key = keySelect.value;
     const length = parseInt(lengthSelect.value, 10) || 6;
-    const keyMode = document.getElementById('keyModeSelect').value;
+    currentKeyMode = keyModeSelect.value;
     const invMode = currentInversionMode;
 
     let seq;
     if (currentMode === 'roman') {
-        seq = generateSequence(key, length, currentFilter, keyMode, invMode);
+        seq = generateSequence(key, length, currentFilter, currentKeyMode, invMode);
     } else if (currentMode === 'absolute') {
         seq = generateAbsoluteSequence(length, currentFilter, invMode);
     } else {
-        seq = generateMixedSequence(key, length, currentFilter, keyMode, invMode);
+        seq = generateMixedSequence(key, length, currentFilter, currentKeyMode, invMode);
     }
 
     currentSequence = seq;
@@ -2025,7 +2083,7 @@ document.querySelectorAll('#modeSelector button').forEach(btn => {
         currentMode = btn.dataset.mode;
         const showKey = currentMode === 'roman' || currentMode === 'mixed';
         keySelect.parentElement.style.display = showKey ? 'flex' : 'none';
-        document.getElementById('keyModeSelect').parentElement.style.display = showKey ? 'flex' : 'none';
+        keyModeSelect.parentElement.style.display = showKey ? 'flex' : 'none';
         document.getElementById('keyDisplay').textContent = showKey ? `Key: ${noteLabel(parseInt(keySelect.value))}` : 'Key: none';
         generate();
     });
@@ -2084,6 +2142,7 @@ document.getElementById('clearBtn').addEventListener('click', () => {
     feedbackMsg.className = 'feedback-msg idle';
     targetDisplay.textContent = '—';
     progressDisplay.textContent = '0 / 0';
+    targetKeyIndicator.style.display = 'none';
 });
 document.getElementById('showNotesBtn').addEventListener('click', function() {
     showNotes = !showNotes;
@@ -2118,7 +2177,8 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-console.log('🎵 Chord Trainer v14 – Complete, with Modulating mode restored.');
+console.log('🎵 Chord Trainer v14 – Modulating mode fully fixed.');
+console.log('📌 In modulating mode, the current key is shown next to the Roman numeral.');
 </script>
 </body>
 </html>
