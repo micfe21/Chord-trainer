@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Chord Trainer – v17 (Strict Inversions)</title>
+    <title>Chord Trainer – v17.1 (Strict Inversions fixed)</title>
     <style>
+        /* ─── same as v17 ─── */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
@@ -627,7 +628,7 @@
 
 <script>
 // ═══════════════════════════════════════════════════════════════════════
-// 1. THEORY ENGINE (full)
+// 1. THEORY ENGINE (same as v17)
 // ═══════════════════════════════════════════════════════════════════════
 
 const NOTE_NAMES_MIXED = ['C','Db','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
@@ -721,7 +722,7 @@ let currentKeyMode = 'fixed';
 let listenMode = false;
 let chordStartTime = 0;
 
-// ─── Note transposition ───
+// ─── Note transposition helper ───
 const MIN_NOTE = 48;
 const MAX_NOTE = 71;
 
@@ -1084,7 +1085,7 @@ function generateMixedSequence(keyRoot, length, filter, keyMode, invMode) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// 2. AUDIO ENGINE (simplified, reliable)
+// 2. AUDIO ENGINE (same as v17)
 // ═══════════════════════════════════════════════════════════════════════
 
 let audioCtx = null;
@@ -1445,7 +1446,7 @@ function resetAudio() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// 3. STATE
+// 3. STATE & PIANO
 // ═══════════════════════════════════════════════════════════════════════
 
 let persistentNotes = [];
@@ -1573,7 +1574,7 @@ window.addEventListener('resize', () => {
 window.addEventListener('orientationchange', () => setTimeout(buildPiano, 300));
 
 // ═══════════════════════════════════════════════════════════════════════
-// 4. NOTE HANDLING & CHORD CHECK (with strict inversion support)
+// 4. NOTE HANDLING & CHORD CHECK (with fixed strict inversion)
 // ═══════════════════════════════════════════════════════════════════════
 
 function handleNoteOn(note, velocity) {
@@ -1626,14 +1627,29 @@ function checkChord() {
     let correct = false;
 
     if (strictInversions) {
-        // Strict: compare exact note numbers (sorted)
-        const playedSorted = [...persistentNotes].sort((a,b)=>a-b);
-        const expectedSorted = [...currentExpectedNotes].sort((a,b)=>a-b);
-        if (playedSorted.length === expectedSorted.length) {
-            correct = playedSorted.every((n, i) => n === expectedSorted[i]);
+        // ─── Strict inversion: check pitch classes AND bass note ───
+        const expectedPitchSet = pitchClassSet(currentExpectedNotes);
+        const playedPitchSet = pitchClassSet(persistentNotes);
+
+        // 1. All expected pitches present and no extra
+        const allPresent = [...expectedPitchSet].every(pc => playedPitchSet.has(pc));
+        const noExtra = [...playedPitchSet].every(pc => expectedPitchSet.has(pc));
+
+        if (allPresent && noExtra) {
+            // 2. Check bass note (lowest played note)
+            const expectedBassPitch = pitchClass(currentExpectedNotes[0]); // first note in the built chord is the bass
+            const playedLowest = Math.min(...persistentNotes);
+            const playedBassPitch = pitchClass(playedLowest);
+            if (playedBassPitch === expectedBassPitch) {
+                correct = true;
+            } else {
+                correct = false;
+            }
+        } else {
+            correct = false;
         }
     } else {
-        // Relaxed: pitch‑class matching
+        // ─── Relaxed: pitch‑class matching (any inversion) ───
         const expectedSet = pitchClassSet(currentExpectedNotes);
         const playedSet = pitchClassSet(persistentNotes);
         const allPresent = [...expectedSet].every(pc => playedSet.has(pc));
@@ -1687,7 +1703,10 @@ function checkChord() {
         if (missing.length) msg += `Missing: ${missing.map(pc => getNoteNames()[pc]).join(' ')} `;
         if (extra.length) msg += `Extra: ${extra.map(pc => getNoteNames()[pc]).join(' ')} `;
         if (strictInversions && !missing.length && !extra.length) {
-            msg = '❌ Wrong inversion – play the exact voicing shown!';
+            const expectedBass = pitchClass(currentExpectedNotes[0]);
+            const playedLowest = Math.min(...persistentNotes);
+            const playedBass = pitchClass(playedLowest);
+            msg = `❌ Wrong inversion – bass should be ${getNoteNames()[expectedBass]}, not ${getNoteNames()[playedBass]}`;
         }
         feedbackMsg.textContent = msg.trim() || '❌ Incorrect';
         feedbackMsg.className = 'feedback-msg wrong';
@@ -1827,7 +1846,7 @@ function updateStats() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// 5. MIDI – AUTO-CONNECT (v16.2)
+// 5. MIDI – AUTO-CONNECT (same as v17)
 // ═══════════════════════════════════════════════════════════════════════
 
 let midiInput = null;
@@ -2336,8 +2355,7 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-console.log('🎵 Chord Trainer v17 – Strict Inversions mode added.');
-console.log('🔒 Toggle "Strict Inversions" to force exact voicing.');
+console.log('🎵 Chord Trainer v17.1 – Strict Inversions fixed (bass‑note check).');
 </script>
 </body>
 </html>
