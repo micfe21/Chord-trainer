@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Chord Trainer – v16 (Full screen + note range)</title>
+    <title>Chord Trainer – v16.1 (Full screen + modulation)</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -18,7 +18,7 @@
             -webkit-tap-highlight-color: transparent;
         }
         .app {
-            max-width: 100%; /* was 820px – now full width */
+            max-width: 100%;
             width: 100%;
             background: #fbfaf7;
             border-radius: 28px;
@@ -26,8 +26,231 @@
             box-shadow: 0 8px 32px rgba(0,0,0,0.06);
             border: 1px solid rgba(0,0,0,0.04);
         }
-        /* ─── rest of styles same as v15 ─── */
-        /* ─── but we adjust piano to fill width ─── */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+        .header h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.02em; }
+        .header h1 span { color: #0b6d73; }
+        .top-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            align-items: center;
+        }
+        .top-controls select, .top-controls button {
+            padding: 5px 10px;
+            border-radius: 8px;
+            border: 1px solid #d7d2c8;
+            background: white;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #1f1c18;
+            cursor: pointer;
+            touch-action: manipulation;
+            min-height: 32px;
+        }
+        .top-controls button {
+            background: #0b6d73;
+            color: white;
+            border-color: #0b6d73;
+        }
+        .top-controls button:active { transform: scale(0.95); }
+        .top-controls button.secondary { background: #e8e3da; color: #1f1c18; border-color: #d7d2c8; }
+        .top-controls button.voice-leading {
+            background: #d97706;
+            color: white;
+            border-color: #d97706;
+            font-weight: 700;
+        }
+        .top-controls button.voice-leading.active {
+            background: #0b6d73;
+            border-color: #0b6d73;
+        }
+        .mode-row {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+            margin-bottom: 6px;
+        }
+        .mode-row button {
+            padding: 4px 14px;
+            border-radius: 999px;
+            border: 2px solid #d7d2c8;
+            background: transparent;
+            font-weight: 600;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: 0.15s;
+            min-height: 30px;
+        }
+        .mode-row button.active { background: #0b6d73; color: white; border-color: #0b6d73; }
+        .filter-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            padding: 4px 0 8px 0;
+        }
+        .filter-row span {
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: #6e6a62;
+            padding: 3px 10px;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.5);
+            border: 1px solid #d7d2c8;
+            cursor: pointer;
+            transition: 0.15s;
+        }
+        .filter-row span.active { background: #0b6d73; color: white; border-color: #0b6d73; }
+        .filter-row span.borrowed-toggle {
+            background: #e8e3da;
+            border-color: #b8b0a4;
+        }
+        .filter-row span.borrowed-toggle.active { background: #0b6d73; color: white; border-color: #0b6d73; }
+        .library-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            padding: 4px 0 8px 0;
+            border-top: 1px solid #e4ded4;
+            margin-top: 4px;
+        }
+        .library-row span {
+            font-size: 0.6rem;
+            font-weight: 600;
+            color: #6e6a62;
+            padding: 2px 10px;
+            border-radius: 999px;
+            background: rgba(255,255,255,0.5);
+            border: 1px solid #d7d2c8;
+            cursor: pointer;
+            transition: 0.15s;
+            white-space: nowrap;
+        }
+        .library-row span.active {
+            background: #0b6d73;
+            color: white;
+            border-color: #0b6d73;
+        }
+        .target-area {
+            background: #edebe6;
+            border-radius: 16px;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+            min-height: 64px;
+        }
+        .target-chord {
+            font-size: 2.2rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            line-height: 1.2;
+        }
+        .target-chord .badge {
+            font-size: 0.6rem;
+            font-weight: 600;
+            color: #6e6a62;
+            text-transform: uppercase;
+            background: #d7d2c8;
+            padding: 2px 10px;
+            border-radius: 20px;
+            margin-right: 8px;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .target-chord .key-indicator {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #0b6d73;
+            background: rgba(11,109,115,0.12);
+            padding: 2px 10px;
+            border-radius: 12px;
+            margin-right: 6px;
+            display: inline-block;
+            vertical-align: middle;
+        }
+        .target-progress {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #6e6a62;
+            background: rgba(255,255,255,0.5);
+            padding: 3px 12px;
+            border-radius: 20px;
+        }
+        .feedback-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 4px;
+            padding: 2px 0 6px 0;
+            min-height: 24px;
+        }
+        .feedback-msg {
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: color 0.15s;
+        }
+        .feedback-msg.correct { color: #2e7d32; }
+        .feedback-msg.wrong   { color: #c62828; }
+        .feedback-msg.waiting { color: #6e6a62; }
+        .feedback-msg.idle    { color: #9e9e9e; }
+        .stats-row {
+            display: flex;
+            gap: 10px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: #6e6a62;
+            flex-wrap: wrap;
+        }
+        .stats-row .stat { background: #edebe6; padding: 2px 10px; border-radius: 12px; }
+        .stats-row .stat strong { color: #1f1c18; }
+        .played-status {
+            font-family: 'SF Mono', 'Courier New', monospace;
+            font-size: 0.65rem;
+            color: #6e6a62;
+            background: rgba(0,0,0,0.04);
+            padding: 2px 10px;
+            border-radius: 12px;
+            text-align: center;
+            min-height: 20px;
+        }
+        .sequence-container {
+            display: flex;
+            gap: 6px;
+            overflow-x: auto;
+            padding: 4px 0 8px 0;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+        }
+        .seq-item {
+            flex: 0 0 auto;
+            background: #f1efe9;
+            padding: 4px 12px;
+            border-radius: 10px;
+            border-left: 4px solid #0b6d73;
+            cursor: pointer;
+            text-align: center;
+            min-width: 48px;
+            transition: background 0.15s, border-color 0.15s;
+        }
+        .seq-item .deg { font-weight: 700; font-size: 0.7rem; }
+        .seq-item .name { font-weight: 500; font-size: 0.85rem; }
+        .seq-item .key-label {
+            font-size: 0.55rem;
+            color: #0b6d73;
+            font-weight: 600;
+        }
+        .seq-item.playing { background: #fef3c7; border-left-color: #d97706; }
+        .seq-item.correct { background: #e8f5e9 !important; border-left-color: #2f7d48 !important; }
+        .seq-item.wrong { background: #fbe9e7 !important; border-left-color: #c62828 !important; }
         .piano-wrapper {
             margin: 4px 0 8px 0;
             padding: 6px 0;
@@ -47,14 +270,196 @@
             touch-action: pan-y;
             min-width: 520px;
         }
-        /* ─── and keep responsive ─── */
+        .key {
+            position: absolute;
+            border-radius: 0 0 5px 5px;
+            cursor: pointer;
+            touch-action: manipulation;
+            user-select: none;
+            transition: background 0.07s, transform 0.05s, box-shadow 0.07s;
+            will-change: transform;
+            border: 1px solid rgba(0,0,0,0.10);
+        }
+        .key:active { transform: scale(0.96); }
+        .key.white {
+            background: #f8f6f2;
+            height: 100%;
+            bottom: 0;
+            border-bottom: 3px solid #bbb;
+            z-index: 1;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+        }
+        .key.white.pressed { background: #d0d0d0; transform: scale(0.96); }
+        .key.white.correct { background: #81c784; }
+        .key.white.wrong   { background: #ef9a9a; }
+        .key.white.missing { background: #90caf9; }
+        .key.black {
+            background: #1a1a1a;
+            height: 62%;
+            top: 0;
+            z-index: 2;
+            border-bottom: 3px solid #444;
+            border-radius: 0 0 3px 3px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .key.black.pressed { background: #555; transform: scale(0.94); }
+        .key.black.correct { background: #4caf50; }
+        .key.black.wrong   { background: #e57373; }
+        .key.black.missing { background: #42a5f5; }
+        .key .label {
+            position: absolute;
+            bottom: 4px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 8px;
+            font-weight: 700;
+            color: #aaa;
+            pointer-events: none;
+            letter-spacing: 0.02em;
+        }
+        .key.black .label { color: #777; bottom: 3px; }
+        .midi-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            align-items: center;
+            padding: 4px 0;
+            margin-top: 2px;
+        }
+        .midi-btn {
+            padding: 6px 14px;
+            border-radius: 10px;
+            border: 1px solid #d7d2c8;
+            background: white;
+            font-weight: 600;
+            font-size: 0.75rem;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+        .midi-btn:active { transform: scale(0.95); }
+        .midi-btn.midi { background: #6c5ce7; color: white; border-color: #6c5ce7; }
+        .midi-btn.midi.connected { background: #2e7d32; border-color: #2e7d32; }
+        .midi-device-select {
+            padding: 4px 8px;
+            border-radius: 8px;
+            border: 1px solid #d7d2c8;
+            background: white;
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: #1f1c18;
+            max-width: 200px;
+            cursor: pointer;
+        }
+        .midi-status {
+            font-size: 0.6rem;
+            color: #6e6a62;
+            padding: 3px 12px;
+            background: #edebe6;
+            border-radius: 20px;
+        }
+        .midi-status.connected { background: #c8e6c9; color: #1e5a1e; }
+        .sound-toggle {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+            background: #edebe6;
+            border-radius: 20px;
+            padding: 2px;
+        }
+        .sound-toggle button {
+            padding: 3px 12px;
+            border-radius: 16px;
+            border: none;
+            background: transparent;
+            font-size: 0.6rem;
+            font-weight: 600;
+            color: #6e6a62;
+            cursor: pointer;
+            transition: 0.15s;
+            touch-action: manipulation;
+        }
+        .sound-toggle button.active {
+            background: #0b6d73;
+            color: white;
+        }
+        .sound-toggle button:active { transform: scale(0.95); }
+        .action-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 6px;
+            border-top: 1px solid #e4ded4;
+            padding-top: 8px;
+        }
+        .action-row button {
+            padding: 6px 14px;
+            border-radius: 10px;
+            border: 1px solid #d7d2c8;
+            background: white;
+            font-weight: 600;
+            font-size: 0.75rem;
+            cursor: pointer;
+            touch-action: manipulation;
+            flex: 1 0 auto;
+            min-width: 50px;
+        }
+        .action-row button:active { transform: scale(0.95); }
+        .action-row button.primary { background: #0b6d73; color: white; border-color: #0b6d73; }
+        .action-row button.danger { background: #c62828; color: white; border-color: #c62828; }
+        .action-row button.check { background: #6c5ce7; color: white; border-color: #6c5ce7; }
+        .action-row button.start-audio {
+            background: #d97706;
+            color: white;
+            border-color: #d97706;
+            font-weight: 700;
+            font-size: 0.85rem;
+            padding: 8px 20px;
+        }
+        .action-row button.test-sound {
+            background: #6c5ce7;
+            color: white;
+            border-color: #6c5ce7;
+        }
+        .action-row button.reset-audio {
+            background: #c62828;
+            color: white;
+            border-color: #c62828;
+        }
+        .audio-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-left: 8px;
+            vertical-align: middle;
+        }
+        .audio-indicator.running { background: #4caf50; }
+        .audio-indicator.suspended { background: #ff9800; }
+        .audio-indicator.error { background: #f44336; }
+        .footer-note {
+            margin-top: 6px;
+            font-size: 0.6rem;
+            color: #9d988f;
+            text-align: center;
+        }
         @media (max-width: 600px) {
             .app { padding: 12px 10px; }
+            .target-chord { font-size: 1.6rem; }
             .piano { height: 140px; min-width: 400px; }
-            /* ... */
+            .key .label { font-size: 6px; bottom: 2px; }
+            .header h1 { font-size: 1.1rem; }
+            .top-controls select, .top-controls button { font-size: 0.65rem; padding: 3px 8px; min-height: 28px; }
+            .stats-row { font-size: 0.55rem; gap: 6px; }
+            .feedback-msg { font-size: 0.75rem; }
+            .sound-toggle button { font-size: 0.5rem; padding: 2px 8px; }
+            .library-row span { font-size: 0.5rem; padding: 1px 6px; }
+            .midi-device-select { max-width: 120px; font-size: 0.6rem; }
+            .target-chord .key-indicator { font-size: 0.7rem; padding: 1px 6px; }
         }
-        /* ─── add full-width on larger screens ─── */
-        @media (min-width: 768px) {
+        @media (max-width: 400px) {
+            .piano { height: 110px; min-width: 320px; }
+        }
+        @media (min-width: 768px) and (orientation: landscape) {
             .app { padding: 24px; }
             .piano { height: 220px; }
         }
@@ -63,7 +468,6 @@
 <body>
 <div class="app">
 
-    <!-- ─── same HTML as v15 ─── -->
     <!-- HEADER -->
     <div class="header">
         <h1>🎵 <span>Chord</span> Trainer</h1>
@@ -200,7 +604,7 @@
 
 <script>
 // ═══════════════════════════════════════════════════════════════════════
-// 1. THEORY ENGINE (same as v15, with a new helper)
+// 1. THEORY ENGINE
 // ═══════════════════════════════════════════════════════════════════════
 
 const NOTE_NAMES_MIXED = ['C','Db','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
@@ -292,6 +696,24 @@ let currentTargetKey = null;
 let currentKeyMode = 'fixed';
 let listenMode = false;
 let chordStartTime = 0;
+
+// ─── Note transposition helper (for display only) ───
+const MIN_NOTE = 48;
+const MAX_NOTE = 71;
+
+function transposeToVisibleRange(notes) {
+    if (!notes || notes.length === 0) return notes;
+    const sorted = [...notes].sort((a,b)=>a-b);
+    const median = sorted[Math.floor(sorted.length/2)];
+    if (median >= MIN_NOTE && median <= MAX_NOTE) return notes;
+    let shift = 0;
+    if (median < MIN_NOTE) {
+        shift = Math.ceil((MIN_NOTE - median) / 12) * 12;
+    } else if (median > MAX_NOTE) {
+        shift = -Math.ceil((median - MAX_NOTE) / 12) * 12;
+    }
+    return notes.map(n => n + shift);
+}
 
 function getNoteNames() {
     switch(currentSpelling) {
@@ -426,27 +848,7 @@ function selectVoiceLeadingInversion(prevNotes, chordRoot, typeKey, maxInv) {
     return bestInv;
 }
 
-// ─── NEW HELPER: transpose notes into visible range [48,71] ───
-const MIN_NOTE = 48;
-const MAX_NOTE = 71;
-
-function transposeToVisibleRange(notes) {
-    if (!notes || notes.length === 0) return notes;
-    // Find the middle note (median) to base transposition on
-    const sorted = [...notes].sort((a,b)=>a-b);
-    const median = sorted[Math.floor(sorted.length/2)];
-    // If already within range, return as is
-    if (median >= MIN_NOTE && median <= MAX_NOTE) return notes;
-    // Determine shift: bring median into range
-    let shift = 0;
-    if (median < MIN_NOTE) {
-        shift = Math.ceil((MIN_NOTE - median) / 12) * 12;
-    } else if (median > MAX_NOTE) {
-        shift = -Math.ceil((median - MAX_NOTE) / 12) * 12;
-    }
-    // Apply shift to all notes
-    return notes.map(n => n + shift);
-}
+// ─── Generate sequence with separate detection and display notes ───
 
 function generateSequence(keyRoot, length, filter, keyMode, invMode) {
     const degrees = [1,2,3,4,5,6,7];
@@ -524,9 +926,10 @@ function generateSequence(keyRoot, length, filter, keyMode, invMode) {
             inv = Math.floor(Math.random() * (maxInv + 1));
         }
 
-        let notes = buildChord(chordRoot, typeKey, inv);
-        // ─── Transpose to visible range ───
-        notes = transposeToVisibleRange(notes);
+        // Build notes for detection (unchanged)
+        const detectionNotes = buildChord(chordRoot, typeKey, inv);
+        // Build notes for display (transposed to visible range)
+        const displayNotes = transposeToVisibleRange([...detectionNotes]);
 
         const romanDisplay = getRomanNumeral(chordKeyRoot, chordRoot, typeKey, inv);
         const symbol = getChordSymbol(chordRoot, typeKey);
@@ -538,7 +941,8 @@ function generateSequence(keyRoot, length, filter, keyMode, invMode) {
             inversion: inv,
             chordRoot: chordRoot,
             chordKeyRoot: chordKeyRoot,
-            notes: notes,
+            notes: detectionNotes,        // for chord detection (unchanged)
+            displayNotes: displayNotes,   // for on‑screen keyboard & playback
             symbol: symbol,
             roman: romanDisplay,
             symbolOnly: symbol,
@@ -590,8 +994,8 @@ function generateAbsoluteSequence(length, filter, invMode) {
         } else {
             inv = Math.floor(Math.random() * (maxInv + 1));
         }
-        let notes = buildChord(chordRoot, typeKey, inv);
-        notes = transposeToVisibleRange(notes);
+        const detectionNotes = buildChord(chordRoot, typeKey, inv);
+        const displayNotes = transposeToVisibleRange([...detectionNotes]);
         const symbol = getChordSymbol(chordRoot, typeKey);
         seq.push({
             degree: 0,
@@ -600,7 +1004,8 @@ function generateAbsoluteSequence(length, filter, invMode) {
             inversion: inv,
             chordRoot: chordRoot,
             chordKeyRoot: chordRoot,
-            notes: notes,
+            notes: detectionNotes,
+            displayNotes: displayNotes,
             symbol: symbol,
             symbolOnly: symbol,
             display: symbol,
@@ -640,7 +1045,7 @@ function generateMixedSequence(keyRoot, length, filter, keyMode, invMode) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// 2. AUDIO ENGINE (identical to v15)
+// 2. AUDIO ENGINE (v15, full)
 // ═══════════════════════════════════════════════════════════════════════
 
 let audioCtx = null;
@@ -889,7 +1294,8 @@ function playSequence(seq) {
             if (!isPlaying) return;
             items.forEach(el => el.classList.remove('playing'));
             if (items[idx]) items[idx].classList.add('playing');
-            playChordNotes(item.notes, 1.2);
+            const notes = item.displayNotes || item.notes;
+            playChordNotes(notes, 1.2);
         }, idx * 1200);
         playbackTimeouts.push(tid);
     });
@@ -906,8 +1312,9 @@ function stopPlayback() {
     document.querySelectorAll('.seq-item.playing').forEach(el => el.classList.remove('playing'));
 }
 
-function playSingleChord(notes) {
+function playSingleChord(item) {
     stopPlayback();
+    const notes = item.displayNotes || item.notes;
     playChordNotes(notes, 1.2);
 }
 
@@ -998,9 +1405,9 @@ function resetAudio() {
     feedbackMsg.className = 'feedback-msg waiting';
 }
 
-// =====================================================================
-// 3. STATE & PIANO (unchanged)
-// =====================================================================
+// ═══════════════════════════════════════════════════════════════════════
+// 3. STATE & PIANO
+// ═══════════════════════════════════════════════════════════════════════
 
 let persistentNotes = [];
 let chordCheckTimeout = null;
@@ -1125,9 +1532,9 @@ window.addEventListener('resize', () => {
 });
 window.addEventListener('orientationchange', () => setTimeout(buildPiano, 300));
 
-// =====================================================================
+// ═══════════════════════════════════════════════════════════════════════
 // 4. NOTE HANDLING & CHORD CHECK
-// =====================================================================
+// ═══════════════════════════════════════════════════════════════════════
 
 function handleNoteOn(note, velocity) {
     velocity = velocity || 80;
@@ -1176,6 +1583,7 @@ function checkChord() {
         return;
     }
 
+    // Use the ORIGINAL detection notes (not transposed)
     const expectedSet = pitchClassSet(currentExpectedNotes);
     const playedSet = pitchClassSet(persistentNotes);
 
@@ -1280,6 +1688,7 @@ function advanceToNext() {
 function setCurrentChord(index) {
     if (!currentSequence || index >= currentSequence.length) return;
     const item = currentSequence[index];
+    // Use original detection notes for checking
     currentExpectedNotes = [...item.notes];
     currentIndex = index;
     chordStartTime = Date.now();
@@ -1344,9 +1753,9 @@ function updateStats() {
     statTime.textContent = avg || '—';
 }
 
-// =====================================================================
-// 5. MIDI – AUTO-CONNECT (same as v15)
-// =====================================================================
+// ═══════════════════════════════════════════════════════════════════════
+// 5. MIDI – AUTO-CONNECT (v15)
+// ═══════════════════════════════════════════════════════════════════════
 
 let midiInput = null;
 let midiConnected = false;
@@ -1589,9 +1998,9 @@ setTimeout(() => {
     autoConnectMIDI();
 }, 500);
 
-// =====================================================================
+// ═══════════════════════════════════════════════════════════════════════
 // 6. SOUND TOGGLE & START AUDIO
-// =====================================================================
+// ═══════════════════════════════════════════════════════════════════════
 
 const soundToggle = document.getElementById('soundToggle');
 const soundStatus = document.getElementById('soundStatus');
@@ -1652,9 +2061,9 @@ document.getElementById('playBtn').addEventListener('click', () => {
     }
 });
 
-// =====================================================================
+// ═══════════════════════════════════════════════════════════════════════
 // 7. VOICE LEADING TOGGLE
-// =====================================================================
+// ═══════════════════════════════════════════════════════════════════════
 
 document.getElementById('voiceLeadingBtn').addEventListener('click', function() {
     voiceLeadingEnabled = !voiceLeadingEnabled;
@@ -1663,9 +2072,9 @@ document.getElementById('voiceLeadingBtn').addEventListener('click', function() 
     generate();
 });
 
-// =====================================================================
+// ═══════════════════════════════════════════════════════════════════════
 // 8. PRACTICE LIBRARY
-// =====================================================================
+// ═══════════════════════════════════════════════════════════════════════
 
 document.querySelectorAll('#libraryRow span').forEach(el => {
     el.addEventListener('click', function() {
@@ -1676,9 +2085,9 @@ document.querySelectorAll('#libraryRow span').forEach(el => {
     });
 });
 
-// =====================================================================
+// ═══════════════════════════════════════════════════════════════════════
 // 9. RENDER SEQUENCE & GENERATE
-// =====================================================================
+// ═══════════════════════════════════════════════════════════════════════
 
 function renderSequence(seq) {
     sequenceContainer.innerHTML = '';
@@ -1705,7 +2114,7 @@ function renderSequence(seq) {
             <div class="name">${nameText}</div>
             ${keyText ? `<div class="key-label">${keyText}</div>` : ''}
         `;
-        div.addEventListener('click', () => playSingleChord(item.notes));
+        div.addEventListener('click', () => playSingleChord(item));
         sequenceContainer.appendChild(div);
     });
 }
@@ -1737,9 +2146,9 @@ function generate() {
     listenMode = true;
 }
 
-// =====================================================================
+// ═══════════════════════════════════════════════════════════════════════
 // 10. UI EVENTS
-// =====================================================================
+// ═══════════════════════════════════════════════════════════════════════
 
 function populateKeys() {
     keySelect.innerHTML = '';
@@ -1828,9 +2237,9 @@ document.getElementById('showNotesBtn').addEventListener('click', function() {
     renderSequence(currentSequence);
 });
 
-// =====================================================================
+// ═══════════════════════════════════════════════════════════════════════
 // 11. INIT
-// =====================================================================
+// ═══════════════════════════════════════════════════════════════════════
 
 document.addEventListener('touchstart', () => {
     if (audioCtx && audioCtx.state === 'suspended') {
@@ -1855,9 +2264,8 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-console.log('🎵 Chord Trainer v16 – full screen + note transposition.');
-console.log('📐 App now fills iPad screen.');
-console.log('🎹 All chords stay within C3–B4 range.');
+console.log('🎵 Chord Trainer v16.1 – full screen + modulation working.');
+console.log('🎹 Transposition for display only; detection uses original notes.');
 </script>
 </body>
 </html>
