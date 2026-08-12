@@ -848,8 +848,6 @@ function selectVoiceLeadingInversion(prevNotes, chordRoot, typeKey, maxInv) {
     return bestInv;
 }
 
-// ─── Generate sequence with separate detection and display notes ───
-
 function generateSequence(keyRoot, length, filter, keyMode, invMode) {
     const degrees = [1,2,3,4,5,6,7];
     const seq = [];
@@ -926,9 +924,7 @@ function generateSequence(keyRoot, length, filter, keyMode, invMode) {
             inv = Math.floor(Math.random() * (maxInv + 1));
         }
 
-        // Build notes for detection (unchanged)
         const detectionNotes = buildChord(chordRoot, typeKey, inv);
-        // Build notes for display (transposed to visible range)
         const displayNotes = transposeToVisibleRange([...detectionNotes]);
 
         const romanDisplay = getRomanNumeral(chordKeyRoot, chordRoot, typeKey, inv);
@@ -941,8 +937,8 @@ function generateSequence(keyRoot, length, filter, keyMode, invMode) {
             inversion: inv,
             chordRoot: chordRoot,
             chordKeyRoot: chordKeyRoot,
-            notes: detectionNotes,        // for chord detection (unchanged)
-            displayNotes: displayNotes,   // for on‑screen keyboard & playback
+            notes: detectionNotes,
+            displayNotes: displayNotes,
             symbol: symbol,
             roman: romanDisplay,
             symbolOnly: symbol,
@@ -1045,7 +1041,7 @@ function generateMixedSequence(keyRoot, length, filter, keyMode, invMode) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// 2. AUDIO ENGINE (v15, full)
+// 2. AUDIO ENGINE
 // ═══════════════════════════════════════════════════════════════════════
 
 let audioCtx = null;
@@ -1583,7 +1579,6 @@ function checkChord() {
         return;
     }
 
-    // Use the ORIGINAL detection notes (not transposed)
     const expectedSet = pitchClassSet(currentExpectedNotes);
     const playedSet = pitchClassSet(persistentNotes);
 
@@ -1688,7 +1683,6 @@ function advanceToNext() {
 function setCurrentChord(index) {
     if (!currentSequence || index >= currentSequence.length) return;
     const item = currentSequence[index];
-    // Use original detection notes for checking
     currentExpectedNotes = [...item.notes];
     currentIndex = index;
     chordStartTime = Date.now();
@@ -1754,7 +1748,7 @@ function updateStats() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// 5. MIDI – AUTO-CONNECT (v15)
+// 5. MIDI – AUTO-CONNECT
 // ═══════════════════════════════════════════════════════════════════════
 
 let midiInput = null;
