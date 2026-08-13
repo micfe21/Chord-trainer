@@ -57,8 +57,7 @@ Whether you're a *music student, an accompanist, or a jazz pianist, this trainer
 | File | Purpose |
 |------|---------|
 | `chordsequencetrainer17.html` | **Main app** – latest version with Strict Inversions. |
-| `setup-guide.html` | Cross‑platform setup guide for USB and Bluetooth MIDI. |
-| `windows-setup-guide.html` | Detailed Windows Bluetooth MIDI guide (MIDIberry + loopMIDI). |
+| `setup-guide.html` | Cross‑platform setup guide for USB and Bluetooth 
 | `chordsequencetrainermanual.html` | User manual (print‑friendly). |
 
 ---
