@@ -26,7 +26,7 @@
         .subtitle { font-size: 1.1rem; color: #6e6a62; margin-bottom: 32px; border-bottom: 2px solid #e4ded4; padding-bottom: 16px; }
         h2 { font-size: 1.5rem; font-weight: 700; margin-top: 32px; margin-bottom: 12px; color: #0b6d73; }
         h3 { font-size: 1.1rem; font-weight: 700; margin-top: 20px; margin-bottom: 6px; }
-        p { line-height: 1.6; margin-bottom: 12px; color: #2d2a24; }
+        p { line-height: 1.6; margin-bottom: 12px; }
         ul, ol { margin: 8px 0 16px 24px; line-height: 1.6; }
         li { margin-bottom: 4px; }
         .highlight { background: #edebe6; padding: 2px 8px; border-radius: 4px; font-weight: 600; }
@@ -65,8 +65,8 @@
 <body>
 <div class="manual">
 
-    <h1>🎵 Chord Trainer</h1>
-    <div class="subtitle">User Manual – Practice Tool for Musicians</div>
+    <h1>🎵 Chord Trainer – User Manual</h1>
+    <div class="subtitle">Practice Tool for Musicians</div>
 
     <!-- ─── WHAT IS THIS APP? ─── -->
     <h2>What is this app?</h2>
@@ -105,6 +105,7 @@
     <ul>
         <li>Shows the chord you need to play right now.</li>
         <li>The badge (e.g., <span class="highlight">Roman</span>) tells you what <em>mode</em> you're in.</li>
+        <li>If <strong>Strict Inversions</strong> is on, you'll also see the inversion (e.g., <span class="highlight">(1st inv.)</span>).</li>
     </ul>
 
     <h3>2. The Progress Indicator</h3>
@@ -132,9 +133,11 @@
         <tr><th>Control</th><th>What it does</th></tr>
         <tr><td><strong>Key</strong></td><td>The key of the sequence (e.g., C, F, Eb). Only used in Roman/Mixed modes.</td></tr>
         <tr><td><strong>Mode</strong></td><td>How chords are displayed: <strong>Roman</strong> (<span class="highlight">iiø7</span>), <strong>Absolute</strong> (<span class="highlight">F#m7</span>), or <strong>Mixed</strong> (both).</td></tr>
+        <tr><td><strong>Key Mode</strong></td><td><strong>Fixed</strong> – all chords in one key; <strong>Modulating</strong> – each chord may be in a different key.</td></tr>
         <tr><td><strong>Length</strong></td><td>How many chords in the sequence (4, 6, 8, 10).</td></tr>
         <tr><td><strong>Triads / Sevenths / Both</strong></td><td>Whether to include 3‑note chords (triads), 4‑note chords (7ths), or both.</td></tr>
         <tr><td><strong>Voice Leading</strong></td><td>When enabled, chords are inverted so your hand moves as little as possible between chords.</td></tr>
+        <tr><td><strong>Strict Inversions</strong></td><td>When enabled, you <strong>must play the exact inversion</strong> shown (root, 1st, 2nd, 3rd). If you play the right notes but in the wrong inversion, the app will tell you. Excellent for advanced practice.</td></tr>
         <tr><td><strong>Generate</strong></td><td>Creates a new random sequence.</td></tr>
         <tr><td><strong>🎲 New</strong></td><td>Creates a new sequence with random settings (key, length, etc.).</td></tr>
     </table>
@@ -213,6 +216,15 @@
         <li>Tap <strong>Generate</strong>.</li>
         <li>Each chord will be inverted so your hand moves as little as possible between chords.</li>
         <li>This is excellent for practising smooth, musical voice‑leading.</li>
+    </ol>
+
+    <h3>Strict Inversion Practice</h3>
+    <ol>
+        <li>Tap the <strong>"Strict Inversions"</strong> button (it turns red and shows ✓).</li>
+        <li>Tap <strong>Generate</strong>.</li>
+        <li>Each chord will now show its inversion (e.g., <span class="highlight">(1st inv.)</span>).</li>
+        <li>You must play the exact inversion shown – if you play the right notes but in a different inversion, the app will tell you.</li>
+        <li>This builds precise finger memory and is essential for jazz and classical voicing practice.</li>
     </ol>
 
     <h3>Sight‑Reading Preparation</h3>
@@ -301,7 +313,7 @@
     <!-- ─── FOOTER ─── -->
     <div class="footer">
         Enjoy practising! 🎹<br />
-        <span style="font-size:0.7rem;">Chord Trainer – Version 8 (Clean Reverb)</span>
+        <span style="font-size:0.7rem;">Chord Trainer – Version 17 (Strict Inversions added)</span>
     </div>
 
 </div>
