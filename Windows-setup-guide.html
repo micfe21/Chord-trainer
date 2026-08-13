@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Windows Setup – Chord Trainer</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
+            background: #f8f6f2;
+            color: #1f1c18;
+            padding: 40px 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .manual {
+            max-width: 900px;
+            width: 100%;
+            background: #fcfaf7;
+            padding: 48px 56px;
+            border-radius: 20px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.06);
+        }
+        h1 { font-size: 2.4rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 4px; }
+        .subtitle { font-size: 1.1rem; color: #6e6a62; margin-bottom: 32px; border-bottom: 2px solid #e4ded4; padding-bottom: 16px; }
+        h2 { font-size: 1.5rem; font-weight: 700; margin-top: 32px; margin-bottom: 12px; color: #0b6d73; }
+        h3 { font-size: 1.1rem; font-weight: 700; margin-top: 20px; margin-bottom: 6px; }
+        p { line-height: 1.6; margin-bottom: 12px; }
+        ul, ol { margin: 8px 0 16px 24px; line-height: 1.6; }
+        li { margin-bottom: 4px; }
+        .highlight { background: #edebe6; padding: 2px 8px; border-radius: 4px; font-weight: 600; }
+        .badge { display: inline-block; background: #0b6d73; color: white; font-size: 0.7rem; font-weight: 700; padding: 1px 10px; border-radius: 20px; margin-right: 4px; }
+        .step { background: #f0f0ec; border-left: 4px solid #0b6d73; padding: 12px 16px; margin: 12px 0; border-radius: 4px; }
+        .step strong { color: #0b6d73; }
+        .note { background: #fcf1d6; border-left: 4px solid #d97706; padding: 10px 14px; margin: 12px 0; border-radius: 4px; }
+        .trouble { background: #fde8e8; border-left: 4px solid #c62828; padding: 10px 14px; margin: 12px 0; border-radius: 4px; }
+        .success { background: #e8f5e9; border-left: 4px solid #2e7d32; padding: 10px 14px; margin: 12px 0; border-radius: 4px; }
+        .cable-warning {
+            background: #fff3e0;
+            border-left: 6px solid #e65100;
+            padding: 16px 20px;
+            margin: 16px 0;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+        .cable-warning strong { color: #bf360c; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12px 0 20px 0;
+            font-size: 0.9rem;
+        }
+        th, td {
+            border: 1px solid #d7d2c8;
+            padding: 8px 12px;
+            text-align: left;
+            vertical-align: top;
+        }
+        th { background: #edebe6; font-weight: 700; }
+        .footer { margin-top: 40px; padding-top: 16px; border-top: 2px solid #e4ded4; font-size: 0.85rem; color: #6e6a62; text-align: center; }
+        .icon { font-size: 1.2rem; margin-right: 6px; }
+        @media (max-width: 600px) {
+            .manual { padding: 24px 18px; }
+            h1 { font-size: 1.8rem; }
+            table { font-size: 0.75rem; }
+            th, td { padding: 4px 8px; }
+        }
+        @media print {
+            body { padding: 0; background: white; }
+            .manual { box-shadow: none; padding: 40px; border-radius: 0; }
+            .badge { background: #0b6d73 !important; color: white !important; }
+        }
+        a { color: #0b6d73; text-decoration: underline; }
+        a:hover { text-decoration: none; }
+    </style>
+</head>
+<body>
+<div class="manual">
+
+    <h1>🪟 Windows Setup Guide</h1>
+    <div class="subtitle">Connect your MIDI keyboard on Windows</div>
+
+    <p>
+        This guide will help you set up the <strong>Chord Trainer</strong> app with your MIDI keyboard on Windows.
+        We recommend <strong>USB MIDI</strong> whenever possible – it's simpler, more reliable, and works immediately.
+    </p>
+
+    <!-- ⚠️ CRITICAL USB CABLE WARNING -->
+    <div class="cable-warning">
+        <strong>⚠️ CRITICAL – Use a DATA‑SYNC USB cable</strong><br />
+        Many USB cables are <strong>charge‑only</strong> and do NOT transmit data.
+        If your keyboard powers on but doesn't appear in the app, <strong>try a different cable</strong> – preferably the one that came with your keyboard or one labelled for data transfer.
+        <br /><br />
+        ✅ <strong>Works:</strong> "Data‑sync", "Data transfer", "USB 2.0/3.0" cables<br />
+        ❌ <strong>Does NOT work:</strong> "Charge‑only", "Charging cable" (usually thin or cheap)
+    </div>
+
+    <!-- ─── USB MIDI ─── -->
+    <h2>Option 1 – USB MIDI (Recommended)</h2>
+    <p>
+        USB MIDI is <strong>plug‑and‑play</strong> on Windows. No drivers needed for most keyboards.
+    </p>
+    <ol>
+        <li><strong>Plug it in</strong> – connect your keyboard to your PC using a <strong>data‑sync USB cable</strong> (not a charge‑only cable).</li>
+        <li><strong>Turn it on</strong> – power on your keyboard.</li>
+        <li><strong>Open the app</strong> in Chrome or Edge.</li>
+        <li><strong>Tap the MIDI button</strong> – your keyboard should appear in the dropdown (e.g., <span class="highlight">SMK-37 Pro Midi</span> or <span class="highlight">USB MIDI Device</span>).</li>
+        <li><strong>Select it</strong> – the status will change to <span class="highlight">"MIDI connected"</span>.</li>
+        <li><strong>Tap "Start Audio"</strong> and play!</li>
+    </ol>
+    <div class="success">
+        <strong>✅ That's it!</strong> USB MIDI on Windows is the simplest and most reliable method.
+    </div>
+
+    <!-- ─── BLUETOOTH MIDI ─── -->
+    <h2>Option 2 – Bluetooth MIDI (BLE)</h2>
+    <p>
+        Windows does <strong>not</strong> natively expose Bluetooth MIDI devices to the Web MIDI API.
+        You need two free tools to bridge the connection:
+    </p>
+    <ul>
+        <li><strong>loopMIDI</strong> – creates a virtual MIDI port that the app can see.</li>
+        <li><strong>MIDIberry</strong> – receives Bluetooth MIDI and forwards it to the loopMIDI port.</li>
+    </ul>
+
+    <h3>Step 1 – Pair your keyboard</h3>
+    <ol>
+        <li>Turn on your keyboard and put it in <strong>Bluetooth pairing mode</strong> (check your manual).</li>
+        <li>On Windows, go to <strong>Settings → Bluetooth &amp; devices → Add device → Bluetooth</strong>.</li>
+        <li>Select your keyboard from the list (e.g., <span class="highlight">SMK-37 Pro_BLE</span> or <span class="highlight">CASIO WU-BT10</span>).</li>
+        <li>If it asks for a PIN, try <span class="highlight">0000</span> or <span class="highlight">1234</span>.</li>
+        <li>Wait for it to show <strong>"Connected"</strong>.</li>
+    </ol>
+
+    <h3>Step 2 – Install loopMIDI</h3>
+    <ol>
+        <li>Go to <a href="https://www.tobias-erichsen.de/software/loopmidi.html" target="_blank">loopMIDI official website</a>.</li>
+        <li>Download and install <strong>loopMIDI</strong>.</li>
+        <li>Open <strong>loopMIDI</strong>.</li>
+        <li>Click the <strong>"+"</strong> (Add Port) button.</li>
+        <li>Give it a name, e.g., <span class="highlight">ChordTrainer Port</span>.</li>
+        <li>Leave loopMIDI running in the background.</li>
+    </ol>
+
+    <h3>Step 3 – Install MIDIberry</h3>
+    <ol>
+        <li>Open the <strong>Microsoft Store</strong> and search for <strong>"MIDIberry"</strong>.</li>
+        <li>Install it (it's free).</li>
+        <li>Alternatively, download from <a href="https://apps.microsoft.com/detail/9n5n2sds4r4t" target="_blank">MIDIberry on Microsoft Store</a>.</li>
+    </ol>
+
+    <h3>Step 4 – Configure MIDIberry</h3>
+    <ol>
+        <li>Open <strong>MIDIberry</strong>.</li>
+        <li>In the <strong>INPUT</strong> section, click <strong>"List All Input Devices"</strong>.</li>
+        <li>Find your keyboard (it should have <strong>"Bluetooth MIDI IN"</strong> in the name).</li>
+        <li>Make sure the toggle next to it is <strong>ON</strong> (enabled).</li>
+        <li>In the <strong>OUTPUT</strong> section, click <strong>"List All Output Devices"</strong>.</li>
+        <li>Find the port you created in loopMIDI (e.g., <span class="highlight">ChordTrainer Port</span>).</li>
+        <li>Enable it (toggle ON).</li>
+        <li>Check the <strong>Input Monitor</strong> – when you play a key, you should see MIDI messages appearing (like <span class="highlight">NoteOn</span>). This confirms MIDIberry is receiving your notes.</li>
+    </ol>
+
+    <div class="step">
+        <strong>✅ At this point, MIDIberry is forwarding your keyboard's notes to the loopMIDI virtual port.</strong>
+    </div>
+
+    <h3>Step 5 – Connect the Chord Trainer app</h3>
+    <ol>
+        <li>Open the <strong>Chord Trainer</strong> app in Chrome or Edge.</li>
+        <li>Tap the <strong>MIDI</strong> button (near the top).</li>
+        <li>
+            In the dropdown that appears, select the port you created in loopMIDI
+            (e.g., <span class="highlight">ChordTrainer Port</span>).
+        </li>
+        <li>The status should change to <span class="highlight">"MIDI connected: ChordTrainer Port"</span>.</li>
+        <li>
+            <strong>Important:</strong> Tap the <span class="highlight">"Start Audio"</span> orange button
+            (this resumes the audio context on Windows).
+        </li>
+        <li>Play a note – you should hear sound and see the on‑screen keys light up.</li>
+    </ol>
+
+    <!-- ─── TROUBLESHOOTING ─── -->
+    <h2>🔧 Troubleshooting</h2>
+
+    <div class="trouble">
+        <strong>❌ My keyboard doesn't appear in the app</strong><br />
+        → <strong>First: try a different USB cable!</strong> This is the most common cause. Use a data‑sync cable, not a charge‑only cable.<br />
+        → <strong>Double‑tap the MIDI status text</strong> to refresh the device list.<br />
+        → Make sure your keyboard is <strong>turned on</strong> and connected.<br />
+        → Try a <strong>different USB port</strong> on your computer.
+    </div>
+
+    <div class="trouble">
+        <strong>❌ No sound from the app</strong><br />
+        → Tap the orange <strong>"Start Audio"</strong> button. This is required on Windows.<br />
+        → Make sure the <strong>Sound</strong> toggle is set to <strong>"Internal"</strong> (not "MIDI Thru").<br />
+        → Check your system volume and ensure Chrome/Edge isn't muted in the Volume Mixer.
+    </div>
+
+    <div class="trouble">
+        <strong>❌ MIDIberry receives notes but the app doesn't respond</strong><br />
+        → In the app, tap the MIDI button and <strong>double‑tap the MIDI status text</strong> to refresh the device list.<br />
+        → Make sure you selected the <strong>loopMIDI port</strong>, not your keyboard directly.<br />
+        → Check that the port is still active in loopMIDI and MIDIberry.
+    </div>
+
+    <div class="trouble">
+        <strong>❌ loopMIDI port doesn't appear in MIDIberry</strong><br />
+        → Make sure loopMIDI is <strong>running</strong> and the port is created.<br />
+        → In MIDIberry, click <strong>"List All Output Devices"</strong> again – it should appear.<br />
+        → If not, restart both applications.
+    </div>
+
+    <!-- ─── QUICK REFERENCE ─── -->
+    <h2>📋 Quick Reference</h2>
+    <table>
+        <tr><th>Connection</th><th>Software needed</th><th>Reliability</th></tr>
+        <tr><td><strong>USB MIDI</strong></td><td>None – plug and play</td><td>⭐⭐⭐⭐⭐ Very reliable</td></tr>
+        <tr><td><strong>Bluetooth MIDI</strong></td><td>loopMIDI + MIDIberry</td><td>⭐⭐⭐ Good, with setup</td></tr>
+    </table>
+
+    <!-- ─── FOOTER ─── -->
+    <div class="footer">
+        Chord Trainer – Windows Setup Guide<br />
+        <span style="font-size:0.7rem;">© 2026 micfe21 – Free for personal use</span>
+    </div>
+
+</div>
+</body>
+</html>
