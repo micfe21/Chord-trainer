@@ -1,17 +1,11 @@
 <!DOCTYPE html>
-<!--
-  Chord Trainer – © 2026 micfe21
-  MIT License – see LICENSE file for details.
-  Free for personal use and sharing with friends.
-  Not for commercial sale or distribution.
--->
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Chord Trainer – v17.1 (Strict Inversions fixed)</title>
+    <title>Chord Trainer – v24 (Commented + Fixed)</title>
     <style>
-        /* ─── same as v17 ─── */
+        /* --- Reset & base --- */
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
@@ -265,11 +259,17 @@
             border-left: 4px solid #0b6d73;
             cursor: pointer;
             text-align: center;
-            min-width: 48px;
+            min-width: 60px;
             transition: background 0.15s, border-color 0.15s;
         }
         .seq-item .deg { font-weight: 700; font-size: 0.7rem; }
         .seq-item .name { font-weight: 500; font-size: 0.85rem; }
+        .seq-item .notes-display {
+            font-size: 0.55rem;
+            color: #4a4a4a;
+            font-family: monospace;
+            margin-top: 2px;
+        }
         .seq-item .key-label {
             font-size: 0.55rem;
             color: #0b6d73;
@@ -496,7 +496,7 @@
 <body>
 <div class="app">
 
-    <!-- HEADER -->
+    <!-- Header with controls -->
     <div class="header">
         <h1>🎵 <span>Chord</span> Trainer</h1>
         <div class="top-controls">
@@ -528,14 +528,14 @@
         </div>
     </div>
 
-    <!-- MODE ROW -->
+    <!-- Mode selection -->
     <div class="mode-row" id="modeSelector">
         <button class="active" data-mode="roman">Roman</button>
         <button data-mode="absolute">Absolute</button>
         <button data-mode="mixed">Mixed</button>
     </div>
 
-    <!-- FILTER ROW -->
+    <!-- Filter row (chord types) -->
     <div class="filter-row" id="filterRow">
         <span class="active" data-filter="all">All</span>
         <span data-filter="diatonic">Diatonic</span>
@@ -545,10 +545,10 @@
         <span data-filter="aug">Aug</span>
         <span data-filter="dim7">°7</span>
         <span data-filter="slash">Slash</span>
-        <span class="borrowed-toggle active" id="borrowedToggle">Borrowed On</span>
+        <span class="borrowed-toggle" id="borrowedToggle">Borrowed Off</span>
     </div>
 
-    <!-- PRACTICE LIBRARY ROW -->
+    <!-- Library filter -->
     <div class="library-row" id="libraryRow">
         <span class="active" data-library="all">All</span>
         <span data-library="major">Major</span>
@@ -564,7 +564,7 @@
         <span data-library="altered">Altered</span>
     </div>
 
-    <!-- TARGET -->
+    <!-- Target chord display -->
     <div class="target-area">
         <div class="target-chord">
             <span class="badge" id="modeBadge">Roman</span>
@@ -575,7 +575,7 @@
         <div class="target-progress" id="progressDisplay">0 / 0</div>
     </div>
 
-    <!-- FEEDBACK -->
+    <!-- Feedback & stats -->
     <div class="feedback-row">
         <div class="feedback-msg idle" id="feedbackMsg">Generate a sequence to begin</div>
         <div class="stats-row" id="statsRow">
@@ -586,18 +586,18 @@
         </div>
     </div>
 
-    <!-- PLAYED NOTES -->
+    <!-- Played notes display -->
     <div class="played-status" id="playedDisplay">🎹 notes: none</div>
 
-    <!-- SEQUENCE LIST -->
+    <!-- Sequence list -->
     <div class="sequence-container" id="sequenceContainer"></div>
 
-    <!-- PIANO -->
+    <!-- Piano -->
     <div class="piano-wrapper">
         <div class="piano" id="piano"></div>
     </div>
 
-    <!-- MIDI & SOUND -->
+    <!-- MIDI controls -->
     <div class="midi-row">
         <button class="midi-btn midi" id="midiBtn">🔌 MIDI</button>
         <select class="midi-device-select" id="midiDeviceSelect">
@@ -607,6 +607,7 @@
         <span style="flex:1;text-align:right;font-size:0.65rem;color:#6e6a62;" id="keyDisplay">Key: C</span>
     </div>
 
+    <!-- Sound controls -->
     <div class="midi-row" style="margin-top:2px;border-top:1px solid #e4ded4;padding-top:6px;">
         <span style="font-size:0.6rem;font-weight:600;color:#6e6a62;margin-right:4px;">🔊 Sound</span>
         <div class="sound-toggle" id="soundToggle">
@@ -618,6 +619,7 @@
         <span id="audioStateText" style="font-size:0.55rem;color:#6e6a62;margin-left:4px;">suspended</span>
     </div>
 
+    <!-- Action buttons -->
     <div class="action-row">
         <button id="startAudioBtn" class="start-audio">▶ Start Audio (Tap First!)</button>
         <button id="testSoundBtn" class="test-sound">🔊 Test Sound</button>
@@ -634,14 +636,16 @@
 
 <script>
 // ═══════════════════════════════════════════════════════════════════════
-// 1. THEORY ENGINE (same as v17)
+// 1. THEORY ENGINE – chord definitions, scales, roman numerals
 // ═══════════════════════════════════════════════════════════════════════
 
+// Note names arrays
 const NOTE_NAMES_MIXED = ['C','Db','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
 const NOTE_NAMES_SHARP = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const NOTE_NAMES_FLAT  = ['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
 const ALL_ROOTS = [60,61,62,63,64,65,66,67,68,69,70,71];
 
+// Chord type definitions: intervals are semitone offsets from root
 const CHORD_TYPES = {
     maj:   { label:'Major', symbol:'', intervals:[0,4,7], category:'diatonic', library:'major' },
     min:   { label:'Minor', symbol:'m', intervals:[0,3,7], category:'diatonic', library:'minor' },
@@ -673,6 +677,7 @@ const CHORD_TYPES = {
     dim7:  { label:'Dim 7', symbol:'°7', intervals:[0,3,6,9], category:'dim7', library:'dim7' },
 };
 
+// Diatonic degree qualities
 const DEGREE_MAP = {
     1:{ label:'I', triad:'maj', seventh:'maj7' },
     2:{ label:'ii', triad:'min', seventh:'min7' },
@@ -683,6 +688,7 @@ const DEGREE_MAP = {
     7:{ label:'vii°', triad:'dim', seventh:'m7b5' }
 };
 
+// Category filters
 const CATEGORIES = {
     all: Object.keys(CHORD_TYPES),
     diatonic: ['maj','min','dim','maj7','min7','dom7','m7b5'],
@@ -694,6 +700,7 @@ const CATEGORIES = {
     slash: ['slash']
 };
 
+// Library filters (practice sets)
 const LIBRARY_MAP = {
     'all': Object.keys(CHORD_TYPES),
     'major': ['maj','maj7','maj9','6','add9'],
@@ -709,13 +716,14 @@ const LIBRARY_MAP = {
     'altered': ['7b9','7#9','13b9','7#5','7b5','7#11','13#11']
 };
 
-let currentMode = 'roman';
-let currentSpelling = 'mixed';
+// ─── Global state ──────────────────────────────────────────────────────
+let currentMode = 'roman';           // 'roman', 'absolute', 'mixed'
+let currentSpelling = 'mixed';       // 'sharp', 'flat', 'mixed'
 let currentInversionMode = 'voice-leading';
 let currentFilter = 'all';
-let useBorrowed = true;
+let useBorrowed = false;            // OFF by default (fixes #iii issue)
 let showNotes = false;
-let currentChordType = 'all';
+let currentChordType = 'all';        // 'triad', 'seventh', 'all'
 let currentLibrary = 'all';
 let voiceLeadingEnabled = false;
 let strictInversions = false;
@@ -728,7 +736,7 @@ let currentKeyMode = 'fixed';
 let listenMode = false;
 let chordStartTime = 0;
 
-// ─── Note transposition helper ───
+// ─── Helper functions ──────────────────────────────────────────────────
 const MIN_NOTE = 48;
 const MAX_NOTE = 71;
 
@@ -844,6 +852,7 @@ function getChordTypeForDegree(deg, chordTypeMode) {
     return Math.random() < 0.6 ? degInfo.seventh : degInfo.triad;
 }
 
+// Voice-leading inversion selection (minimises distance between chords)
 function selectVoiceLeadingInversion(prevNotes, chordRoot, typeKey, maxInv) {
     if (!voiceLeadingEnabled || !prevNotes || prevNotes.length === 0) {
         return Math.floor(Math.random() * (maxInv + 1));
@@ -879,32 +888,40 @@ function selectVoiceLeadingInversion(prevNotes, chordRoot, typeKey, maxInv) {
     return bestInv;
 }
 
+// ─── Sequence generators ──────────────────────────────────────────────
+
+// Main generator for Roman numeral mode (diatonic + optional borrowed)
 function generateSequence(keyRoot, length, filter, keyMode, invMode) {
     const degrees = [1,2,3,4,5,6,7];
     const seq = [];
     let prevDegree = null;
     let allowedTypes = CATEGORIES[filter] || CATEGORIES.all;
+    if (filter === 'all') allowedTypes = Object.keys(CHORD_TYPES).filter(t => t !== 'slash');
     const libraryTypes = getLibraryTypes();
 
     for (let i = 0; i < length; i++) {
         let deg, chordRoot, chordKeyRoot;
         let isBorrowed = false;
 
+        // Borrowed chord: pick random root, map to parallel minor degree
         if (useBorrowed && Math.random() < 0.25) {
             chordRoot = ALL_ROOTS[Math.floor(Math.random() * ALL_ROOTS.length)];
             chordKeyRoot = keyMode === 'modulating' ? ALL_ROOTS[Math.floor(Math.random() * ALL_ROOTS.length)] : parseInt(keyRoot, 10);
+            isBorrowed = true;
+            const minorScale = [0, 2, 3, 5, 7, 8, 10];
             const keyPc = pitchClass(chordKeyRoot);
             const chordPc = pitchClass(chordRoot);
             let interval = (chordPc - keyPc + 12) % 12;
-            const diatonic = [0,2,4,5,7,9,11];
-            let minDist = Infinity, bestDeg = 1;
-            for (let d = 0; d < 7; d++) {
-                let dist = Math.min((interval - diatonic[d] + 12) % 12, (diatonic[d] - interval + 12) % 12);
-                if (dist < minDist) { minDist = dist; bestDeg = d + 1; }
+            let minDist = Infinity;
+            let minorDeg = 1;
+            for (let j = 0; j < 7; j++) {
+                let diff = (interval - minorScale[j] + 12) % 12;
+                if (diff > 6) diff = 12 - diff;
+                if (diff < minDist) { minDist = diff; minorDeg = j + 1; }
             }
-            deg = bestDeg;
-            isBorrowed = true;
+            deg = minorDeg;
         } else {
+            // Diatonic degree (avoid same degree in a row)
             do { deg = degrees[Math.floor(Math.random() * degrees.length)]; } while (deg === prevDegree && length > 3);
             prevDegree = deg;
             const scale = [0,2,4,5,7,9,11];
@@ -914,33 +931,76 @@ function generateSequence(keyRoot, length, filter, keyMode, invMode) {
 
         let typeKey;
 
-        // ─── Borrowed quality fix ───
-        if (isBorrowed && filter !== 'diatonic' && filter !== 'all') {
-            const degInfo = DEGREE_MAP[deg];
-            const baseQuality = degInfo ? degInfo.triad : 'maj';
-            const matchingTypes = allowedTypes.filter(t => {
-                if (t === 'slash') return false;
+        // Pick chord type based on quality and filters
+        if (isBorrowed) {
+            let quality = 'maj';
+            if (deg === 1 || deg === 4 || deg === 5) quality = 'min';
+            else if (deg === 2) quality = 'dim';
+            let candidateTypes = [];
+            for (let t of allowedTypes) {
+                if (t === 'slash') continue;
                 const info = CHORD_TYPES[t];
-                if (!info) return false;
-                if (baseQuality === 'maj') {
-                    return ['major', 'major7', 'dominant7'].includes(info.library);
-                }
-                if (baseQuality === 'min') {
-                    return ['minor', 'minor7'].includes(info.library);
-                }
-                if (baseQuality === 'dim') {
-                    return ['dim', 'dim7', 'halfdim'].includes(info.library);
-                }
-                return false;
-            });
-            const available = matchingTypes.length ? matchingTypes : allowedTypes.filter(t => t !== 'slash');
-            typeKey = available.length ? available[Math.floor(Math.random() * available.length)] : 'maj';
+                if (!info) continue;
+                if (currentChordType === 'triad' && info.intervals.length > 3) continue;
+                if (currentChordType === 'seventh' && info.intervals.length < 4) continue;
+                if (currentLibrary !== 'all' && !(LIBRARY_MAP[currentLibrary] || []).includes(t)) continue;
+                let matches = false;
+                if (quality === 'maj' && ['major', 'major7', 'dominant7'].includes(info.library)) matches = true;
+                else if (quality === 'min' && ['minor', 'minor7'].includes(info.library)) matches = true;
+                else if (quality === 'dim' && ['dim', 'dim7', 'halfdim'].includes(info.library)) matches = true;
+                if (matches) candidateTypes.push(t);
+            }
+            if (candidateTypes.length === 0) {
+                if (quality === 'maj') candidateTypes = ['maj'];
+                else if (quality === 'min') candidateTypes = ['min'];
+                else candidateTypes = ['dim'];
+            }
+            typeKey = candidateTypes[Math.floor(Math.random() * candidateTypes.length)];
         } else {
+            // Standard diatonic
             const baseType = getChordTypeForDegree(deg, currentChordType);
             let candidateTypes = [baseType];
             if (libraryTypes) {
-                candidateTypes = libraryTypes.filter(t => allowedTypes.includes(t));
-                if (candidateTypes.length === 0) candidateTypes = allowedTypes.filter(t => t !== 'slash');
+                const degInfo = DEGREE_MAP[deg];
+                const baseQuality = degInfo ? degInfo.triad : 'maj';
+                const matchingFromLibrary = libraryTypes.filter(t => {
+                    const info = CHORD_TYPES[t];
+                    if (!info) return false;
+                    if (currentChordType === 'triad' && info.intervals.length > 3) return false;
+                    if (currentChordType === 'seventh' && info.intervals.length < 4) return false;
+                    if (baseQuality === 'maj') {
+                        return ['major', 'major7', 'dominant7'].includes(info.library);
+                    }
+                    if (baseQuality === 'min') {
+                        return ['minor', 'minor7'].includes(info.library);
+                    }
+                    if (baseQuality === 'dim') {
+                        return ['dim', 'dim7', 'halfdim'].includes(info.library);
+                    }
+                    return false;
+                });
+                if (matchingFromLibrary.length > 0) {
+                    candidateTypes = matchingFromLibrary;
+                } else {
+                    const qualityTypes = allowedTypes.filter(t => {
+                        if (t === 'slash') return false;
+                        const info = CHORD_TYPES[t];
+                        if (!info) return false;
+                        if (currentChordType === 'triad' && info.intervals.length > 3) return false;
+                        if (currentChordType === 'seventh' && info.intervals.length < 4) return false;
+                        if (baseQuality === 'maj') {
+                            return ['major', 'major7', 'dominant7'].includes(info.library);
+                        }
+                        if (baseQuality === 'min') {
+                            return ['minor', 'minor7'].includes(info.library);
+                        }
+                        if (baseQuality === 'dim') {
+                            return ['dim', 'dim7', 'halfdim'].includes(info.library);
+                        }
+                        return false;
+                    });
+                    candidateTypes = qualityTypes.length > 0 ? qualityTypes : [baseType];
+                }
             }
             typeKey = candidateTypes.length ? candidateTypes[Math.floor(Math.random() * candidateTypes.length)] : 'maj';
         }
@@ -948,6 +1008,7 @@ function generateSequence(keyRoot, length, filter, keyMode, invMode) {
         const chordInfo = CHORD_TYPES[typeKey];
         if (!chordInfo) continue;
 
+        // Determine inversion
         const maxInv = chordInfo.intervals.length - 1;
         let inv = 0;
         if (invMode === 'none') inv = 0;
@@ -955,6 +1016,7 @@ function generateSequence(keyRoot, length, filter, keyMode, invMode) {
             const prevNotes = seq[seq.length - 1].notes;
             inv = selectVoiceLeadingInversion(prevNotes, chordRoot, typeKey, maxInv);
         } else if (invMode === 'chaos' && seq.length > 0) {
+            // Chaos mode – chooses worst inversion (largest distance)
             const prevNotes = seq[seq.length - 1].notes;
             let worstInv = 0, worstDist = -1;
             const prevLowest = Math.min(...prevNotes);
@@ -977,7 +1039,27 @@ function generateSequence(keyRoot, length, filter, keyMode, invMode) {
         const detectionNotes = buildChord(chordRoot, typeKey, inv);
         const displayNotes = transposeToVisibleRange([...detectionNotes]);
 
-        const romanDisplay = getRomanNumeral(chordKeyRoot, chordRoot, typeKey, inv);
+        // Build display names
+        let romanDisplay;
+        if (isBorrowed) {
+            const degInfo = DEGREE_MAP[deg];
+            let label = degInfo ? degInfo.label : '?';
+            const quality = typeKey.startsWith('min') ? 'minor' : (typeKey === 'dim' ? 'dim' : 'major');
+            if (quality === 'minor' || quality === 'dim') {
+                label = label.toLowerCase();
+            }
+            let suffix = chordInfo.symbol;
+            if (typeKey === 'maj' || typeKey === 'min') suffix = '';
+            else if (typeKey === 'dim') suffix = '°';
+            else if (typeKey === 'maj7') suffix = 'maj7';
+            else if (typeKey === 'min7') suffix = '7';
+            else if (typeKey === 'm7b5') suffix = 'ø7';
+            else if (typeKey === 'dim7') suffix = '°7';
+            romanDisplay = label + suffix;
+        } else {
+            romanDisplay = getRomanNumeral(chordKeyRoot, chordRoot, typeKey, inv);
+        }
+
         const symbol = getChordSymbol(chordRoot, typeKey);
 
         seq.push({
@@ -1001,18 +1083,18 @@ function generateSequence(keyRoot, length, filter, keyMode, invMode) {
     return seq;
 }
 
+// Absolute mode – random chords with no key context
 function generateAbsoluteSequence(length, filter, invMode) {
     const seq = [];
-    let allowedTypes = CATEGORIES[filter] || CATEGORIES.all;
+    const allowedTypes = CATEGORIES[filter] || CATEGORIES.all;
     const libraryTypes = getLibraryTypes();
-
     for (let i = 0; i < length; i++) {
-        const chordRoot = ALL_ROOTS[Math.floor(Math.random() * ALL_ROOTS.length)];
-        let candidateTypes = allowedTypes.filter(t => t !== 'slash');
-        if (libraryTypes) {
-            candidateTypes = candidateTypes.filter(t => libraryTypes.includes(t));
-        }
-        const typeKey = candidateTypes.length ? candidateTypes[Math.floor(Math.random() * candidateTypes.length)] : 'maj';
+        let typeKey;
+        const root = ALL_ROOTS[Math.floor(Math.random() * ALL_ROOTS.length)];
+        let candidates = allowedTypes.filter(t => t !== 'slash');
+        if (libraryTypes) candidates = candidates.filter(t => libraryTypes.includes(t));
+        if (candidates.length === 0) candidates = ['maj'];
+        typeKey = candidates[Math.floor(Math.random() * candidates.length)];
         const chordInfo = CHORD_TYPES[typeKey];
         if (!chordInfo) continue;
         const maxInv = chordInfo.intervals.length - 1;
@@ -1020,78 +1102,185 @@ function generateAbsoluteSequence(length, filter, invMode) {
         if (invMode === 'none') inv = 0;
         else if ((invMode === 'voice-leading' || voiceLeadingEnabled) && seq.length > 0) {
             const prevNotes = seq[seq.length - 1].notes;
-            inv = selectVoiceLeadingInversion(prevNotes, chordRoot, typeKey, maxInv);
-        } else if (invMode === 'chaos' && seq.length > 0) {
-            const prevNotes = seq[seq.length - 1].notes;
-            let worstInv = 0, worstDist = -1;
-            const prevLowest = Math.min(...prevNotes);
-            for (let v = 0; v <= maxInv; v++) {
-                const testNotes = buildChord(chordRoot, typeKey, v);
-                if (testNotes.length === 0) continue;
-                const testLowest = Math.min(...testNotes);
-                let dist = 0;
-                for (let oct = -2; oct <= 2; oct++) {
-                    const d = Math.abs((testLowest + oct * 12) - prevLowest);
-                    if (d > dist) dist = d;
-                }
-                if (dist > worstDist) { worstDist = dist; worstInv = v; }
-            }
-            inv = worstInv;
+            inv = selectVoiceLeadingInversion(prevNotes, root, typeKey, maxInv);
         } else {
             inv = Math.floor(Math.random() * (maxInv + 1));
         }
-        const detectionNotes = buildChord(chordRoot, typeKey, inv);
+        const detectionNotes = buildChord(root, typeKey, inv);
         const displayNotes = transposeToVisibleRange([...detectionNotes]);
-        const symbol = getChordSymbol(chordRoot, typeKey);
+        const symbol = getChordSymbol(root, typeKey);
         seq.push({
-            degree: 0,
-            degreeLabel: '',
+            degree: 1,
+            degreeLabel: 'I',
             typeKey: typeKey,
             inversion: inv,
-            chordRoot: chordRoot,
-            chordKeyRoot: chordRoot,
+            chordRoot: root,
+            chordKeyRoot: root,
             notes: detectionNotes,
             displayNotes: displayNotes,
             symbol: symbol,
+            roman: symbol,
             symbolOnly: symbol,
             display: symbol,
             fullDesc: symbol,
             category: chordInfo.category || 'diatonic',
-            isBorrowed: false,
-            _mode: 'absolute'
+            isBorrowed: false
         });
     }
     return seq;
 }
 
+// Mixed mode – roman numeral and absolute chords mixed
 function generateMixedSequence(keyRoot, length, filter, keyMode, invMode) {
-    const roman = generateSequence(keyRoot, length, filter, keyMode, invMode);
-    const abs = generateAbsoluteSequence(length, filter, invMode);
-    const mixed = [];
-    const usedR = roman.map(()=>false), usedA = abs.map(()=>false);
+    const seq = [];
+    const degrees = [1,2,3,4,5,6,7];
+    const allowedTypes = CATEGORIES[filter] || CATEGORIES.all;
+    const libraryTypes = getLibraryTypes();
     for (let i = 0; i < length; i++) {
-        const useR = Math.random() < 0.5;
-        let found = false;
-        for (let att = 0; att < 20; att++) {
-            if (useR) {
-                const idx = Math.floor(Math.random() * roman.length);
-                if (!usedR[idx]) { usedR[idx] = true; mixed.push({...roman[idx], _mode: 'roman'}); found = true; break; }
-            } else {
-                const idx = Math.floor(Math.random() * abs.length);
-                if (!usedA[idx]) { usedA[idx] = true; mixed.push({...abs[idx], _mode: 'absolute'}); found = true; break; }
+        let deg, chordRoot, chordKeyRoot;
+        let isBorrowed = false;
+        let useRoman = Math.random() < 0.6;
+        // Borrowed logic same as roman mode
+        if (useBorrowed && Math.random() < 0.25) {
+            chordRoot = ALL_ROOTS[Math.floor(Math.random() * ALL_ROOTS.length)];
+            chordKeyRoot = keyMode === 'modulating' ? ALL_ROOTS[Math.floor(Math.random() * ALL_ROOTS.length)] : parseInt(keyRoot, 10);
+            isBorrowed = true;
+            const minorScale = [0, 2, 3, 5, 7, 8, 10];
+            const keyPc = pitchClass(chordKeyRoot);
+            const chordPc = pitchClass(chordRoot);
+            let interval = (chordPc - keyPc + 12) % 12;
+            let minDist = Infinity;
+            let minorDeg = 1;
+            for (let j = 0; j < 7; j++) {
+                let diff = (interval - minorScale[j] + 12) % 12;
+                if (diff > 6) diff = 12 - diff;
+                if (diff < minDist) { minDist = diff; minorDeg = j + 1; }
             }
+            deg = minorDeg;
+        } else {
+            do { deg = degrees[Math.floor(Math.random() * degrees.length)]; } while (deg === (seq.length ? seq[seq.length-1].degree : -1) && length > 3);
+            const scale = [0,2,4,5,7,9,11];
+            chordKeyRoot = keyMode === 'modulating' ? ALL_ROOTS[Math.floor(Math.random() * ALL_ROOTS.length)] : parseInt(keyRoot, 10);
+            chordRoot = chordKeyRoot + scale[deg - 1];
         }
-        if (!found) {
-            for (let j = 0; j < roman.length; j++) if (!usedR[j]) { usedR[j] = true; mixed.push({...roman[j], _mode: 'roman'}); found = true; break; }
-            if (!found) for (let j = 0; j < abs.length; j++) if (!usedA[j]) { usedA[j] = true; mixed.push({...abs[j], _mode: 'absolute'}); found = true; break; }
+
+        // Same type selection as roman mode
+        let typeKey;
+        if (isBorrowed) {
+            let quality = 'maj';
+            if (deg === 1 || deg === 4 || deg === 5) quality = 'min';
+            else if (deg === 2) quality = 'dim';
+            let candidateTypes = [];
+            for (let t of allowedTypes) {
+                if (t === 'slash') continue;
+                const info = CHORD_TYPES[t];
+                if (!info) continue;
+                if (currentChordType === 'triad' && info.intervals.length > 3) continue;
+                if (currentChordType === 'seventh' && info.intervals.length < 4) continue;
+                if (currentLibrary !== 'all' && !(LIBRARY_MAP[currentLibrary] || []).includes(t)) continue;
+                let matches = false;
+                if (quality === 'maj' && ['major', 'major7', 'dominant7'].includes(info.library)) matches = true;
+                else if (quality === 'min' && ['minor', 'minor7'].includes(info.library)) matches = true;
+                else if (quality === 'dim' && ['dim', 'dim7', 'halfdim'].includes(info.library)) matches = true;
+                if (matches) candidateTypes.push(t);
+            }
+            if (candidateTypes.length === 0) {
+                if (quality === 'maj') candidateTypes = ['maj'];
+                else if (quality === 'min') candidateTypes = ['min'];
+                else candidateTypes = ['dim'];
+            }
+            typeKey = candidateTypes[Math.floor(Math.random() * candidateTypes.length)];
+        } else {
+            const baseType = getChordTypeForDegree(deg, currentChordType);
+            let candidateTypes = [baseType];
+            if (libraryTypes) {
+                const degInfo = DEGREE_MAP[deg];
+                const baseQuality = degInfo ? degInfo.triad : 'maj';
+                const matchingFromLibrary = libraryTypes.filter(t => {
+                    const info = CHORD_TYPES[t];
+                    if (!info) return false;
+                    if (currentChordType === 'triad' && info.intervals.length > 3) return false;
+                    if (currentChordType === 'seventh' && info.intervals.length < 4) return false;
+                    if (baseQuality === 'maj') {
+                        return ['major', 'major7', 'dominant7'].includes(info.library);
+                    }
+                    if (baseQuality === 'min') {
+                        return ['minor', 'minor7'].includes(info.library);
+                    }
+                    if (baseQuality === 'dim') {
+                        return ['dim', 'dim7', 'halfdim'].includes(info.library);
+                    }
+                    return false;
+                });
+                if (matchingFromLibrary.length > 0) {
+                    candidateTypes = matchingFromLibrary;
+                } else {
+                    const qualityTypes = allowedTypes.filter(t => {
+                        if (t === 'slash') return false;
+                        const info = CHORD_TYPES[t];
+                        if (!info) return false;
+                        if (currentChordType === 'triad' && info.intervals.length > 3) return false;
+                        if (currentChordType === 'seventh' && info.intervals.length < 4) return false;
+                        if (baseQuality === 'maj') {
+                            return ['major', 'major7', 'dominant7'].includes(info.library);
+                        }
+                        if (baseQuality === 'min') {
+                            return ['minor', 'minor7'].includes(info.library);
+                        }
+                        if (baseQuality === 'dim') {
+                            return ['dim', 'dim7', 'halfdim'].includes(info.library);
+                        }
+                        return false;
+                    });
+                    candidateTypes = qualityTypes.length > 0 ? qualityTypes : [baseType];
+                }
+            }
+            typeKey = candidateTypes.length ? candidateTypes[Math.floor(Math.random() * candidateTypes.length)] : 'maj';
         }
+
+        const chordInfo = CHORD_TYPES[typeKey];
+        if (!chordInfo) continue;
+
+        const maxInv = chordInfo.intervals.length - 1;
+        let inv = 0;
+        if (invMode === 'none') inv = 0;
+        else if ((invMode === 'voice-leading' || voiceLeadingEnabled) && seq.length > 0) {
+            const prevNotes = seq[seq.length - 1].notes;
+            inv = selectVoiceLeadingInversion(prevNotes, chordRoot, typeKey, maxInv);
+        } else {
+            inv = Math.floor(Math.random() * (maxInv + 1));
+        }
+
+        const detectionNotes = buildChord(chordRoot, typeKey, inv);
+        const displayNotes = transposeToVisibleRange([...detectionNotes]);
+        const romanDisplay = getRomanNumeral(chordKeyRoot, chordRoot, typeKey, inv);
+        const symbol = getChordSymbol(chordRoot, typeKey);
+        const display = useRoman ? romanDisplay : symbol;
+
+        seq.push({
+            degree: deg,
+            degreeLabel: DEGREE_MAP[deg] ? DEGREE_MAP[deg].label : '?',
+            typeKey: typeKey,
+            inversion: inv,
+            chordRoot: chordRoot,
+            chordKeyRoot: chordKeyRoot,
+            notes: detectionNotes,
+            displayNotes: displayNotes,
+            symbol: symbol,
+            roman: romanDisplay,
+            symbolOnly: symbol,
+            display: display,
+            fullDesc: display,
+            category: isBorrowed ? 'borrowed' : (chordInfo.category || 'diatonic'),
+            isBorrowed: isBorrowed,
+            _mode: useRoman ? 'roman' : 'absolute'
+        });
     }
-    mixed.forEach(item => { item.display = item._mode === 'roman' ? item.display : item.symbol; item.fullDesc = item._mode === 'roman' ? item.fullDesc : item.symbol; });
-    return mixed;
+    return seq;
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// 2. AUDIO ENGINE (same as v17)
+// 2. AUDIO ENGINE – Web Audio synthesis with reverb
 // ═══════════════════════════════════════════════════════════════════════
 
 let audioCtx = null;
@@ -1225,6 +1414,7 @@ function playNote(note, velocity, duration) {
         const amp = Math.max(0.02, (velocity / 127) * 0.35);
         activeVoices++;
 
+        // Three oscillators for a richer sound
         const osc1 = ctx.createOscillator();
         osc1.type = 'sawtooth';
         osc1.frequency.value = freq;
@@ -1308,6 +1498,7 @@ function playNote(note, velocity, duration) {
     } catch(e) {
         console.warn('PlayNote failed:', e);
         activeVoices--;
+        // Fallback: simple sine wave
         try {
             const osc = ctx.createOscillator();
             const gain = ctx.createGain();
@@ -1452,7 +1643,7 @@ function resetAudio() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// 3. STATE & PIANO
+// 3. PIANO & STATE
 // ═══════════════════════════════════════════════════════════════════════
 
 let persistentNotes = [];
@@ -1491,9 +1682,11 @@ function buildPiano() {
     const padRight = parseFloat(containerStyle.paddingRight) || 0;
     const availWidth = container.clientWidth - padLeft - padRight - 4;
 
+    // White keys: 14 notes from C3 to E5
     const whiteCount = 14;
     const whiteKeyWidth = Math.max(20, Math.floor(availWidth / whiteCount));
-    const blackKeyWidth = Math.round(whiteKeyWidth * 0.58);
+    // Black keys: thinner – now 50% of white key width (was 58%)
+    const blackKeyWidth = Math.round(whiteKeyWidth * 0.50);
     const blackKeyOffset = whiteKeyWidth - Math.round(blackKeyWidth / 2);
 
     const vh = window.innerHeight;
@@ -1512,7 +1705,7 @@ function buildPiano() {
         if (BLACK_PCS.includes(pitchClass(n))) blackNotes.push(n);
     }
 
-    const whiteEls = [];
+    // Draw white keys
     whiteNotes.forEach((n, idx) => {
         const key = document.createElement('div');
         key.className = 'key white';
@@ -1524,10 +1717,10 @@ function buildPiano() {
         label.textContent = noteLabel(n);
         key.appendChild(label);
         pianoEl.appendChild(key);
-        whiteEls.push(key);
         keyElements.set(n, key);
     });
 
+    // Draw black keys (centered on the left edge of the white key to its right)
     blackNotes.forEach(n => {
         const whiteBelow = n - 1;
         const idx = whiteNotes.indexOf(whiteBelow);
@@ -1546,6 +1739,7 @@ function buildPiano() {
         keyElements.set(n, key);
     });
 
+    // Attach event listeners to each key
     pianoEl.querySelectorAll('.key').forEach(el => {
         const note = parseInt(el.dataset.note);
         const on = (e) => {
@@ -1566,6 +1760,7 @@ function buildPiano() {
         el.addEventListener('touchcancel', off, { passive: false });
     });
 
+    // Restore any persistent notes (from MIDI)
     persistentNotes.forEach(n => {
         const el = keyElements.get(n);
         if (el) el.classList.add('pressed');
@@ -1580,7 +1775,7 @@ window.addEventListener('resize', () => {
 window.addEventListener('orientationchange', () => setTimeout(buildPiano, 300));
 
 // ═══════════════════════════════════════════════════════════════════════
-// 4. NOTE HANDLING & CHORD CHECK (with fixed strict inversion)
+// 4. NOTE HANDLING & CHORD CHECK
 // ═══════════════════════════════════════════════════════════════════════
 
 function handleNoteOn(note, velocity) {
@@ -1618,6 +1813,7 @@ function scheduleCheck() {
     }, 500);
 }
 
+// ─── Chord checking with strict inversion support ────────────────────
 function checkChord() {
     if (!currentExpectedNotes || currentExpectedNotes.length === 0) {
         feedbackMsg.textContent = 'Generate a sequence first.';
@@ -1630,42 +1826,62 @@ function checkChord() {
         return;
     }
 
+    const playedPitchSet = pitchClassSet(persistentNotes);
+    const expectedPitchSet = pitchClassSet(currentExpectedNotes);
+
+    // Debug output in console
+    console.log('🎯 Expected MIDI:', currentExpectedNotes);
+    console.log('🎯 Expected pitch classes:', [...expectedPitchSet].map(pc => getNoteNames()[pc]));
+    console.log('🎹 Played MIDI:', persistentNotes);
+    console.log('🎹 Played pitch classes:', [...playedPitchSet].map(pc => getNoteNames()[pc]));
+
     let correct = false;
+    let errorMsg = '';
 
     if (strictInversions) {
-        // ─── Strict inversion: check pitch classes AND bass note ───
-        const expectedPitchSet = pitchClassSet(currentExpectedNotes);
-        const playedPitchSet = pitchClassSet(persistentNotes);
-
-        // 1. All expected pitches present and no extra
+        // First: check that the pitch‑class sets match exactly
         const allPresent = [...expectedPitchSet].every(pc => playedPitchSet.has(pc));
         const noExtra = [...playedPitchSet].every(pc => expectedPitchSet.has(pc));
 
         if (allPresent && noExtra) {
-            // 2. Check bass note (lowest played note)
-            const expectedBassPitch = pitchClass(currentExpectedNotes[0]); // first note in the built chord is the bass
+            // Now check the bass pitch class
+            const expectedBass = pitchClass(currentExpectedNotes[0]); // lowest note after inversion
             const playedLowest = Math.min(...persistentNotes);
-            const playedBassPitch = pitchClass(playedLowest);
-            if (playedBassPitch === expectedBassPitch) {
+            const playedBass = pitchClass(playedLowest);
+
+            if (expectedBass === playedBass) {
                 correct = true;
             } else {
-                correct = false;
+                errorMsg = `❌ Wrong inversion – bass should be ${getNoteNames()[expectedBass]}, not ${getNoteNames()[playedBass]}`;
             }
         } else {
-            correct = false;
+            const missing = [...expectedPitchSet].filter(pc => !playedPitchSet.has(pc));
+            const extra = [...playedPitchSet].filter(pc => !expectedPitchSet.has(pc));
+            let msg = '❌ ';
+            if (missing.length) msg += `Missing: ${missing.map(pc => getNoteNames()[pc]).join(' ')} `;
+            if (extra.length) msg += `Extra: ${extra.map(pc => getNoteNames()[pc]).join(' ')} `;
+            errorMsg = msg.trim() || '❌ Incorrect';
         }
     } else {
-        // ─── Relaxed: pitch‑class matching (any inversion) ───
-        const expectedSet = pitchClassSet(currentExpectedNotes);
-        const playedSet = pitchClassSet(persistentNotes);
-        const allPresent = [...expectedSet].every(pc => playedSet.has(pc));
-        const noExtra = [...playedSet].every(pc => expectedSet.has(pc));
+        // Non‑strict: only pitch classes matter, inversions ignored
+        const allPresent = [...expectedPitchSet].every(pc => playedPitchSet.has(pc));
+        const noExtra = [...playedPitchSet].every(pc => expectedPitchSet.has(pc));
         correct = allPresent && noExtra;
+        if (!correct) {
+            const missing = [...expectedPitchSet].filter(pc => !playedPitchSet.has(pc));
+            const extra = [...playedPitchSet].filter(pc => !expectedPitchSet.has(pc));
+            let msg = '❌ ';
+            if (missing.length) msg += `Missing: ${missing.map(pc => getNoteNames()[pc]).join(' ')} `;
+            if (extra.length) msg += `Extra: ${extra.map(pc => getNoteNames()[pc]).join(' ')} `;
+            errorMsg = msg.trim() || '❌ Incorrect';
+        }
     }
 
+    // Clear previous visual states
     keyElements.forEach(el => el.classList.remove('correct', 'wrong', 'missing'));
 
     if (correct) {
+        // --- Correct ---
         stats.correct++;
         stats.streak++;
         if (stats.streak > stats.bestStreak) stats.bestStreak = stats.streak;
@@ -1695,27 +1911,17 @@ function checkChord() {
         }, 700);
 
     } else {
+        // --- Wrong ---
         stats.wrong++;
         stats.streak = 0;
         stats.total++;
         updateStats();
 
-        const expectedSet = pitchClassSet(currentExpectedNotes);
-        const playedSet = pitchClassSet(persistentNotes);
-        const missing = [...expectedSet].filter(pc => !playedSet.has(pc));
-        const extra = [...playedSet].filter(pc => !expectedSet.has(pc));
-
-        let msg = '❌ ';
-        if (missing.length) msg += `Missing: ${missing.map(pc => getNoteNames()[pc]).join(' ')} `;
-        if (extra.length) msg += `Extra: ${extra.map(pc => getNoteNames()[pc]).join(' ')} `;
-        if (strictInversions && !missing.length && !extra.length) {
-            const expectedBass = pitchClass(currentExpectedNotes[0]);
-            const playedLowest = Math.min(...persistentNotes);
-            const playedBass = pitchClass(playedLowest);
-            msg = `❌ Wrong inversion – bass should be ${getNoteNames()[expectedBass]}, not ${getNoteNames()[playedBass]}`;
-        }
-        feedbackMsg.textContent = msg.trim() || '❌ Incorrect';
+        feedbackMsg.textContent = errorMsg || '❌ Incorrect';
         feedbackMsg.className = 'feedback-msg wrong';
+
+        const extra = [...playedPitchSet].filter(pc => !expectedPitchSet.has(pc));
+        const missing = [...expectedPitchSet].filter(pc => !playedPitchSet.has(pc));
 
         extra.forEach(pc => {
             persistentNotes.forEach(n => {
@@ -1852,7 +2058,7 @@ function updateStats() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════
-// 5. MIDI – AUTO-CONNECT (same as v17)
+// 5. MIDI – Web MIDI support
 // ═══════════════════════════════════════════════════════════════════════
 
 let midiInput = null;
@@ -2097,7 +2303,7 @@ setTimeout(() => {
 }, 500);
 
 // ═══════════════════════════════════════════════════════════════════════
-// 6. UI EVENTS
+// 6. UI EVENTS & RENDER
 // ═══════════════════════════════════════════════════════════════════════
 
 const soundToggle = document.getElementById('soundToggle');
@@ -2187,6 +2393,14 @@ document.querySelectorAll('#libraryRow span').forEach(el => {
     });
 });
 
+// ─── Borrowed Toggle ───
+document.getElementById('borrowedToggle').addEventListener('click', function() {
+    useBorrowed = !useBorrowed;
+    this.textContent = useBorrowed ? 'Borrowed On' : 'Borrowed Off';
+    this.classList.toggle('active', useBorrowed);
+    generate();
+});
+
 // ─── Render Sequence ───
 function renderSequence(seq) {
     sequenceContainer.innerHTML = '';
@@ -2208,10 +2422,17 @@ function renderSequence(seq) {
             keyText = noteLabel(item.chordKeyRoot);
         }
 
+        let notesHtml = '';
+        if (showNotes) {
+            const noteNames = item.notes.map(n => noteLabel(n)).join(' ');
+            notesHtml = `<div class="notes-display">${noteNames}</div>`;
+        }
+
         div.innerHTML = `
             <div class="deg">${idx+1}.</div>
             <div class="name">${nameText}</div>
             ${keyText ? `<div class="key-label">${keyText}</div>` : ''}
+            ${notesHtml}
         `;
         div.addEventListener('click', () => playSingleChord(item));
         sequenceContainer.appendChild(div);
@@ -2281,13 +2502,6 @@ document.querySelectorAll('#filterRow span[data-filter]').forEach(el => {
     });
 });
 
-document.getElementById('borrowedToggle').addEventListener('click', function() {
-    useBorrowed = !useBorrowed;
-    this.textContent = useBorrowed ? 'Borrowed On' : 'Borrowed Off';
-    this.classList.toggle('active', useBorrowed);
-    generate();
-});
-
 chordTypeSelect.addEventListener('change', () => {
     currentChordType = chordTypeSelect.value;
     generate();
@@ -2328,6 +2542,8 @@ document.getElementById('clearBtn').addEventListener('click', () => {
     targetKeyIndicator.style.display = 'none';
     invBadge.style.display = 'none';
 });
+
+// ─── Show Notes Toggle ───
 document.getElementById('showNotesBtn').addEventListener('click', function() {
     showNotes = !showNotes;
     this.textContent = showNotes ? 'Hide Notes' : 'Show Notes';
@@ -2361,7 +2577,7 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
-console.log('🎵 Chord Trainer v17.1 – Strict Inversions fixed (bass‑note check).');
+console.log('🎵 Chord Trainer v24 – Commented, black keys thinner, fixed keyboard events.');
 </script>
 </body>
 </html>
