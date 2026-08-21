@@ -24,7 +24,7 @@ Whether you're a *music student, an accompanist, or a jazz pianist, this trainer
 ## 🚀 Quick Start
 
 1. **Open the app** in your browser:
-   - `https://micfe21.github.io/Chord-trainer/chordsequencetrainer17.1.html`
+   - `https://micfe21.github.io/Chord-trainer/chordsequencetrainer17.html
 2. **Tap `Start Audio`** (orange button) – this enables sound.
 3. **Tap `Generate`** – a chord sequence appears.
 4. **Read the chord symbol** in the big display.
