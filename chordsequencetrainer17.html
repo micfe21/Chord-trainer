@@ -1,17 +1,16 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<title>Chord Trainer – v49 (Capability Debug)</title>
+<title>Chord Trainer – v50 (Extended range + per‑note feedback)</title>
 <style>
+/* same styles – I'll keep it compact */
 *{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;background:#f5f2ed;min-height:100dvh;padding:12px;color:#1f1c18;display:flex;justify-content:center;touch-action:manipulation;-webkit-tap-highlight-color:transparent}.app{max-width:100%;width:100%;background:#fbfaf7;border-radius:28px;padding:18px 16px 20px;box-shadow:0 8px 32px rgba(0,0,0,.06);border:1px solid rgba(0,0,0,.04)}.header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:12px}.header h1{font-size:1.4rem;font-weight:700;letter-spacing:-.02em}.header h1 span{color:#0b6d73}.top-controls{display:flex;flex-wrap:wrap;gap:4px;align-items:center}.top-controls select,.top-controls button{padding:5px 10px;border-radius:8px;border:1px solid #d7d2c8;background:#fff;font-size:.75rem;font-weight:600;color:#1f1c18;cursor:pointer;touch-action:manipulation;min-height:32px}.top-controls button{background:#0b6d73;color:#fff;border-color:#0b6d73}.top-controls button:active{transform:scale(.95)}.top-controls button.secondary{background:#e8e3da;color:#1f1c18;border-color:#d7d2c8}.top-controls button.voice-leading{background:#d97706;color:#fff;border-color:#d97706;font-weight:700}.top-controls button.voice-leading.active{background:#0b6d73;border-color:#0b6d73}.top-controls button.strict-inversions{background:#6c5ce7;color:#fff;border-color:#6c5ce7}.top-controls button.strict-inversions.active{background:#c62828;border-color:#c62828}.mode-row{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px}.mode-row button{padding:4px 14px;border-radius:999px;border:2px solid #d7d2c8;background:transparent;font-weight:600;font-size:.8rem;cursor:pointer;transition:.15s;min-height:30px}.mode-row button.active{background:#0b6d73;color:#fff;border-color:#0b6d73}.filter-row{display:flex;flex-wrap:wrap;gap:4px;padding:4px 0 8px}.filter-row span{font-size:.65rem;font-weight:600;color:#6e6a62;padding:3px 10px;border-radius:999px;background:rgba(255,255,255,.5);border:1px solid #d7d2c8;cursor:pointer;transition:.15s}.filter-row span.active{background:#0b6d73;color:#fff;border-color:#0b6d73}.filter-row span.chromatic-toggle{background:#e8e3da;border-color:#b8b0a4}.filter-row span.chromatic-toggle.active{background:#0b6d73;color:#fff;border-color:#0b6d73}.library-row{display:flex;flex-wrap:wrap;gap:4px;padding:4px 0 8px;border-top:1px solid #e4ded4;margin-top:4px}.library-row span{font-size:.6rem;font-weight:600;color:#6e6a62;padding:2px 10px;border-radius:999px;background:rgba(255,255,255,.5);border:1px solid #d7d2c8;cursor:pointer;transition:.15s;white-space:nowrap}.library-row span.active{background:#0b6d73;color:#fff;border-color:#0b6d73}.target-area{background:#edebe6;border-radius:16px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;min-height:64px}.target-chord{font-size:2.2rem;font-weight:700;letter-spacing:-.02em;line-height:1.2}.target-chord .badge{font-size:.6rem;font-weight:600;color:#6e6a62;text-transform:uppercase;background:#d7d2c8;padding:2px 10px;border-radius:20px;margin-right:8px;display:inline-block;vertical-align:middle}.target-chord .key-indicator{font-size:1rem;font-weight:600;color:#0b6d73;background:rgba(11,109,115,.12);padding:2px 10px;border-radius:12px;margin-right:6px;display:inline-block;vertical-align:middle}.target-chord .inv-badge{font-size:.8rem;font-weight:600;color:#6c5ce7;background:rgba(108,92,231,.15);padding:2px 10px;border-radius:12px;margin-left:6px;display:inline-block;vertical-align:middle}.target-progress{font-size:.95rem;font-weight:600;color:#6e6a62;background:rgba(255,255,255,.5);padding:3px 12px;border-radius:20px}.feedback-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;padding:2px 0 6px;min-height:24px}.feedback-msg{font-weight:600;font-size:.85rem;transition:color .15s}.feedback-msg.correct{color:#2e7d32}.feedback-msg.wrong{color:#c62828}.feedback-msg.waiting{color:#6e6a62}.feedback-msg.idle{color:#9e9e9e}.debug-line{font-size:.6rem;color:#333;background:#f0ede8;padding:2px 8px;border-radius:8px;margin-top:2px;font-family:monospace;word-break:break-all}.stats-row{display:flex;gap:10px;font-size:.65rem;font-weight:600;color:#6e6a62;flex-wrap:wrap}.stats-row .stat{background:#edebe6;padding:2px 10px;border-radius:12px}.stats-row .stat strong{color:#1f1c18}.played-status{font-family:'SF Mono','Courier New',monospace;font-size:.65rem;color:#6e6a62;background:rgba(0,0,0,.04);padding:2px 10px;border-radius:12px;text-align:center;min-height:20px}.sequence-container{display:flex;gap:6px;overflow-x:auto;padding:4px 0 8px;scroll-behavior:smooth;-webkit-overflow-scrolling:touch}.seq-item{flex:0 0 auto;background:#f1efe9;padding:4px 12px;border-radius:10px;border-left:4px solid #0b6d73;cursor:pointer;text-align:center;min-width:60px;transition:background .15s,border-color .15s}.seq-item .deg{font-weight:700;font-size:.7rem}.seq-item .name{font-weight:500;font-size:.85rem}.seq-item .notes-display{font-size:.55rem;color:#4a4a4a;font-family:monospace;margin-top:2px}.seq-item .key-label{font-size:.55rem;color:#0b6d73;font-weight:600}.seq-item.playing{background:#fef3c7;border-left-color:#d97706}.seq-item.correct{background:#e8f5e9!important;border-left-color:#2f7d48!important}.seq-item.wrong{background:#fbe9e7!important;border-left-color:#c62828!important}.piano-wrapper{margin:4px 0 8px;padding:6px 0;background:#dcd6cc;border-radius:14px;overflow-x:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x;position:relative;width:100%}.piano{position:relative;height:180px;width:100%;margin:0 auto;touch-action:pan-y;min-width:520px}.key{position:absolute;border-radius:0 0 5px 5px;cursor:pointer;touch-action:manipulation;user-select:none;transition:background .07s,transform .05s,box-shadow .07s;will-change:transform;border:1px solid rgba(0,0,0,.1)}.key:active{transform:scale(.96)}.key.white{background:#f8f6f2;height:100%;bottom:0;border-bottom:3px solid #bbb;z-index:1;box-shadow:0 2px 4px rgba(0,0,0,.03)}.key.white.pressed{background:#d0d0d0;transform:scale(.96)}.key.white.correct{background:#81c784}.key.white.wrong{background:#ef9a9a}.key.white.missing{background:#90caf9}.key.black{background:#1a1a1a;height:62%;top:0;z-index:2;border-bottom:3px solid #444;border-radius:0 0 3px 3px;box-shadow:0 4px 6px rgba(0,0,0,.3)}.key.black.pressed{background:#555;transform:scale(.94)}.key.black.correct{background:#4caf50}.key.black.wrong{background:#e57373}.key.black.missing{background:#42a5f5}.key .label{position:absolute;bottom:4px;left:50%;transform:translateX(-50%);font-size:8px;font-weight:700;color:#aaa;pointer-events:none;letter-spacing:.02em}.key.black .label{color:#777;bottom:3px}.midi-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:4px 0;margin-top:2px}.midi-btn{padding:6px 14px;border-radius:10px;border:1px solid #d7d2c8;background:#fff;font-weight:600;font-size:.75rem;cursor:pointer;touch-action:manipulation}.midi-btn:active{transform:scale(.95)}.midi-btn.midi{background:#6c5ce7;color:#fff;border-color:#6c5ce7}.midi-btn.midi.connected{background:#2e7d32;border-color:#2e7d32}.midi-device-select{padding:4px 8px;border-radius:8px;border:1px solid #d7d2c8;background:#fff;font-size:.7rem;font-weight:600;color:#1f1c18;max-width:200px;cursor:pointer}.midi-status{font-size:.6rem;color:#6e6a62;padding:3px 12px;background:#edebe6;border-radius:20px}.midi-status.connected{background:#c8e6c9;color:#1e5a1e}.midi-debug{font-size:.55rem;color:#6e6a62;margin-top:4px;font-family:monospace;word-break:break-all}.sound-toggle{display:flex;gap:4px;align-items:center;background:#edebe6;border-radius:20px;padding:2px}.sound-toggle button{padding:3px 12px;border-radius:16px;border:none;background:transparent;font-size:.6rem;font-weight:600;color:#6e6a62;cursor:pointer;transition:.15s;touch-action:manipulation}.sound-toggle button.active{background:#0b6d73;color:#fff}.sound-toggle button:active{transform:scale(.95)}.action-row{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;border-top:1px solid #e4ded4;padding-top:8px}.action-row button{padding:6px 14px;border-radius:10px;border:1px solid #d7d2c8;background:#fff;font-weight:600;font-size:.75rem;cursor:pointer;touch-action:manipulation;flex:1 0 auto;min-width:50px}.action-row button:active{transform:scale(.95)}.action-row button.primary{background:#0b6d73;color:#fff;border-color:#0b6d73}.action-row button.danger{background:#c62828;color:#fff;border-color:#c62828}.action-row button.check{background:#6c5ce7;color:#fff;border-color:#6c5ce7}.action-row button.start-audio{background:#d97706;color:#fff;border-color:#d97706;font-weight:700;font-size:.85rem;padding:8px 20px}.action-row button.test-sound{background:#6c5ce7;color:#fff;border-color:#6c5ce7}.action-row button.reset-audio{background:#c62828;color:#fff;border-color:#c62828}.audio-indicator{display:inline-block;width:12px;height:12px;border-radius:50%;margin-left:8px;vertical-align:middle}.audio-indicator.running{background:#4caf50}.audio-indicator.suspended{background:#ff9800}.audio-indicator.error{background:#f44336}.footer-note{margin-top:6px;font-size:.6rem;color:#9d988f;text-align:center}@media(max-width:600px){.app{padding:12px 10px}.target-chord{font-size:1.6rem}.piano{height:140px;min-width:420px}.key .label{font-size:6px;bottom:2px}.header h1{font-size:1.1rem}.top-controls select,.top-controls button{font-size:.65rem;padding:3px 8px;min-height:28px}.stats-row{font-size:.55rem;gap:6px}.feedback-msg{font-size:.75rem}.sound-toggle button{font-size:.5rem;padding:2px 8px}.library-row span{font-size:.5rem;padding:1px 6px}.midi-device-select{max-width:120px;font-size:.6rem}.target-chord .key-indicator{font-size:.7rem;padding:1px 6px}.target-chord .inv-badge{font-size:.6rem;padding:1px 6px}}@media(max-width:400px){.piano{height:110px;min-width:340px}}@media(min-width:768px)and(orientation:landscape){.app{padding:24px}.piano{height:220px}}
 </style>
 </head>
 <body>
 <div class="app">
-  <!-- same structure -->
   <div class="header"><h1>🎵 <span>Chord</span> Trainer</h1><div class="top-controls"><select id="keySelect"><option value="60">C</option></select><select id="modeSelect"><option value="roman">Roman</option><option value="absolute">Absolute</option><option value="mixed">Mixed</option></select><select id="keyModeSelect"><option value="fixed">Fixed</option><option value="modulating">Modulating</option></select><select id="lengthSelect"><option value="4">4</option><option value="6" selected>6</option><option value="8">8</option><option value="10">10</option></select><select id="chordTypeSelect"><option value="triad">Triads</option><option value="seventh">Sevenths</option><option value="all" selected>Both</option></select><button id="voiceLeadingBtn" class="voice-leading">🎹 Voice Leading</button><button id="strictInvBtn" class="strict-inversions">🔒 Strict Inversions</button><button id="generateBtn">Generate</button><button id="randomBtn" class="secondary">🎲</button></div></div>
   <div class="mode-row" id="modeSelector"><button class="active" data-mode="roman">Roman</button><button data-mode="absolute">Absolute</button><button data-mode="mixed">Mixed</button></div>
   <div class="filter-row" id="filterRow"><span class="active" data-filter="all">All</span><span data-filter="diatonic">Diatonic</span><span data-filter="extended">Extended</span><span data-filter="altered">Altered</span><span data-filter="sus">Sus</span><span data-filter="aug">Aug</span><span data-filter="dim7">°7</span><span data-filter="slash">Slash</span><span class="chromatic-toggle" id="chromaticToggle">Chromatic</span></div>
@@ -22,12 +21,7 @@
   <div class="played-status" id="playedDisplay">🎹 notes: none</div>
   <div class="sequence-container" id="sequenceContainer"></div>
   <div class="piano-wrapper"><div class="piano" id="piano"></div></div>
-  <div class="midi-row">
-    <button class="midi-btn midi" id="midiBtn">🔌 MIDI</button>
-    <select class="midi-device-select" id="midiDeviceSelect"><option value="">No devices</option></select>
-    <span class="midi-status" id="midiStatus">idle</span>
-    <span style="flex:1;text-align:right;font-size:.65rem;color:#6e6a62;" id="keyDisplay">Key: C</span>
-  </div>
+  <div class="midi-row"><button class="midi-btn midi" id="midiBtn">🔌 MIDI</button><select class="midi-device-select" id="midiDeviceSelect"><option value="">No devices</option></select><span class="midi-status" id="midiStatus">idle</span><span style="flex:1;text-align:right;font-size:.65rem;color:#6e6a62;" id="keyDisplay">Key: C</span></div>
   <div class="midi-debug" id="midiDebug">MIDI check: …</div>
   <div class="midi-row" style="margin-top:2px;border-top:1px solid #e4ded4;padding-top:6px;"><span style="font-size:.6rem;font-weight:600;color:#6e6a62;margin-right:4px;">🔊 Sound</span><div class="sound-toggle" id="soundToggle"><button class="active" data-mode="internal">Internal</button><button data-mode="external">MIDI Thru</button></div><span style="font-size:.55rem;color:#9d988f;margin-left:6px;" id="soundStatus">Warm piano</span><span id="audioIndicator" class="audio-indicator suspended" style="margin-left:auto;"></span><span id="audioStateText" style="font-size:.55rem;color:#6e6a62;margin-left:4px;">suspended</span></div>
   <div class="action-row"><button id="startAudioBtn" class="start-audio">▶ Start Audio (Tap First!)</button><button id="testSoundBtn" class="test-sound">🔊 Test Sound</button><button id="resetAudioBtn" class="reset-audio">🔄 Reset Audio</button><button id="playBtn" class="primary">▶ Play</button><button id="stopBtn">⏹ Stop</button><button id="checkBtn" class="check">🔍 Check</button><button id="showNotesBtn">Show Notes</button><button id="clearBtn">✖ Clear</button></div>
@@ -35,10 +29,10 @@
 </div>
 <script>
 // ═══════════════════════════════════════════════════════════════════════
-// v49 – Capability debug line
+// v50 – Extended range (C3–E5) + per‑note immediate feedback
 // ═══════════════════════════════════════════════════════════════════════
 
-// --- CHORD THEORY (same as v48 – fixed ♯iii and ♭V) ---
+// --- CHORD THEORY (same as v49, fixed ♯iii and ♭V) ---
 const NOTE_NAMES_MIXED=['C','Db','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
 const NOTE_NAMES_SHARP=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
 const NOTE_NAMES_FLAT=['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
@@ -110,7 +104,7 @@ const LIBRARY_MAP={
 };
 
 let currentMode='roman',currentSpelling='mixed',currentInversionMode='voice-leading',currentFilter='all',allowChromatic=false,showNotes=false,currentChordType='all',currentLibrary='all',voiceLeadingEnabled=false,strictInversions=false,currentSequence=[],currentIndex=0,currentExpectedNotes=[],currentTargetDisplay='',currentTargetKey=null,currentKeyMode='fixed',listenMode=false,chordStartTime=0;
-const MIN_NOTE=52,MAX_NOTE=72;
+const MIN_NOTE=48,MAX_NOTE=76; // C3 to E5
 const debugEl=document.getElementById('debugLine');
 
 function getNoteNames(){switch(currentSpelling){case'sharp':return NOTE_NAMES_SHARP;case'flat':return NOTE_NAMES_FLAT;default:return NOTE_NAMES_MIXED}}
@@ -125,7 +119,7 @@ function getLibraryTypes(){return currentLibrary==='all'?null:LIBRARY_MAP[curren
 function getChordTypeForDegree(d,m){const e=DEGREE_MAP[d];if(!e)return'maj';if(m==='triad')return e.triad;if(m==='seventh')return e.seventh;return Math.random()<0.5?e.triad:e.seventh}
 function selectVoiceLeadingInversion(p,r,t,m){if(!voiceLeadingEnabled||!p||!p.length)return Math.floor(Math.random()*(m+1));const l=Math.min(...p),s=Math.max(...p),c=new Set(p.map(pitchClass));let o=0,a=Infinity;for(let u=0;u<=m;u++){const e=buildChord(r,t,u);if(!e.length)continue;const n=Math.min(...e),i=Math.max(...e),d=new Set(e.map(pitchClass));let v=Infinity,f=0;for(let e=-2;e<=2;e++){let t=0;const r=[...d].filter(e=>c.has(e)),s=r.length*.8,o=(n+i)/2+e*12,a=(l+s)/2,p=Math.abs(o-a),m=Math.abs(n+e*12-l);t=p*.3+m*.4-s*12;t<v&&(v=t,f=e)}const h=v;h<a&&(a=h,o=u)}return o}
 
-// ─── CHORD GENERATOR (same as v48) ──────────────────────────────────
+// ─── CHORD GENERATOR (same as v49) ──────────────────────────────────
 function generateSequence(keyRoot,length,filter,keyMode,invMode){
  const degrees=[1,2,3,4,5,6,7];
  const seq=[];
@@ -352,7 +346,7 @@ function generateAbsoluteSequence(length,filter,invMode){
  return seq;
 }
 
-// ─── AUDIO ENGINE (shortened) ──────────────────────────────────────
+// ─── AUDIO ENGINE (same as v49) ──────────────────────────────────────
 let audioCtx=null,masterGain=null,reverbNode=null,reverbGain=null,dryGain=null,soundMode='internal',audioInitialized=false,playbackTimeouts=[],isPlaying=false,activeVoices=0;const MAX_VOICES=16;
 function ensureAudio(){if(!audioCtx){try{audioCtx=new(window.AudioContext||window.webkitAudioContext)}catch(e){return console.warn('Failed to create AudioContext:',e),null}}audioCtx.state==='suspended'&&audioCtx.resume().catch(e=>console.warn('Resume failed:',e));updateAudioIndicator();return audioCtx}
 function createReverbIR(d,p){d=d||1.8;p=p||20;if(!audioCtx)return null;try{const sr=audioCtx.sampleRate||44100,ps=Math.floor(p/1000*sr),tl=Math.floor(d*sr)+ps,buf=audioCtx.createBuffer(2,tl,sr),L=buf.getChannelData(0),R=buf.getChannelData(1);for(let i=0;i<tl-ps;i++){const idx=i+ps,dec=Math.exp(-i/(sr*d*.25)),no=(Math.random()*2-1)*.5;L[idx]=no*dec*.6;R[idx]=no*dec*.4}for(let i=0;i<12;i++){const pos=ps+Math.floor(Math.random()*200);if(pos<tl){L[pos]+=Math.random()*.2;R[pos]+=Math.random()*.15}}const cv=audioCtx.createConvolver();cv.buffer=buf;return cv}catch(e){return console.warn('Reverb IR failed:',e),null}}
@@ -421,7 +415,8 @@ function resetAudio(){if(audioCtx){audioCtx.close().catch(()=>{});audioCtx=null;
 // ─── STATE & PIANO ──────────────────────────────────────────────────
 let persistentNotes=[],chordCheckTimeout=null,feedbackTimer=null,stats={correct:0,wrong:0,streak:0,bestStreak:0,total:0,times:[]},keyElements=new Map();
 const pianoEl=document.getElementById('piano'),targetDisplay=document.getElementById('targetDisplay'),targetKeyIndicator=document.getElementById('targetKeyIndicator'),invBadge=document.getElementById('invBadge'),progressDisplay=document.getElementById('progressDisplay'),feedbackMsg=document.getElementById('feedbackMsg'),playedDisplay=document.getElementById('playedDisplay'),modeBadge=document.getElementById('modeBadge'),sequenceContainer=document.getElementById('sequenceContainer'),keySelect=document.getElementById('keySelect'),modeSelect=document.getElementById('modeSelect'),lengthSelect=document.getElementById('lengthSelect'),chordTypeSelect=document.getElementById('chordTypeSelect'),statCorrect=document.getElementById('statCorrect'),statWrong=document.getElementById('statWrong'),statStreak=document.getElementById('statStreak'),statTime=document.getElementById('statTime'),keyModeSelect=document.getElementById('keyModeSelect');
-const KEY_START=52,KEY_END=72,BLACK_PCS=[1,3,6,8,10];
+const KEY_START=48,KEY_END=76,BLACK_PCS=[1,3,6,8,10]; // C3 to E5
+
 function buildPiano(){
  const container=pianoEl.parentElement,style=window.getComputedStyle(container),padL=parseFloat(style.paddingLeft)||0,padR=parseFloat(style.paddingRight)||0,avail=container.clientWidth-padL-padR-4;
  const whiteNotes=[];for(let n=KEY_START;n<=KEY_END;n++){if(!BLACK_PCS.includes(pitchClass(n)))whiteNotes.push(n)}const whiteCount=whiteNotes.length;const whiteW=Math.max(18,Math.floor(avail/whiteCount));const blackW=Math.round(whiteW*0.45);const blackOff=whiteW-Math.round(blackW/2);const vh=window.innerHeight,pianoH=Math.min(200,Math.max(120,Math.round(vh*0.26)));pianoEl.style.height=pianoH+'px';pianoEl.innerHTML='';keyElements.clear();
@@ -433,11 +428,51 @@ function buildPiano(){
 }
 let resizeTimer;window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(buildPiano,150)});window.addEventListener('orientationchange',()=>setTimeout(buildPiano,300));
 
-// ─── NOTE HANDLING ──────────────────────────────────────────────────
-function handleNoteOn(n,v,fromMidi){v=v||80;if(audioCtx&&audioCtx.state==='suspended')resumeAudio();if(!audioInitialized)initAudioGraph();if(!persistentNotes.includes(n)){persistentNotes.push(n);if(soundMode==='internal')playNote(n,v,.5)}updatePlayedDisplay();scheduleCheck()}
-function handleNoteOff(n,fromMidi){persistentNotes=persistentNotes.filter(e=>e!==n);updatePlayedDisplay();scheduleCheck()}
+// ─── NOTE HANDLING (with per‑note feedback) ──────────────────────
+function handleNoteOn(n,v,fromMidi){
+  v=v||80;
+  if(audioCtx&&audioCtx.state==='suspended') resumeAudio();
+  if(!audioInitialized) initAudioGraph();
+
+  // Add to persistent notes
+  if(!persistentNotes.includes(n)){
+    persistentNotes.push(n);
+    if(soundMode==='internal') playNote(n,v,.5);
+  }
+
+  // Immediate visual feedback per note
+  const expectedSet = new Set(currentExpectedNotes.map(pitchClass));
+  const notePc = pitchClass(n);
+  const el = keyElements.get(n);
+  if(el){
+    // Remove any previous feedback classes
+    el.classList.remove('correct','wrong');
+    if(expectedSet.has(notePc)){
+      el.classList.add('correct'); // green
+    } else {
+      el.classList.add('wrong'); // red
+    }
+  }
+
+  updatePlayedDisplay();
+  scheduleCheck();
+}
+
+function handleNoteOff(n,fromMidi){
+  persistentNotes = persistentNotes.filter(p=>p!==n);
+  // Remove feedback classes but keep pressed state (if any)
+  const el = keyElements.get(n);
+  if(el){
+    el.classList.remove('correct','wrong');
+  }
+  updatePlayedDisplay();
+  scheduleCheck();
+}
+
 function updatePlayedDisplay(){const s=[...persistentNotes].sort((a,b)=>a-b);playedDisplay.textContent=s.length?'🎹 '+s.map(n=>noteLabel(n)).join(' '):'🎹 notes: none'}
 function scheduleCheck(){if(chordCheckTimeout)clearTimeout(chordCheckTimeout);chordCheckTimeout=setTimeout(()=>{if(listenMode&&persistentNotes.length>0)checkChord()},500)}
+
+// ─── checkChord (same as before, but we already have per‑note feedback) ──
 function checkChord(){
  if(!currentExpectedNotes||!currentExpectedNotes.length){feedbackMsg.textContent='Generate a sequence first.';feedbackMsg.className='feedback-msg waiting';return}
  if(!persistentNotes.length){feedbackMsg.textContent='⚠️ No notes held.';feedbackMsg.className='feedback-msg waiting';return}
@@ -468,15 +503,32 @@ function checkChord(){
    let msg='❌ ';if(missing.length)msg+=`Missing: ${missing.map(p=>getNoteNames()[p]).join(' ')} `;if(extra.length)msg+=`Extra: ${extra.map(p=>getNoteNames()[p]).join(' ')} `;err=msg.trim()||'❌ Incorrect';
   }
  }
+ // Clear any leftover feedback that might be stale
  keyElements.forEach(el=>el.classList.remove('correct','wrong','missing'));
- if(correct){stats.correct++;stats.streak++;if(stats.streak>stats.bestStreak)stats.bestStreak=stats.streak;stats.total++;stats.times.push(Date.now()-chordStartTime);updateStats();feedbackMsg.textContent='✅ Correct!';feedbackMsg.className='feedback-msg correct';persistentNotes.forEach(n=>{const el=keyElements.get(n);if(el)el.classList.add('correct')});const items=document.querySelectorAll('.seq-item');if(items[currentIndex]){items[currentIndex].classList.add('correct');items[currentIndex].classList.remove('playing')}if(feedbackTimer)clearTimeout(feedbackTimer);feedbackTimer=setTimeout(()=>{persistentNotes=[];updatePlayedDisplay();advanceToNext()},700);}else{stats.wrong++;stats.streak=0;stats.total++;updateStats();feedbackMsg.textContent=err||'❌ Incorrect';feedbackMsg.className='feedback-msg wrong';const extra=[...playedSet].filter(p=>!expectedSet.has(p));const missing=[...expectedSet].filter(p=>!playedSet.has(p));extra.forEach(pc=>{persistentNotes.forEach(n=>{if(pitchClass(n)===pc){const el=keyElements.get(n);if(el)el.classList.add('wrong')}})});missing.forEach(pc=>{for(let n=KEY_START;n<=KEY_END;n++){if(pitchClass(n)===pc){const el=keyElements.get(n);if(el){el.classList.add('missing');break}}}});const items=document.querySelectorAll('.seq-item');if(items[currentIndex]){items[currentIndex].classList.add('wrong');items[currentIndex].classList.remove('playing')}if(feedbackTimer)clearTimeout(feedbackTimer);feedbackTimer=setTimeout(()=>{keyElements.forEach(el=>el.classList.remove('wrong','missing'));const items2=document.querySelectorAll('.seq-item');if(items2[currentIndex])items2[currentIndex].classList.remove('wrong');feedbackMsg.textContent=`🎯 Play: ${currentTargetDisplay}`;feedbackMsg.className='feedback-msg waiting'},1500);}}
+ if(correct){
+  stats.correct++;stats.streak++;if(stats.streak>stats.bestStreak)stats.bestStreak=stats.streak;stats.total++;stats.times.push(Date.now()-chordStartTime);updateStats();
+  feedbackMsg.textContent='✅ Correct!';feedbackMsg.className='feedback-msg correct';
+  persistentNotes.forEach(n=>{const el=keyElements.get(n);if(el)el.classList.add('correct')});
+  const items=document.querySelectorAll('.seq-item');if(items[currentIndex]){items[currentIndex].classList.add('correct');items[currentIndex].classList.remove('playing')}
+  if(feedbackTimer)clearTimeout(feedbackTimer);feedbackTimer=setTimeout(()=>{persistentNotes=[];updatePlayedDisplay();advanceToNext()},700);
+ }else{
+  stats.wrong++;stats.streak=0;stats.total++;updateStats();
+  feedbackMsg.textContent=err||'❌ Incorrect';feedbackMsg.className='feedback-msg wrong';
+  const extra=[...playedSet].filter(p=>!expectedSet.has(p));
+  const missing=[...expectedSet].filter(p=>!playedSet.has(p));
+  extra.forEach(pc=>{persistentNotes.forEach(n=>{if(pitchClass(n)===pc){const el=keyElements.get(n);if(el)el.classList.add('wrong')}})});
+  missing.forEach(pc=>{for(let n=KEY_START;n<=KEY_END;n++){if(pitchClass(n)===pc){const el=keyElements.get(n);if(el){el.classList.add('missing');break}}}});
+  const items=document.querySelectorAll('.seq-item');if(items[currentIndex]){items[currentIndex].classList.add('wrong');items[currentIndex].classList.remove('playing')}
+  if(feedbackTimer)clearTimeout(feedbackTimer);feedbackTimer=setTimeout(()=>{keyElements.forEach(el=>el.classList.remove('wrong','missing'));const items2=document.querySelectorAll('.seq-item');if(items2[currentIndex])items2[currentIndex].classList.remove('wrong');feedbackMsg.textContent=`🎯 Play: ${currentTargetDisplay}`;feedbackMsg.className='feedback-msg waiting'},1500);
+ }
+}
+
 function advanceToNext(){currentIndex++;if(currentIndex<currentSequence.length)setCurrentChord(currentIndex);else{feedbackMsg.textContent='🎉 Complete! Generate a new sequence.';feedbackMsg.className='feedback-msg correct';listenMode=false;progressDisplay.textContent=currentSequence.length+' / '+currentSequence.length}}
 function setCurrentChord(index){if(!currentSequence||index>=currentSequence.length)return;const item=currentSequence[index];currentExpectedNotes=[...item.notes];currentIndex=index;chordStartTime=Date.now();let display='',keyName='',invText='';if(strictInversions){const invNames=['root','1st','2nd','3rd'];const inv=item.inversion||0;if(inv>0&&inv<invNames.length)invText=invNames[inv]+' inv.';else if(inv===0)invText='root'}if(currentMode==='absolute'){display=item.symbol;modeBadge.textContent='Absolute';targetKeyIndicator.style.display='none'}else if(currentMode==='mixed'){display=item._mode==='roman'?item.display:item.symbol;modeBadge.textContent='Mixed';if(item._mode==='roman'&&currentKeyMode==='modulating'){keyName=noteLabel(item.chordKeyRoot);targetKeyIndicator.style.display='inline-block';targetKeyIndicator.textContent=keyName+':'}else targetKeyIndicator.style.display='none'}else{modeBadge.textContent='Roman';if(currentKeyMode==='modulating'){keyName=noteLabel(item.chordKeyRoot);display=item.roman;targetKeyIndicator.style.display='inline-block';targetKeyIndicator.textContent=keyName+':'}else{display=item.roman;targetKeyIndicator.style.display='none'}}currentTargetDisplay=display;currentTargetKey=keyName||null;targetDisplay.textContent=display;progressDisplay.textContent=(index+1)+' / '+currentSequence.length;if(strictInversions&&invText){invBadge.style.display='inline-block';invBadge.textContent=invText}else invBadge.style.display='none';feedbackMsg.textContent='🎯 Play: '+display;feedbackMsg.className='feedback-msg waiting';const items=document.querySelectorAll('.seq-item');items.forEach(el=>el.classList.remove('playing','correct','wrong'));if(items[index]){items[index].classList.add('playing');const deg=items[index].querySelector('.deg');if(deg)deg.textContent=deg.textContent.replace(/[✅❌]\s*/,'')}keyElements.forEach(el=>el.classList.remove('correct','wrong','missing'));persistentNotes=[];updatePlayedDisplay();listenMode=true}
 function updateStats(){const avg=stats.times.length?Math.round(stats.times.reduce((a,b)=>a+b,0)/stats.times.length):0;statCorrect.textContent=stats.correct;statWrong.textContent=stats.wrong;statStreak.textContent=stats.streak;statTime.textContent=avg||'—'}
 
 // ═══════════════════════════════════════════════════════════════════════
 // ─── CAPABILITY DEBUG ──────────────────────────────────────────────────
-// ═══════════════════════════════════════════════════════════════════════
 function updateCapabilityDebug(){
   const info = [
     `secure=${window.isSecureContext}`,
@@ -488,24 +540,13 @@ function updateCapabilityDebug(){
 }
 updateCapabilityDebug();
 
-// ─── BLE MIDI + Web MIDI DUAL PATH ──────────────────────────────────
+// ─── BLE MIDI + Web MIDI DUAL PATH (same as v49) ──────────────────
 const BLE_MIDI_SERVICE = '03b80e5a-ede8-4b33-a751-6ce34ec4c700';
 const BLE_MIDI_CHARACTERISTIC = '7772e5db-3868-4112-a1a9-f2669d106bf3';
 
-let bleDevice = null;
-let bleServer = null;
-let bleService = null;
-let bleCharacteristic = null;
-let bleConnected = false;
-
-let midiAccess = null;
-let midiInputs = [];
-let selectedMidiInputId = '';
-let selectedMidiOutputId = '';
-
-const midiBtn = document.getElementById('midiBtn');
-const midiDeviceSelect = document.getElementById('midiDeviceSelect');
-const midiStatus = document.getElementById('midiStatus');
+let bleDevice = null, bleServer = null, bleService = null, bleCharacteristic = null, bleConnected = false;
+let midiAccess = null, midiInputs = [], selectedMidiInputId = '', selectedMidiOutputId = '';
+const midiBtn=document.getElementById('midiBtn'), midiDeviceSelect=document.getElementById('midiDeviceSelect'), midiStatus=document.getElementById('midiStatus');
 
 function setMidiStatus(text, connected=false){
   midiStatus.textContent = text;
@@ -515,264 +556,29 @@ function setMidiStatus(text, connected=false){
   else midiBtn.textContent = '🔌 MIDI';
 }
 
-// ─── Web MIDI functions ──────────────────────────────────────────────
-function clearMidiInputs(){
-  for (const input of midiInputs) {
-    try { input.onmidimessage = null; } catch (e) {}
-  }
-  midiInputs = [];
-}
+function clearMidiInputs(){ for (const input of midiInputs) { try { input.onmidimessage = null; } catch (e) {} } midiInputs = []; }
+function getSelectedMidiOutput(){ if (!midiAccess || !selectedMidiOutputId) return null; return midiAccess.outputs.get(selectedMidiOutputId) || null; }
+function sendMidiNoteOn(note, velocity=100, channel=0){ const out = getSelectedMidiOutput(); if (!out) return; out.send([0x90 + channel, note & 0x7f, velocity & 0x7f]); }
+function sendMidiNoteOff(note, channel=0){ const out = getSelectedMidiOutput(); if (!out) return; out.send([0x80 + channel, note & 0x7f, 0]); }
+function panicMidi(){ if (!midiAccess) return; midiAccess.outputs.forEach(output => { for (let ch = 0; ch < 16; ch++) output.send([0xB0 + ch, 123, 0]); }); }
+function handleMidiMessage(event){ const [status, note, velocity] = event.data; const command = status & 0xf0; if (command === 0x90 && velocity > 0) { if (typeof handleNoteOn === 'function') handleNoteOn(note, velocity, true); } else if (command === 0x80 || (command === 0x90 && velocity === 0)) { if (typeof handleNoteOff === 'function') handleNoteOff(note, true); } }
+function bindMidiInputs(){ clearMidiInputs(); if (!midiAccess) return; midiAccess.inputs.forEach(input => { if (!selectedMidiInputId || input.id === selectedMidiInputId) { input.onmidimessage = handleMidiMessage; midiInputs.push(input); } }); }
+function populateMidiDevices(){ if (!midiAccess) { midiDeviceSelect.innerHTML = '<option value="">No devices</option>'; return; } const inputs = [...midiAccess.inputs.values()]; const outputs = [...midiAccess.outputs.values()]; const parts = []; if (inputs.length) { parts.push('<optgroup label="Inputs">' + inputs.map(input => { const label = `${input.name || 'Input'}${input.manufacturer ? ' — ' + input.manufacturer : ''}`; return `<option value="in:${input.id}">${label}</option>`; }).join('') + '</optgroup>'); } if (outputs.length) { parts.push('<optgroup label="Outputs">' + outputs.map(output => { const label = `${output.name || 'Output'}${output.manufacturer ? ' — ' + output.manufacturer : ''}`; return `<option value="out:${output.id}">${label}</option>`; }).join('') + '</optgroup>'); } midiDeviceSelect.innerHTML = parts.join('') || '<option value="">No MIDI devices</option>'; if (!selectedMidiInputId && inputs[0]) selectedMidiInputId = inputs[0].id; if (!selectedMidiOutputId && outputs[0]) selectedMidiOutputId = outputs[0].id; const preferred = selectedMidiInputId ? `in:${selectedMidiInputId}` : (selectedMidiOutputId ? `out:${selectedMidiOutputId}` : ''); if (preferred) midiDeviceSelect.value = preferred; bindMidiInputs(); setMidiStatus('ready', inputs.length > 0 || outputs.length > 0); }
 
-function getSelectedMidiOutput(){
-  if (!midiAccess || !selectedMidiOutputId) return null;
-  return midiAccess.outputs.get(selectedMidiOutputId) || null;
-}
+function onBleDisconnected(){ bleConnected = false; bleCharacteristic = null; bleService = null; bleServer = null; bleDevice = null; setMidiStatus('BLE disconnected', false); feedbackMsg.textContent = 'BLE MIDI disconnected.'; feedbackMsg.className = 'feedback-msg wrong'; }
+function parseBleMidiPacket(data){ const midiBytes = []; for (let i = 0; i < data.length; i++) { const b = data[i]; if (b & 0x80) { if (i + 1 < data.length && (data[i + 1] & 0x80)) continue; continue; } midiBytes.push(b); } return midiBytes; }
+function onBleMidiMessage(event){ const data = new Uint8Array(event.target.value.buffer); const midiBytes = parseBleMidiPacket(data); for (let i = 0; i < midiBytes.length; ) { const status = midiBytes[i++]; if (status === undefined) break; const command = status & 0xF0; if (command === 0x90 || command === 0x80) { const note = midiBytes[i++]; const velocity = midiBytes[i++] ?? 0; if (note === undefined) break; if (command === 0x90 && velocity > 0) { if (typeof handleNoteOn === 'function') handleNoteOn(note, velocity, true); } else { if (typeof handleNoteOff === 'function') handleNoteOff(note, true); } } else if (command === 0xC0 || command === 0xD0) { i += 1; } else { i += 2; } } }
+function makeBleMidiPacket(bytes){ const ts = performance.now() & 0x1fff; const header = 0x80 | ((ts >> 7) & 0x3f); const timestampLow = 0x80 | (ts & 0x7f); const out = [header]; for (let i = 0; i < bytes.length; i++) { out.push(timestampLow, bytes[i] & 0x7f); } return new Uint8Array(out); }
+async function sendBleMidi(bytes){ if (!bleConnected || !bleCharacteristic) return; const packet = makeBleMidiPacket(bytes); await bleCharacteristic.writeValue(packet); }
+function sendBleNoteOn(note, velocity=100, channel=0){ return sendBleMidi([0x90 + channel, note & 0x7f, velocity & 0x7f]); }
+function sendBleNoteOff(note, channel=0){ return sendBleMidi([0x80 + channel, note & 0x7f, 0]); }
+async function connectBleMidi(){ if (!('bluetooth' in navigator)) { setMidiStatus('no bluetooth', false); feedbackMsg.textContent = 'Web Bluetooth is not available.'; feedbackMsg.className = 'feedback-msg wrong'; return; } try { setMidiStatus('scanning BLE...', false); bleDevice = await navigator.bluetooth.requestDevice({ filters: [{ services: [BLE_MIDI_SERVICE] }], optionalServices: [BLE_MIDI_SERVICE] }); bleDevice.addEventListener('gattserverdisconnected', onBleDisconnected); bleServer = await bleDevice.gatt.connect(); bleService = await bleServer.getPrimaryService(BLE_MIDI_SERVICE); bleCharacteristic = await bleService.getCharacteristic(BLE_MIDI_CHARACTERISTIC); await bleCharacteristic.startNotifications(); bleCharacteristic.addEventListener('characteristicvaluechanged', onBleMidiMessage); bleConnected = true; setMidiStatus('BLE MIDI connected', true); feedbackMsg.textContent = `🎹 BLE MIDI: ${bleDevice.name || 'device'}`; feedbackMsg.className = 'feedback-msg waiting'; } catch (err) { bleConnected = false; setMidiStatus('BLE failed', false); feedbackMsg.textContent = `BLE failed: ${err.message || err.name || 'unknown'}`; feedbackMsg.className = 'feedback-msg wrong'; console.log('BLE MIDI error:', err); } }
 
-function sendMidiNoteOn(note, velocity=100, channel=0){
-  const out = getSelectedMidiOutput();
-  if (!out) return;
-  out.send([0x90 + channel, note & 0x7f, velocity & 0x7f]);
-}
-
-function sendMidiNoteOff(note, channel=0){
-  const out = getSelectedMidiOutput();
-  if (!out) return;
-  out.send([0x80 + channel, note & 0x7f, 0]);
-}
-
-function panicMidi(){
-  if (!midiAccess) return;
-  midiAccess.outputs.forEach(output => {
-    for (let ch = 0; ch < 16; ch++) output.send([0xB0 + ch, 123, 0]);
-  });
-}
-
-function handleMidiMessage(event){
-  const [status, note, velocity] = event.data;
-  const command = status & 0xf0;
-
-  if (command === 0x90 && velocity > 0) {
-    if (typeof handleNoteOn === 'function') handleNoteOn(note, velocity, true);
-  } else if (command === 0x80 || (command === 0x90 && velocity === 0)) {
-    if (typeof handleNoteOff === 'function') handleNoteOff(note, true);
-  }
-}
-
-function bindMidiInputs(){
-  clearMidiInputs();
-  if (!midiAccess) return;
-
-  midiAccess.inputs.forEach(input => {
-    if (!selectedMidiInputId || input.id === selectedMidiInputId) {
-      input.onmidimessage = handleMidiMessage;
-      midiInputs.push(input);
-    }
-  });
-}
-
-function populateMidiDevices(){
-  if (!midiAccess) {
-    midiDeviceSelect.innerHTML = '<option value="">No devices</option>';
-    return;
-  }
-
-  const inputs = [...midiAccess.inputs.values()];
-  const outputs = [...midiAccess.outputs.values()];
-  const parts = [];
-
-  if (inputs.length) {
-    parts.push(
-      '<optgroup label="Inputs">' +
-      inputs.map(input => {
-        const label = `${input.name || 'Input'}${input.manufacturer ? ' — ' + input.manufacturer : ''}`;
-        return `<option value="in:${input.id}">${label}</option>`;
-      }).join('') +
-      '</optgroup>'
-    );
-  }
-
-  if (outputs.length) {
-    parts.push(
-      '<optgroup label="Outputs">' +
-      outputs.map(output => {
-        const label = `${output.name || 'Output'}${output.manufacturer ? ' — ' + output.manufacturer : ''}`;
-        return `<option value="out:${output.id}">${label}</option>`;
-      }).join('') +
-      '</optgroup>'
-    );
-  }
-
-  midiDeviceSelect.innerHTML = parts.join('') || '<option value="">No MIDI devices</option>';
-
-  if (!selectedMidiInputId && inputs[0]) selectedMidiInputId = inputs[0].id;
-  if (!selectedMidiOutputId && outputs[0]) selectedMidiOutputId = outputs[0].id;
-
-  const preferred = selectedMidiInputId
-    ? `in:${selectedMidiInputId}`
-    : (selectedMidiOutputId ? `out:${selectedMidiOutputId}` : '');
-
-  if (preferred) midiDeviceSelect.value = preferred;
-
-  bindMidiInputs();
-  setMidiStatus('ready', inputs.length > 0 || outputs.length > 0);
-}
-
-// ─── BLE MIDI functions ─────────────────────────────────────────────
-function onBleDisconnected(){
-  bleConnected = false;
-  bleCharacteristic = null;
-  bleService = null;
-  bleServer = null;
-  bleDevice = null;
-  setMidiStatus('BLE disconnected', false);
-  feedbackMsg.textContent = 'BLE MIDI disconnected.';
-  feedbackMsg.className = 'feedback-msg wrong';
-}
-
-function parseBleMidiPacket(data){
-  const midiBytes = [];
-  for (let i = 0; i < data.length; i++) {
-    const b = data[i];
-    if (b & 0x80) {
-      if (i + 1 < data.length && (data[i + 1] & 0x80)) continue;
-      continue;
-    }
-    midiBytes.push(b);
-  }
-  return midiBytes;
-}
-
-function onBleMidiMessage(event){
-  const data = new Uint8Array(event.target.value.buffer);
-  const midiBytes = parseBleMidiPacket(data);
-
-  for (let i = 0; i < midiBytes.length; ) {
-    const status = midiBytes[i++];
-    if (status === undefined) break;
-    const command = status & 0xF0;
-
-    if (command === 0x90 || command === 0x80) {
-      const note = midiBytes[i++];
-      const velocity = midiBytes[i++] ?? 0;
-      if (note === undefined) break;
-
-      if (command === 0x90 && velocity > 0) {
-        if (typeof handleNoteOn === 'function') handleNoteOn(note, velocity, true);
-      } else {
-        if (typeof handleNoteOff === 'function') handleNoteOff(note, true);
-      }
-    } else if (command === 0xC0 || command === 0xD0) {
-      i += 1;
-    } else {
-      i += 2;
-    }
-  }
-}
-
-function makeBleMidiPacket(bytes){
-  const ts = performance.now() & 0x1fff;
-  const header = 0x80 | ((ts >> 7) & 0x3f);
-  const timestampLow = 0x80 | (ts & 0x7f);
-  const out = [header];
-
-  for (let i = 0; i < bytes.length; i++) {
-    out.push(timestampLow, bytes[i] & 0x7f);
-  }
-
-  return new Uint8Array(out);
-}
-
-async function sendBleMidi(bytes){
-  if (!bleConnected || !bleCharacteristic) return;
-  const packet = makeBleMidiPacket(bytes);
-  await bleCharacteristic.writeValue(packet);
-}
-
-function sendBleNoteOn(note, velocity=100, channel=0){
-  return sendBleMidi([0x90 + channel, note & 0x7f, velocity & 0x7f]);
-}
-
-function sendBleNoteOff(note, channel=0){
-  return sendBleMidi([0x80 + channel, note & 0x7f, 0]);
-}
-
-async function connectBleMidi(){
-  if (!('bluetooth' in navigator)) {
-    setMidiStatus('no bluetooth', false);
-    feedbackMsg.textContent = 'Web Bluetooth is not available.';
-    feedbackMsg.className = 'feedback-msg wrong';
-    return;
-  }
-
-  try {
-    setMidiStatus('scanning BLE...', false);
-
-    bleDevice = await navigator.bluetooth.requestDevice({
-      filters: [{ services: [BLE_MIDI_SERVICE] }],
-      optionalServices: [BLE_MIDI_SERVICE]
-    });
-
-    bleDevice.addEventListener('gattserverdisconnected', onBleDisconnected);
-
-    bleServer = await bleDevice.gatt.connect();
-    bleService = await bleServer.getPrimaryService(BLE_MIDI_SERVICE);
-    bleCharacteristic = await bleService.getCharacteristic(BLE_MIDI_CHARACTERISTIC);
-
-    await bleCharacteristic.startNotifications();
-    bleCharacteristic.addEventListener('characteristicvaluechanged', onBleMidiMessage);
-
-    bleConnected = true;
-    setMidiStatus('BLE MIDI connected', true);
-    feedbackMsg.textContent = `🎹 BLE MIDI: ${bleDevice.name || 'device'}`;
-    feedbackMsg.className = 'feedback-msg waiting';
-  } catch (err) {
-    bleConnected = false;
-    setMidiStatus('BLE failed', false);
-    feedbackMsg.textContent = `BLE failed: ${err.message || err.name || 'unknown'}`;
-    feedbackMsg.className = 'feedback-msg wrong';
-    console.log('BLE MIDI error:', err);
-  }
-}
-
-// ─── Dual‑path init ──────────────────────────────────────────────────
-async function initMidi(){
-  // Try Web MIDI first
-  if ('requestMIDIAccess' in navigator) {
-    try {
-      setMidiStatus('requesting Web MIDI...', false);
-      midiAccess = await navigator.requestMIDIAccess({ sysex: false });
-      midiAccess.onstatechange = populateMidiDevices;
-      populateMidiDevices();
-      feedbackMsg.textContent = '🎹 Web MIDI connected.';
-      feedbackMsg.className = 'feedback-msg waiting';
-      return;
-    } catch (err) {
-      console.log('Web MIDI failed:', err);
-    }
-  }
-
-  // Fallback to BLE MIDI
-  await connectBleMidi();
-}
-
+async function initMidi(){ if ('requestMIDIAccess' in navigator) { try { setMidiStatus('requesting Web MIDI...', false); midiAccess = await navigator.requestMIDIAccess({ sysex: false }); midiAccess.onstatechange = populateMidiDevices; populateMidiDevices(); feedbackMsg.textContent = '🎹 Web MIDI connected.'; feedbackMsg.className = 'feedback-msg waiting'; return; } catch (err) { console.log('Web MIDI failed:', err); } } await connectBleMidi(); }
 midiBtn.addEventListener('click', initMidi);
-
-midiDeviceSelect.addEventListener('change', e => {
-  const value = e.target.value || '';
-  if (value.startsWith('in:')) {
-    selectedMidiInputId = value.slice(3);
-    bindMidiInputs();
-    setMidiStatus('input selected', true);
-  } else if (value.startsWith('out:')) {
-    selectedMidiOutputId = value.slice(4);
-    setMidiStatus('output selected', true);
-  }
-});
-
+midiDeviceSelect.addEventListener('change', e => { const value = e.target.value || ''; if (value.startsWith('in:')) { selectedMidiInputId = value.slice(3); bindMidiInputs(); setMidiStatus('input selected', true); } else if (value.startsWith('out:')) { selectedMidiOutputId = value.slice(4); setMidiStatus('output selected', true); } });
 window.addEventListener('beforeunload', panicMidi);
-document.addEventListener('visibilitychange', () => {
-  if (document.hidden) panicMidi();
-});
+document.addEventListener('visibilitychange', () => { if (document.hidden) panicMidi(); });
 
 // ─── UI ────────────────────────────────────────────────────────────
 const soundToggle=document.getElementById('soundToggle'),soundStatus=document.getElementById('soundStatus');
@@ -805,7 +611,7 @@ document.addEventListener('touchstart',()=>{if(audioCtx&&audioCtx.state==='suspe
 document.addEventListener('click',()=>{if(audioCtx&&audioCtx.state==='suspended')resumeAudio()},{passive:true});
 buildPiano();generate();updateAudioIndicator();
 document.addEventListener('keydown',e=>{if(e.key===' '&&e.target===document.body){e.preventDefault();if(persistentNotes.length>0)checkChord()}});
-console.log('🎵 Chord Trainer v49 – Capability debug added.');
+console.log('🎵 Chord Trainer v50 – Extended range C3–E5, per‑note feedback.');
 </script>
 </body>
 </html>
