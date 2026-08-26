@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<title>Chord Trainer – v65 (BLE Connect button)</title>
+<title>Chord Trainer – v66 (BLE button)</title>
 <style>
 /* same compact styles – unchanged */
 *{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;background:#f5f2ed;min-height:100dvh;padding:12px;color:#1f1c18;display:flex;justify-content:center;touch-action:manipulation;-webkit-tap-highlight-color:transparent}.app{max-width:100%;width:100%;background:#fbfaf7;border-radius:28px;padding:18px 16px 20px;box-shadow:0 8px 32px rgba(0,0,0,.06);border:1px solid rgba(0,0,0,.04)}.header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:12px}.header h1{font-size:1.4rem;font-weight:700;letter-spacing:-.02em}.header h1 span{color:#0b6d73}.top-controls{display:flex;flex-wrap:wrap;gap:4px;align-items:center}.top-controls select,.top-controls button{padding:5px 10px;border-radius:8px;border:1px solid #d7d2c8;background:#fff;font-size:.75rem;font-weight:600;color:#1f1c18;cursor:pointer;touch-action:manipulation;min-height:32px}.top-controls button{background:#0b6d73;color:#fff;border-color:#0b6d73}.top-controls button:active{transform:scale(.95)}.top-controls button.secondary{background:#e8e3da;color:#1f1c18;border-color:#d7d2c8}.top-controls button.voice-leading{background:#d97706;color:#fff;border-color:#d97706;font-weight:700}.top-controls button.voice-leading.active{background:#0b6d73;border-color:#0b6d73}.top-controls button.strict-inversions{background:#6c5ce7;color:#fff;border-color:#6c5ce7}.top-controls button.strict-inversions.active{background:#c62828;border-color:#c62828}.mode-row{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px}.mode-row button{padding:4px 14px;border-radius:999px;border:2px solid #d7d2c8;background:transparent;font-weight:600;font-size:.8rem;cursor:pointer;transition:.15s;min-height:30px}.mode-row button.active{background:#0b6d73;color:#fff;border-color:#0b6d73}.filter-row{display:flex;flex-wrap:wrap;gap:4px;padding:4px 0 8px}.filter-row span{font-size:.65rem;font-weight:600;color:#6e6a62;padding:3px 10px;border-radius:999px;background:rgba(255,255,255,.5);border:1px solid #d7d2c8;cursor:pointer;transition:.15s}.filter-row span.active{background:#0b6d73;color:#fff;border-color:#0b6d73}.filter-row span.chromatic-toggle{background:#e8e3da;border-color:#b8b0a4}.filter-row span.chromatic-toggle.active{background:#0b6d73;color:#fff;border-color:#0b6d73}.library-row{display:flex;flex-wrap:wrap;gap:4px;padding:4px 0 8px;border-top:1px solid #e4ded4;margin-top:4px}.library-row span{font-size:.6rem;font-weight:600;color:#6e6a62;padding:2px 10px;border-radius:999px;background:rgba(255,255,255,.5);border:1px solid #d7d2c8;cursor:pointer;transition:.15s;white-space:nowrap}.library-row span.active{background:#0b6d73;color:#fff;border-color:#0b6d73}.target-area{background:#edebe6;border-radius:16px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;min-height:64px}.target-chord{font-size:2.2rem;font-weight:700;letter-spacing:-.02em;line-height:1.2}.target-chord .badge{font-size:.6rem;font-weight:600;color:#6e6a62;text-transform:uppercase;background:#d7d2c8;padding:2px 10px;border-radius:20px;margin-right:8px;display:inline-block;vertical-align:middle}.target-chord .key-indicator{font-size:1rem;font-weight:600;color:#0b6d73;background:rgba(11,109,115,.12);padding:2px 10px;border-radius:12px;margin-right:6px;display:inline-block;vertical-align:middle}.target-chord .inv-badge{font-size:.8rem;font-weight:600;color:#6c5ce7;background:rgba(108,92,231,.15);padding:2px 10px;border-radius:12px;margin-left:6px;display:inline-block;vertical-align:middle}.target-progress{font-size:.95rem;font-weight:600;color:#6e6a62;background:rgba(255,255,255,.5);padding:3px 12px;border-radius:20px}.feedback-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;padding:2px 0 6px;min-height:24px}.feedback-msg{font-weight:600;font-size:.85rem;transition:color .15s}.feedback-msg.correct{color:#2e7d32}.feedback-msg.wrong{color:#c62828}.feedback-msg.waiting{color:#6e6a62}.feedback-msg.idle{color:#9e9e9e}.debug-line{font-size:.6rem;color:#333;background:#f0ede8;padding:2px 8px;border-radius:8px;margin-top:2px;font-family:monospace;word-break:break-all}.stats-row{display:flex;gap:10px;font-size:.65rem;font-weight:600;color:#6e6a62;flex-wrap:wrap}.stats-row .stat{background:#edebe6;padding:2px 10px;border-radius:12px}.stats-row .stat strong{color:#1f1c18}.played-status{font-family:'SF Mono','Courier New',monospace;font-size:.65rem;color:#6e6a62;background:rgba(0,0,0,.04);padding:2px 10px;border-radius:12px;text-align:center;min-height:20px}.sequence-container{display:flex;gap:6px;overflow-x:auto;padding:4px 0 8px;scroll-behavior:smooth;-webkit-overflow-scrolling:touch}.seq-item{flex:0 0 auto;background:#f1efe9;padding:4px 12px;border-radius:10px;border-left:4px solid #0b6d73;cursor:pointer;text-align:center;min-width:60px;transition:background .15s,border-color .15s}.seq-item .deg{font-weight:700;font-size:.7rem}.seq-item .name{font-weight:500;font-size:.85rem}.seq-item .notes-display{font-size:.55rem;color:#4a4a4a;font-family:monospace;margin-top:2px}.seq-item .key-label{font-size:.55rem;color:#0b6d73;font-weight:600}.seq-item.playing{background:#fef3c7;border-left-color:#d97706}.seq-item.correct{background:#e8f5e9!important;border-left-color:#2f7d48!important}.seq-item.wrong{background:#fbe9e7!important;border-left-color:#c62828!important}.piano-wrapper{margin:4px 0 8px;padding:6px 0;background:#dcd6cc;border-radius:14px;overflow-x:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x;position:relative;width:100%}.piano{position:relative;height:180px;width:100%;margin:0 auto;touch-action:pan-y;min-width:520px}.key{position:absolute;border-radius:0 0 5px 5px;cursor:pointer;touch-action:manipulation;user-select:none;transition:background .07s,transform .05s,box-shadow .07s;will-change:transform;border:1px solid rgba(0,0,0,.1)}.key:active{transform:scale(.96)}.key.white{background:#f8f6f2;height:100%;bottom:0;border-bottom:3px solid #bbb;z-index:1;box-shadow:0 2px 4px rgba(0,0,0,.03)}.key.white.pressed{background:#d0d0d0;transform:scale(.96)}.key.white.correct{background:#81c784}.key.white.wrong{background:#ef9a9a}.key.white.missing{background:#90caf9}.key.black{background:#1a1a1a;height:62%;top:0;z-index:2;border-bottom:3px solid #444;border-radius:0 0 3px 3px;box-shadow:0 4px 6px rgba(0,0,0,.3)}.key.black.pressed{background:#555;transform:scale(.94)}.key.black.correct{background:#4caf50}.key.black.wrong{background:#e57373}.key.black.missing{background:#42a5f5}.key .label{position:absolute;bottom:4px;left:50%;transform:translateX(-50%);font-size:8px;font-weight:700;color:#aaa;pointer-events:none;letter-spacing:.02em}.key.black .label{color:#777;bottom:3px}.midi-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:4px 0;margin-top:2px}.midi-btn{padding:6px 14px;border-radius:10px;border:1px solid #d7d2c8;background:#fff;font-weight:600;font-size:.75rem;cursor:pointer;touch-action:manipulation}.midi-btn:active{transform:scale(.95)}.midi-btn.midi{background:#6c5ce7;color:#fff;border-color:#6c5ce7}.midi-btn.midi.connected{background:#2e7d32;border-color:#2e7d32}.midi-btn.refresh{background:#6c5ce7;color:#fff;border-color:#6c5ce7;font-size:.6rem;padding:4px 8px}.midi-device-select{padding:4px 8px;border-radius:8px;border:1px solid #d7d2c8;background:#fff;font-size:.7rem;font-weight:600;color:#1f1c18;max-width:200px;cursor:pointer}.midi-status{font-size:.6rem;color:#6e6a62;padding:3px 12px;background:#edebe6;border-radius:20px}.midi-status.connected{background:#c8e6c9;color:#1e5a1e}.midi-debug{font-size:.55rem;color:#6e6a62;margin-top:4px;font-family:monospace;word-break:break-all}.sound-toggle{display:flex;gap:4px;align-items:center;background:#edebe6;border-radius:20px;padding:2px}.sound-toggle button{padding:3px 12px;border-radius:16px;border:none;background:transparent;font-size:.6rem;font-weight:600;color:#6e6a62;cursor:pointer;transition:.15s;touch-action:manipulation}.sound-toggle button.active{background:#0b6d73;color:#fff}.sound-toggle button:active{transform:scale(.95)}.action-row{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;border-top:1px solid #e4ded4;padding-top:8px}.action-row button{padding:6px 14px;border-radius:10px;border:1px solid #d7d2c8;background:#fff;font-weight:600;font-size:.75rem;cursor:pointer;touch-action:manipulation;flex:1 0 auto;min-width:50px}.action-row button:active{transform:scale(.95)}.action-row button.primary{background:#0b6d73;color:#fff;border-color:#0b6d73}.action-row button.danger{background:#c62828;color:#fff;border-color:#c62828}.action-row button.check{background:#6c5ce7;color:#fff;border-color:#6c5ce7}.action-row button.start-audio{background:#d97706;color:#fff;border-color:#d97706;font-weight:700;font-size:.85rem;padding:8px 20px}.action-row button.test-sound{background:#6c5ce7;color:#fff;border-color:#6c5ce7}.action-row button.reset-audio{background:#c62828;color:#fff;border-color:#c62828}.audio-indicator{display:inline-block;width:12px;height:12px;border-radius:50%;margin-left:8px;vertical-align:middle}.audio-indicator.running{background:#4caf50}.audio-indicator.suspended{background:#ff9800}.audio-indicator.error{background:#f44336}.footer-note{margin-top:6px;font-size:.6rem;color:#9d988f;text-align:center}@media(max-width:600px){.app{padding:12px 10px}.target-chord{font-size:1.6rem}.piano{height:140px;min-width:420px}.key .label{font-size:6px;bottom:2px}.header h1{font-size:1.1rem}.top-controls select,.top-controls button{font-size:.65rem;padding:3px 8px;min-height:28px}.stats-row{font-size:.55rem;gap:6px}.feedback-msg{font-size:.75rem}.sound-toggle button{font-size:.5rem;padding:2px 8px}.library-row span{font-size:.5rem;padding:1px 6px}.midi-device-select{max-width:120px;font-size:.6rem}.target-chord .key-indicator{font-size:.7rem;padding:1px 6px}.target-chord .inv-badge{font-size:.6rem;padding:1px 6px}}@media(max-width:400px){.piano{height:110px;min-width:340px}}@media(min-width:768px)and(orientation:landscape){.app{padding:24px}.piano{height:220px}}
@@ -21,26 +21,51 @@
   <div class="played-status" id="playedDisplay">🎹 notes: none</div>
   <div class="sequence-container" id="sequenceContainer"></div>
   <div class="piano-wrapper"><div class="piano" id="piano"></div></div>
+
+  <!-- ============ MIDI ROW ============ -->
   <div class="midi-row">
     <button class="midi-btn midi" id="midiBtn">🔌 MIDI</button>
-    <!-- NEW BLE CONNECT BUTTON -->
+
+    <!-- BLE CONNECT BUTTON – THIS IS WHAT WAS MISSING -->
     <button class="midi-btn" id="bleBtn" style="background:#0984e3;border-color:#0984e3;color:#fff;">🔵 BLE Connect</button>
+
     <button class="midi-btn refresh" id="midiRefreshBtn">⟳ Refresh</button>
     <button class="midi-btn refresh" id="forceScanBtn" style="background:#d97706;border-color:#d97706;color:#fff;">⏳ Force Scan</button>
     <button class="midi-btn refresh" id="stopScanBtn" style="background:#c62828;border-color:#c62828;color:#fff;">⏹ Stop</button>
     <button class="midi-btn refresh" id="forceBindBtn" style="background:#6c5ce7;border-color:#6c5ce7;color:#fff;">🔗 Force Bind</button>
+
     <select class="midi-device-select" id="midiDeviceSelect"><option value="">No devices</option></select>
     <span class="midi-status" id="midiStatus">idle</span>
     <span style="flex:1;text-align:right;font-size:.65rem;color:#6e6a62;" id="keyDisplay">Key: C</span>
   </div>
+
   <div class="midi-debug" id="midiDebug">MIDI check: …</div>
-  <div class="midi-row" style="margin-top:2px;border-top:1px solid #e4ded4;padding-top:6px;"><span style="font-size:.6rem;font-weight:600;color:#6e6a62;margin-right:4px;">🔊 Sound</span><div class="sound-toggle" id="soundToggle"><button class="active" data-mode="internal">Internal</button><button data-mode="external">MIDI Thru</button></div><span style="font-size:.55rem;color:#9d988f;margin-left:6px;" id="soundStatus">Warm piano</span><span id="audioIndicator" class="audio-indicator suspended" style="margin-left:auto;"></span><span id="audioStateText" style="font-size:.55rem;color:#6e6a62;margin-left:4px;">suspended</span></div>
-  <div class="action-row"><button id="startAudioBtn" class="start-audio">▶ Start Audio (Tap First!)</button><button id="testSoundBtn" class="test-sound">🔊 Test Sound</button><button id="resetAudioBtn" class="reset-audio">🔄 Reset Audio</button><button id="playBtn" class="primary">▶ Play</button><button id="stopBtn">⏹ Stop</button><button id="checkBtn" class="check">🔍 Check</button><button id="showNotesBtn">Show Notes</button><button id="clearBtn">✖ Clear</button></div>
+  <div class="midi-row" style="margin-top:2px;border-top:1px solid #e4ded4;padding-top:6px;">
+    <span style="font-size:.6rem;font-weight:600;color:#6e6a62;margin-right:4px;">🔊 Sound</span>
+    <div class="sound-toggle" id="soundToggle">
+      <button class="active" data-mode="internal">Internal</button>
+      <button data-mode="external">MIDI Thru</button>
+    </div>
+    <span style="font-size:.55rem;color:#9d988f;margin-left:6px;" id="soundStatus">Warm piano</span>
+    <span id="audioIndicator" class="audio-indicator suspended" style="margin-left:auto;"></span>
+    <span id="audioStateText" style="font-size:.55rem;color:#6e6a62;margin-left:4px;">suspended</span>
+  </div>
+
+  <div class="action-row">
+    <button id="startAudioBtn" class="start-audio">▶ Start Audio (Tap First!)</button>
+    <button id="testSoundBtn" class="test-sound">🔊 Test Sound</button>
+    <button id="resetAudioBtn" class="reset-audio">🔄 Reset Audio</button>
+    <button id="playBtn" class="primary">▶ Play</button>
+    <button id="stopBtn">⏹ Stop</button>
+    <button id="checkBtn" class="check">🔍 Check</button>
+    <button id="showNotesBtn">Show Notes</button>
+    <button id="clearBtn">✖ Clear</button>
+  </div>
   <div class="footer-note">Tap a chord to preview it. Auto‑check works when you play.</div>
 </div>
 <script>
 // ═══════════════════════════════════════════════════════════════════════
-// v65 – BLE Connect button for iOS (direct user gesture)
+// v66 – BLE Connect button added (visible, direct user gesture)
 // ═══════════════════════════════════════════════════════════════════════
 
 // --- CHORD THEORY (unchanged) ---
@@ -521,7 +546,7 @@ function setCurrentChord(index){if(!currentSequence||index>=currentSequence.leng
 function updateStats(){const avg=stats.times.length?Math.round(stats.times.reduce((a,b)=>a+b,0)/stats.times.length):0;statCorrect.textContent=stats.correct;statWrong.textContent=stats.wrong;statStreak.textContent=stats.streak;statTime.textContent=avg||'—'}
 
 // ═══════════════════════════════════════════════════════════════════════
-// ─── MIDI – v65: BLE Connect button for iOS direct gesture ──────────
+// ─── MIDI – v66: BLE Connect button (direct user gesture) ────────────
 // ═══════════════════════════════════════════════════════════════════════
 
 let midiAccess = null;
@@ -1125,7 +1150,7 @@ document.addEventListener('touchstart',()=>{if(audioCtx&&audioCtx.state==='suspe
 document.addEventListener('click',()=>{if(audioCtx&&audioCtx.state==='suspended')resumeAudio()},{passive:true});
 buildPiano();generate();updateAudioIndicator();
 document.addEventListener('keydown',e=>{if(e.key===' '&&e.target===document.body){e.preventDefault();if(persistentNotes.length>0)checkChord()}});
-console.log('🎵 Chord Trainer v65 – dedicated BLE Connect button for iOS.');
+console.log('🎵 Chord Trainer v66 – BLE Connect button added.');
 </script>
 </body>
 </html>
