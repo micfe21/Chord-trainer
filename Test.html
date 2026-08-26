@@ -1,0 +1,25 @@
+navigator.requestMIDIAccess().then(access => {
+    console.log("MIDI ACCESS OK");
+    access.inputs.forEach(input => {
+        console.log(
+            "INPUT FOUND:",
+            input.name,
+            "id:", input.id,
+            "state:", input.state,
+            "connection:", input.connection
+        );
+        input.onmidimessage = event => {
+            console.log(
+                "MIDI MESSAGE:",
+                Array.from(event.data)
+            );
+        };
+        if (typeof input.open === "function") {
+            input.open()
+                .then(() => console.log("OPENED:", input.name))
+                .catch(err => console.log("OPEN ERROR:", err));
+        }
+    });
+}).catch(error => {
+    console.log("MIDI ACCESS ERROR:", error);
+});
