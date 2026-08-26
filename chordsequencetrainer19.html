@@ -3,13 +3,14 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<title>Chord Trainer – v59 (MIDIWeb Browser fix)</title>
+<title>Chord Trainer – v60 (Delayed MIDI port discovery)</title>
 <style>
 /* same compact styles – unchanged */
 *{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;background:#f5f2ed;min-height:100dvh;padding:12px;color:#1f1c18;display:flex;justify-content:center;touch-action:manipulation;-webkit-tap-highlight-color:transparent}.app{max-width:100%;width:100%;background:#fbfaf7;border-radius:28px;padding:18px 16px 20px;box-shadow:0 8px 32px rgba(0,0,0,.06);border:1px solid rgba(0,0,0,.04)}.header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;margin-bottom:12px}.header h1{font-size:1.4rem;font-weight:700;letter-spacing:-.02em}.header h1 span{color:#0b6d73}.top-controls{display:flex;flex-wrap:wrap;gap:4px;align-items:center}.top-controls select,.top-controls button{padding:5px 10px;border-radius:8px;border:1px solid #d7d2c8;background:#fff;font-size:.75rem;font-weight:600;color:#1f1c18;cursor:pointer;touch-action:manipulation;min-height:32px}.top-controls button{background:#0b6d73;color:#fff;border-color:#0b6d73}.top-controls button:active{transform:scale(.95)}.top-controls button.secondary{background:#e8e3da;color:#1f1c18;border-color:#d7d2c8}.top-controls button.voice-leading{background:#d97706;color:#fff;border-color:#d97706;font-weight:700}.top-controls button.voice-leading.active{background:#0b6d73;border-color:#0b6d73}.top-controls button.strict-inversions{background:#6c5ce7;color:#fff;border-color:#6c5ce7}.top-controls button.strict-inversions.active{background:#c62828;border-color:#c62828}.mode-row{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:6px}.mode-row button{padding:4px 14px;border-radius:999px;border:2px solid #d7d2c8;background:transparent;font-weight:600;font-size:.8rem;cursor:pointer;transition:.15s;min-height:30px}.mode-row button.active{background:#0b6d73;color:#fff;border-color:#0b6d73}.filter-row{display:flex;flex-wrap:wrap;gap:4px;padding:4px 0 8px}.filter-row span{font-size:.65rem;font-weight:600;color:#6e6a62;padding:3px 10px;border-radius:999px;background:rgba(255,255,255,.5);border:1px solid #d7d2c8;cursor:pointer;transition:.15s}.filter-row span.active{background:#0b6d73;color:#fff;border-color:#0b6d73}.filter-row span.chromatic-toggle{background:#e8e3da;border-color:#b8b0a4}.filter-row span.chromatic-toggle.active{background:#0b6d73;color:#fff;border-color:#0b6d73}.library-row{display:flex;flex-wrap:wrap;gap:4px;padding:4px 0 8px;border-top:1px solid #e4ded4;margin-top:4px}.library-row span{font-size:.6rem;font-weight:600;color:#6e6a62;padding:2px 10px;border-radius:999px;background:rgba(255,255,255,.5);border:1px solid #d7d2c8;cursor:pointer;transition:.15s;white-space:nowrap}.library-row span.active{background:#0b6d73;color:#fff;border-color:#0b6d73}.target-area{background:#edebe6;border-radius:16px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;min-height:64px}.target-chord{font-size:2.2rem;font-weight:700;letter-spacing:-.02em;line-height:1.2}.target-chord .badge{font-size:.6rem;font-weight:600;color:#6e6a62;text-transform:uppercase;background:#d7d2c8;padding:2px 10px;border-radius:20px;margin-right:8px;display:inline-block;vertical-align:middle}.target-chord .key-indicator{font-size:1rem;font-weight:600;color:#0b6d73;background:rgba(11,109,115,.12);padding:2px 10px;border-radius:12px;margin-right:6px;display:inline-block;vertical-align:middle}.target-chord .inv-badge{font-size:.8rem;font-weight:600;color:#6c5ce7;background:rgba(108,92,231,.15);padding:2px 10px;border-radius:12px;margin-left:6px;display:inline-block;vertical-align:middle}.target-progress{font-size:.95rem;font-weight:600;color:#6e6a62;background:rgba(255,255,255,.5);padding:3px 12px;border-radius:20px}.feedback-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px;padding:2px 0 6px;min-height:24px}.feedback-msg{font-weight:600;font-size:.85rem;transition:color .15s}.feedback-msg.correct{color:#2e7d32}.feedback-msg.wrong{color:#c62828}.feedback-msg.waiting{color:#6e6a62}.feedback-msg.idle{color:#9e9e9e}.debug-line{font-size:.6rem;color:#333;background:#f0ede8;padding:2px 8px;border-radius:8px;margin-top:2px;font-family:monospace;word-break:break-all}.stats-row{display:flex;gap:10px;font-size:.65rem;font-weight:600;color:#6e6a62;flex-wrap:wrap}.stats-row .stat{background:#edebe6;padding:2px 10px;border-radius:12px}.stats-row .stat strong{color:#1f1c18}.played-status{font-family:'SF Mono','Courier New',monospace;font-size:.65rem;color:#6e6a62;background:rgba(0,0,0,.04);padding:2px 10px;border-radius:12px;text-align:center;min-height:20px}.sequence-container{display:flex;gap:6px;overflow-x:auto;padding:4px 0 8px;scroll-behavior:smooth;-webkit-overflow-scrolling:touch}.seq-item{flex:0 0 auto;background:#f1efe9;padding:4px 12px;border-radius:10px;border-left:4px solid #0b6d73;cursor:pointer;text-align:center;min-width:60px;transition:background .15s,border-color .15s}.seq-item .deg{font-weight:700;font-size:.7rem}.seq-item .name{font-weight:500;font-size:.85rem}.seq-item .notes-display{font-size:.55rem;color:#4a4a4a;font-family:monospace;margin-top:2px}.seq-item .key-label{font-size:.55rem;color:#0b6d73;font-weight:600}.seq-item.playing{background:#fef3c7;border-left-color:#d97706}.seq-item.correct{background:#e8f5e9!important;border-left-color:#2f7d48!important}.seq-item.wrong{background:#fbe9e7!important;border-left-color:#c62828!important}.piano-wrapper{margin:4px 0 8px;padding:6px 0;background:#dcd6cc;border-radius:14px;overflow-x:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x;position:relative;width:100%}.piano{position:relative;height:180px;width:100%;margin:0 auto;touch-action:pan-y;min-width:520px}.key{position:absolute;border-radius:0 0 5px 5px;cursor:pointer;touch-action:manipulation;user-select:none;transition:background .07s,transform .05s,box-shadow .07s;will-change:transform;border:1px solid rgba(0,0,0,.1)}.key:active{transform:scale(.96)}.key.white{background:#f8f6f2;height:100%;bottom:0;border-bottom:3px solid #bbb;z-index:1;box-shadow:0 2px 4px rgba(0,0,0,.03)}.key.white.pressed{background:#d0d0d0;transform:scale(.96)}.key.white.correct{background:#81c784}.key.white.wrong{background:#ef9a9a}.key.white.missing{background:#90caf9}.key.black{background:#1a1a1a;height:62%;top:0;z-index:2;border-bottom:3px solid #444;border-radius:0 0 3px 3px;box-shadow:0 4px 6px rgba(0,0,0,.3)}.key.black.pressed{background:#555;transform:scale(.94)}.key.black.correct{background:#4caf50}.key.black.wrong{background:#e57373}.key.black.missing{background:#42a5f5}.key .label{position:absolute;bottom:4px;left:50%;transform:translateX(-50%);font-size:8px;font-weight:700;color:#aaa;pointer-events:none;letter-spacing:.02em}.key.black .label{color:#777;bottom:3px}.midi-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:4px 0;margin-top:2px}.midi-btn{padding:6px 14px;border-radius:10px;border:1px solid #d7d2c8;background:#fff;font-weight:600;font-size:.75rem;cursor:pointer;touch-action:manipulation}.midi-btn:active{transform:scale(.95)}.midi-btn.midi{background:#6c5ce7;color:#fff;border-color:#6c5ce7}.midi-btn.midi.connected{background:#2e7d32;border-color:#2e7d32}.midi-btn.refresh{background:#6c5ce7;color:#fff;border-color:#6c5ce7;font-size:.6rem;padding:4px 8px}.midi-device-select{padding:4px 8px;border-radius:8px;border:1px solid #d7d2c8;background:#fff;font-size:.7rem;font-weight:600;color:#1f1c18;max-width:200px;cursor:pointer}.midi-status{font-size:.6rem;color:#6e6a62;padding:3px 12px;background:#edebe6;border-radius:20px}.midi-status.connected{background:#c8e6c9;color:#1e5a1e}.midi-debug{font-size:.55rem;color:#6e6a62;margin-top:4px;font-family:monospace;word-break:break-all}.sound-toggle{display:flex;gap:4px;align-items:center;background:#edebe6;border-radius:20px;padding:2px}.sound-toggle button{padding:3px 12px;border-radius:16px;border:none;background:transparent;font-size:.6rem;font-weight:600;color:#6e6a62;cursor:pointer;transition:.15s;touch-action:manipulation}.sound-toggle button.active{background:#0b6d73;color:#fff}.sound-toggle button:active{transform:scale(.95)}.action-row{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;border-top:1px solid #e4ded4;padding-top:8px}.action-row button{padding:6px 14px;border-radius:10px;border:1px solid #d7d2c8;background:#fff;font-weight:600;font-size:.75rem;cursor:pointer;touch-action:manipulation;flex:1 0 auto;min-width:50px}.action-row button:active{transform:scale(.95)}.action-row button.primary{background:#0b6d73;color:#fff;border-color:#0b6d73}.action-row button.danger{background:#c62828;color:#fff;border-color:#c62828}.action-row button.check{background:#6c5ce7;color:#fff;border-color:#6c5ce7}.action-row button.start-audio{background:#d97706;color:#fff;border-color:#d97706;font-weight:700;font-size:.85rem;padding:8px 20px}.action-row button.test-sound{background:#6c5ce7;color:#fff;border-color:#6c5ce7}.action-row button.reset-audio{background:#c62828;color:#fff;border-color:#c62828}.audio-indicator{display:inline-block;width:12px;height:12px;border-radius:50%;margin-left:8px;vertical-align:middle}.audio-indicator.running{background:#4caf50}.audio-indicator.suspended{background:#ff9800}.audio-indicator.error{background:#f44336}.footer-note{margin-top:6px;font-size:.6rem;color:#9d988f;text-align:center}@media(max-width:600px){.app{padding:12px 10px}.target-chord{font-size:1.6rem}.piano{height:140px;min-width:420px}.key .label{font-size:6px;bottom:2px}.header h1{font-size:1.1rem}.top-controls select,.top-controls button{font-size:.65rem;padding:3px 8px;min-height:28px}.stats-row{font-size:.55rem;gap:6px}.feedback-msg{font-size:.75rem}.sound-toggle button{font-size:.5rem;padding:2px 8px}.library-row span{font-size:.5rem;padding:1px 6px}.midi-device-select{max-width:120px;font-size:.6rem}.target-chord .key-indicator{font-size:.7rem;padding:1px 6px}.target-chord .inv-badge{font-size:.6rem;padding:1px 6px}}@media(max-width:400px){.piano{height:110px;min-width:340px}}@media(min-width:768px)and(orientation:landscape){.app{padding:24px}.piano{height:220px}}
 </style>
 </head>
 <body>
+<!-- same HTML structure – unchanged -->
 <div class="app">
   <div class="header"><h1>🎵 <span>Chord</span> Trainer</h1><div class="top-controls"><select id="keySelect"><option value="60">C</option></select><select id="modeSelect"><option value="roman">Roman</option><option value="absolute">Absolute</option><option value="mixed">Mixed</option></select><select id="keyModeSelect"><option value="fixed">Fixed</option><option value="modulating">Modulating</option></select><select id="lengthSelect"><option value="4">4</option><option value="6" selected>6</option><option value="8">8</option><option value="10">10</option></select><select id="chordTypeSelect"><option value="triad">Triads</option><option value="seventh">Sevenths</option><option value="all" selected>Both</option></select><button id="voiceLeadingBtn" class="voice-leading">🎹 Voice Leading</button><button id="strictInvBtn" class="strict-inversions">🔒 Strict Inversions</button><button id="generateBtn">Generate</button><button id="randomBtn" class="secondary">🎲</button></div></div>
   <div class="mode-row" id="modeSelector"><button class="active" data-mode="roman">Roman</button><button data-mode="absolute">Absolute</button><button data-mode="mixed">Mixed</button></div>
@@ -36,7 +37,7 @@
 </div>
 <script>
 // ═══════════════════════════════════════════════════════════════════════
-// v59 – MIDIWeb Browser / SMK37 fix – correct enumeration & direct parsing
+// v60 – Delayed MIDI port discovery for MIDIWeb Browser
 // ═══════════════════════════════════════════════════════════════════════
 
 // --- CHORD THEORY (unchanged) ---
@@ -517,7 +518,7 @@ function setCurrentChord(index){if(!currentSequence||index>=currentSequence.leng
 function updateStats(){const avg=stats.times.length?Math.round(stats.times.reduce((a,b)=>a+b,0)/stats.times.length):0;statCorrect.textContent=stats.correct;statWrong.textContent=stats.wrong;statStreak.textContent=stats.streak;statTime.textContent=avg||'—'}
 
 // ═══════════════════════════════════════════════════════════════════════
-// ─── MIDI – v59: Correct enumeration & standard MIDI parsing ──────
+// ─── MIDI – v60: Delayed port discovery for MIDIWeb Browser ────────
 // ═══════════════════════════════════════════════════════════════════════
 
 let midiAccess = null;
@@ -525,6 +526,9 @@ let midiInputs = [];
 let selectedMidiInputId = '';
 let selectedMidiOutputId = '';
 let bleConnected = false;
+
+let midiDiscoveryTimer = null;
+let midiDiscoveryAttempts = 0;
 
 const midiBtn = document.getElementById('midiBtn');
 const midiRefreshBtn = document.getElementById('midiRefreshBtn');
@@ -542,84 +546,102 @@ function setMidiStatus(text, connected = false) {
   midiBtn.textContent = connected ? '🔌 MIDI ✓' : '🔌 MIDI';
 }
 
-function updateCapabilityDebug(extra = '') {
-  const info = [
-    `secure=${window.isSecureContext}`,
-    `top=${window.top === window.self}`,
-    `webmidi=${'requestMIDIAccess' in navigator}`,
-    `inputs=${midiAccess ? midiAccess.inputs.size : 0}`,
-    `bound=${midiInputs.length}`
-  ];
-  if (extra) info.push(extra);
-  midiDebug.textContent = `MIDI: ${info.join(' | ')}`;
+/*
+  normaliseMidiPorts – robust port extraction from Map, iterable, or object.
+*/
+function normaliseMidiPorts(collection) {
+  const ports = [];
+  if (!collection) return ports;
+
+  const add = (value) => {
+    if (!value) return;
+    // Standard Map entry: [id, port]
+    if (Array.isArray(value) && value.length >= 2) {
+      const port = value[1];
+      if (port && typeof port === 'object' && port.id) {
+        ports.push(port);
+      }
+      return;
+    }
+    // Direct MIDIInput/MIDIOutput object
+    if (typeof value === 'object' && value.id) {
+      ports.push(value);
+    }
+  };
+
+  // 1. Standard Web MIDI Map values()
+  try {
+    if (typeof collection.values === 'function') {
+      for (const value of collection.values()) add(value);
+    }
+  } catch (error) {
+    console.warn('MIDI values() enumeration failed:', error);
+  }
+
+  // 2. Some bridges expose entries() but values() may be incomplete
+  if (!ports.length) {
+    try {
+      if (typeof collection.entries === 'function') {
+        for (const entry of collection.entries()) add(entry);
+      }
+    } catch (error) {
+      console.warn('MIDI entries() enumeration failed:', error);
+    }
+  }
+
+  // 3. Array-like or iterable fallback
+  if (!ports.length) {
+    try {
+      for (const value of collection) add(value);
+    } catch (error) { /* ignore */ }
+  }
+
+  // 4. Object-property fallback (for non‑standard collections)
+  if (!ports.length) {
+    try {
+      Object.keys(collection).forEach(key => add(collection[key]));
+    } catch (error) { /* ignore */ }
+  }
+
+  // Remove duplicates by ID
+  return [...new Map(ports.map(port => [port.id, port])).values()];
 }
 
-/*
-  CRITICAL FIX:
-  MIDIAccess.inputs is a Map. Iterating it directly yields [id, input] pairs.
-  We must use .values() to get the actual MIDIInput objects.
-*/
 function getAllMidiInputs() {
-  if (!midiAccess || !midiAccess.inputs) return [];
-  try {
-    return Array.from(midiAccess.inputs.values());
-  } catch (error) {
-    console.warn('Could not read MIDI inputs:', error);
-    return [];
-  }
+  return midiAccess ? normaliseMidiPorts(midiAccess.inputs) : [];
 }
 
 function getAllMidiOutputs() {
-  if (!midiAccess || !midiAccess.outputs) return [];
-  try {
-    return Array.from(midiAccess.outputs.values());
-  } catch (error) {
-    console.warn('Could not read MIDI outputs:', error);
-    return [];
-  }
+  return midiAccess ? normaliseMidiPorts(midiAccess.outputs) : [];
 }
 
 function clearMidiInputs() {
   midiInputs.forEach(input => {
-    try {
-      input.onmidimessage = null;
-    } catch (error) {
-      console.warn('Could not clear MIDI input:', error);
-    }
+    try { input.onmidimessage = null; } catch (e) {}
   });
   midiInputs = [];
 }
 
 function handleMidiMessage(event) {
   const data = Array.from(event.data || []);
-  const rawHex = data
-    .map(byte => byte.toString(16).padStart(2, '0'))
-    .join(' ');
-
+  const rawHex = data.map(b => b.toString(16).padStart(2, '0')).join(' ');
   const sourceName = event.currentTarget?.name || 'MIDI input';
-  midiDebug.textContent =
-    `RECEIVED from ${sourceName}: ${rawHex || 'empty'}`;
+  midiDebug.textContent = `RECEIVED from ${sourceName}: ${rawHex || 'empty'}`;
 
   if (data.length < 2) return;
-
   const status = data[0];
   const command = status & 0xF0;
   const note = data[1];
   const velocity = data.length > 2 ? data[2] : 0;
 
-  // Note On: 0x90 through 0x9F with velocity > 0
   if (command === 0x90 && velocity > 0) {
     handleNoteOn(note, velocity, true);
     return;
   }
-
-  // Note Off: 0x80 or Note On with velocity 0
   if (command === 0x80 || (command === 0x90 && velocity === 0)) {
     handleNoteOff(note, true);
     return;
   }
-
-  // Other messages (control, aftertouch, etc.) – just log
   console.log('Unhandled MIDI message:', data);
 }
 
@@ -628,14 +650,7 @@ function bindMidiInput(input) {
   try {
     input.onmidimessage = handleMidiMessage;
     midiInputs.push(input);
-    console.log(
-      'Bound MIDI input:',
-      input.name,
-      input.id,
-      input.manufacturer,
-      input.state,
-      input.connection
-    );
+    console.log('Bound MIDI input:', input.name, input.id);
     return true;
   } catch (error) {
     console.warn('Could not bind MIDI input:', error);
@@ -646,33 +661,25 @@ function bindMidiInput(input) {
 function bindMidiInputs() {
   clearMidiInputs();
   const inputs = getAllMidiInputs();
-  if (!inputs.length) {
-    updateCapabilityDebug('no inputs available');
-    return 0;
-  }
+  if (!inputs.length) return 0;
 
-  // If a specific input is selected, bind only that; otherwise bind all.
   let targets = selectedMidiInputId
     ? inputs.filter(input => input.id === selectedMidiInputId)
     : [];
 
-  if (!targets.length) {
-    targets = inputs;
-  }
+  if (!targets.length) targets = inputs;
 
   targets.forEach(bindMidiInput);
-  updateCapabilityDebug(`selected=${selectedMidiInputId || 'all'}`);
   return midiInputs.length;
 }
 
 function choosePreferredInput(inputs) {
   return inputs.find(input => {
-    const description =
-      `${input.name || ''} ${input.manufacturer || ''}`.toLowerCase();
-    return description.includes('bluetooth') ||
-      description.includes('sinco') ||
-      description.includes('smk') ||
-      description.includes('m-vave');
+    const text = `${input.name || ''} ${input.manufacturer || ''}`.toLowerCase();
+    return text.includes('bluetooth') ||
+      text.includes('sinco') ||
+      text.includes('smk') ||
+      text.includes('m-vave');
   }) || inputs[0] || null;
 }
 
@@ -685,62 +692,116 @@ function populateMidiDevices() {
   const inputs = getAllMidiInputs();
   const outputs = getAllMidiOutputs();
 
-  // Automatically select the Bluetooth input if present
-  const preferredInput = choosePreferredInput(inputs);
-  if (
-    !selectedMidiInputId ||
-    !inputs.some(input => input.id === selectedMidiInputId)
-  ) {
-    selectedMidiInputId = preferredInput?.id || '';
-  }
-  if (
-    !selectedMidiOutputId ||
-    !outputs.some(output => output.id === selectedMidiOutputId)
-  ) {
-    selectedMidiOutputId = outputs[0]?.id || '';
-  }
-
-  const optionGroups = [];
+  // Build dropdown
+  const groups = [];
 
   if (inputs.length) {
-    const options = inputs.map(input => {
-      const name = input.name || 'Unnamed input';
-      const maker = input.manufacturer ? ` — ${input.manufacturer}` : '';
-      const selected = input.id === selectedMidiInputId ? ' selected' : '';
-      return `<option value="in:${input.id}"${selected}>${name}${maker}</option>`;
-    }).join('');
-    optionGroups.push(`<optgroup label="Inputs">${options}</optgroup>`);
+    groups.push(
+      '<optgroup label="Inputs">' +
+      inputs.map(input => {
+        const selected = input.id === selectedMidiInputId ? ' selected' : '';
+        return `<option value="in:${input.id}"${selected}>` +
+          `${input.name || 'MIDI input'}` +
+          `${input.manufacturer ? ' — ' + input.manufacturer : ''}` +
+          '</option>';
+      }).join('') +
+      '</optgroup>'
+    );
   }
 
   if (outputs.length) {
-    const options = outputs.map(output => {
-      const name = output.name || 'Unnamed output';
-      const maker = output.manufacturer ? ` — ${output.manufacturer}` : '';
-      const selected = output.id === selectedMidiOutputId ? ' selected' : '';
-      return `<option value="out:${output.id}"${selected}>${name}${maker}</option>`;
-    }).join('');
-    optionGroups.push(`<optgroup label="Outputs">${options}</optgroup>`);
+    groups.push(
+      '<optgroup label="Outputs">' +
+      outputs.map(output => {
+        const selected = output.id === selectedMidiOutputId ? ' selected' : '';
+        return `<option value="out:${output.id}"${selected}>` +
+          `${output.name || 'MIDI output'}` +
+          `${output.manufacturer ? ' — ' + output.manufacturer : ''}` +
+          '</option>';
+      }).join('') +
+      '</optgroup>'
+    );
   }
 
   midiDeviceSelect.innerHTML =
-    optionGroups.join('') || '<option value="">No MIDI devices found</option>';
+    groups.join('') ||
+    '<option value="">No MIDI devices found</option>';
 
-  const boundCount = bindMidiInputs();
-  const connected = inputs.length > 0 || outputs.length > 0;
+  // Auto‑select Bluetooth if available
+  if (inputs.length) {
+    const preferred = choosePreferredInput(inputs);
+    if (
+      !selectedMidiInputId ||
+      !inputs.some(input => input.id === selectedMidiInputId)
+    ) {
+      selectedMidiInputId = preferred?.id || inputs[0].id;
+    }
+  }
 
-  if (boundCount) {
-    const boundName = midiInputs[0]?.name || 'input';
-    setMidiStatus(`bound: ${boundName}`, true);
-  } else if (connected) {
-    setMidiStatus('device found, not bound', false);
+  if (outputs.length && !selectedMidiOutputId) {
+    selectedMidiOutputId = outputs[0].id;
+  }
+
+  const preferredValue = selectedMidiInputId
+    ? `in:${selectedMidiInputId}`
+    : selectedMidiOutputId
+      ? `out:${selectedMidiOutputId}`
+      : '';
+
+  if (preferredValue && [...midiDeviceSelect.options].some(o => o.value === preferredValue)) {
+    midiDeviceSelect.value = preferredValue;
+  }
+
+  const bound = bindMidiInputs();
+
+  if (bound) {
+    setMidiStatus(`bound: ${midiInputs[0].name || 'input'}`, true);
+  } else if (inputs.length || outputs.length) {
+    setMidiStatus('devices found', true);
   } else {
     setMidiStatus('no devices', false);
   }
 
-  updateCapabilityDebug(
-    `inputs=${inputs.length}, outputs=${outputs.length}`
-  );
-  return connected;
+  midiDebug.textContent =
+    `MIDI: inputs=${inputs.length}, outputs=${outputs.length}, bound=${midiInputs.length}`;
+
+  return inputs.length > 0 || outputs.length > 0;
+}
+
+/*
+  discoverMidiPorts – polls for ports every 250ms, up to 13 attempts.
+  This gives MIDIWeb Browser time to publish its Bluetooth devices.
+*/
+function discoverMidiPorts(attempt = 0) {
+  clearTimeout(midiDiscoveryTimer);
+  midiDiscoveryAttempts = attempt;
+
+  const inputs = getAllMidiInputs();
+  const outputs = getAllMidiOutputs();
+
+  midiDebug.textContent =
+    `MIDI discovery ${attempt + 1}: inputs=${inputs.length}, outputs=${outputs.length}, bound=${midiInputs.length}`;
+
+  if (inputs.length || outputs.length) {
+    populateMidiDevices();
+    bindMidiInputs();
+    return true;
+  }
+
+  // Retry up to 12 more times (total 13 checks, ~3 seconds)
+  if (attempt < 12) {
+    midiDiscoveryTimer = setTimeout(
+      () => discoverMidiPorts(attempt + 1),
+      250
+    );
+    return false;
+  }
+
+  setMidiStatus('no devices', false);
+  feedbackMsg.textContent =
+    'Web MIDI is open, but MIDIWeb Browser has not published its ports. Tap Refresh after reconnecting SMK37.';
+  feedbackMsg.className = 'feedback-msg wrong';
+  return false;
 }
 
 function forceBindFirstInput() {
@@ -761,7 +822,6 @@ function forceBindFirstInput() {
   }
 
   selectedMidiInputId = preferred.id;
-  // Update the dropdown selection if possible
   const optionValue = `in:${preferred.id}`;
   if ([...midiDeviceSelect.options].some(o => o.value === optionValue)) {
     midiDeviceSelect.value = optionValue;
@@ -770,13 +830,11 @@ function forceBindFirstInput() {
   const count = bindMidiInputs();
   if (count) {
     setMidiStatus(`bound: ${preferred.name || 'Bluetooth'}`, true);
-    feedbackMsg.textContent =
-      `✅ Bound ${preferred.name || 'Bluetooth input'}. Play a key now.`;
+    feedbackMsg.textContent = `✅ Bound ${preferred.name || 'Bluetooth input'}. Play a key now.`;
     feedbackMsg.className = 'feedback-msg correct';
   } else {
     setMidiStatus('bind failed', false);
-    feedbackMsg.textContent =
-      'Could not attach a message listener to the selected input.';
+    feedbackMsg.textContent = 'Could not attach a message listener to the selected input.';
     feedbackMsg.className = 'feedback-msg wrong';
   }
 }
@@ -807,8 +865,7 @@ function panicMidi() {
   } catch (e) {}
 }
 
-// ─── BLE fallback (direct Web Bluetooth, if supported) ────────────
-
+// ─── BLE fallback (direct Web Bluetooth) ──────────────────────────
 const BLE_MIDI_SERVICE = '03b80e5a-ede8-4b33-a751-6ce34ec4c700';
 const BLE_MIDI_CHARACTERISTIC = '7772e5db-3868-4112-a1a9-f2669d106bf3';
 let bleDevice = null, bleServer = null, bleService = null, bleCharacteristic = null;
@@ -825,17 +882,15 @@ function onBleDisconnected() {
 }
 
 function parseBleMidiPacket(data) {
-  // Simple BLE-MIDI parser (timestamp stripping)
   const bytes = Array.from(data);
   if (bytes.length < 3) return [];
   const midi = [];
   let i = 0;
-  // Skip header (0x80 + high bits) and second timestamp byte
   if ((bytes[i] & 0x80) !== 0) i++;
   if (i < bytes.length && (bytes[i] & 0x80)) i++;
   while (i < bytes.length) {
     const byte = bytes[i++];
-    if (byte & 0x80) continue; // skip timestamp continuation
+    if (byte & 0x80) continue;
     midi.push(byte);
   }
   return midi;
@@ -846,7 +901,6 @@ function onBleMidiMessage(event) {
   const rawHex = Array.from(data).map(b => b.toString(16).padStart(2, '0')).join(' ');
   midiDebug.textContent = `BLE raw: ${rawHex}`;
   const bytes = parseBleMidiPacket(data);
-  // Pass the extracted bytes to the same handler (simulate a standard event)
   if (bytes.length) {
     handleMidiMessage({ data: new Uint8Array(bytes), currentTarget: { name: 'BLE MIDI' } });
   }
@@ -885,66 +939,64 @@ async function connectBleMidi() {
 }
 
 async function initMidi() {
-  if ('requestMIDIAccess' in navigator) {
-    try {
-      setMidiStatus('requesting Web MIDI...', false);
-      midiAccess = await navigator.requestMIDIAccess({ sysex: false });
-      midiAccess.onstatechange = populateMidiDevices;
-      const hasDevices = populateMidiDevices();
+  if (!('requestMIDIAccess' in navigator)) {
+    setMidiStatus('Web MIDI unavailable', false);
+    feedbackMsg.textContent = 'Web MIDI is unavailable in this browser context.';
+    feedbackMsg.className = 'feedback-msg wrong';
+    return;
+  }
 
-      if (!hasDevices) {
-        if ('bluetooth' in navigator) {
-          setMidiStatus('No USB devices, trying BLE…', false);
-          feedbackMsg.textContent = '🔍 No USB MIDI found – trying Bluetooth…';
-          feedbackMsg.className = 'feedback-msg waiting';
-          await connectBleMidi();
-          return;
-        } else {
-          setMidiStatus('no devices', false);
-          feedbackMsg.textContent = 'Web MIDI connected but no devices. Try "Force Bind" or connect a USB device.';
-          feedbackMsg.className = 'feedback-msg waiting';
-          return;
-        }
-      }
-      setMidiStatus('ready', true);
-      feedbackMsg.textContent = '🎹 Web MIDI ready.';
-      feedbackMsg.className = 'feedback-msg waiting';
-      return;
-    } catch (err) {
-      console.log('Web MIDI failed:', err);
-      if ('bluetooth' in navigator) {
-        await connectBleMidi();
-        return;
-      }
-      setMidiStatus('Web MIDI failed', false);
-      feedbackMsg.textContent = `Web MIDI error: ${err.message || err.name}`;
-      feedbackMsg.className = 'feedback-msg wrong';
-    }
-  } else {
-    if ('bluetooth' in navigator) {
-      await connectBleMidi();
-    } else {
-      setMidiStatus('no MIDI support', false);
-      feedbackMsg.textContent = 'MIDI not supported in this browser/context.';
-      feedbackMsg.className = 'feedback-msg wrong';
-    }
+  try {
+    setMidiStatus('requesting…', false);
+    midiAccess = await navigator.requestMIDIAccess({ sysex: false });
+
+    midiAccess.onstatechange = event => {
+      console.log(
+        'MIDI state change:',
+        event.port?.name,
+        event.port?.type,
+        event.port?.state,
+        event.port?.connection
+      );
+      discoverMidiPorts(0);
+    };
+
+    feedbackMsg.textContent = 'Web MIDI opened. Waiting for MIDIWeb Browser ports…';
+    feedbackMsg.className = 'feedback-msg waiting';
+
+    // Start delayed discovery – do not rely on immediate ports.
+    discoverMidiPorts(0);
+
+  } catch (error) {
+    console.error('Web MIDI request failed:', error);
+    setMidiStatus('MIDI error', false);
+    feedbackMsg.textContent =
+      `Web MIDI error: ${error.message || error.name || 'unknown error'}`;
+    feedbackMsg.className = 'feedback-msg wrong';
   }
 }
 
 // ─── MIDI event listeners ──────────────────────────────────────────
 
 midiBtn.addEventListener('click', initMidi);
-midiRefreshBtn.addEventListener('click', () => {
-  if (midiAccess) populateMidiDevices();
-  else initMidi();
+
+midiRefreshBtn.addEventListener('click', async () => {
+  if (!midiAccess) {
+    await initMidi();
+    return;
+  }
+  feedbackMsg.textContent = 'Refreshing MIDI ports…';
+  feedbackMsg.className = 'feedback-msg waiting';
+  discoverMidiPorts(0);
 });
+
 forceBindBtn.addEventListener('click', forceBindFirstInput);
 
 midiDeviceSelect.addEventListener('change', e => {
   const value = e.target.value || '';
   if (value.startsWith('in:')) {
     selectedMidiInputId = value.slice(3);
-    // Give the iOS bridge a moment to settle
+    // Give bridge a moment
     setTimeout(() => {
       const count = bindMidiInputs();
       setMidiStatus(
@@ -999,7 +1051,7 @@ document.addEventListener('touchstart',()=>{if(audioCtx&&audioCtx.state==='suspe
 document.addEventListener('click',()=>{if(audioCtx&&audioCtx.state==='suspended')resumeAudio()},{passive:true});
 buildPiano();generate();updateAudioIndicator();
 document.addEventListener('keydown',e=>{if(e.key===' '&&e.target===document.body){e.preventDefault();if(persistentNotes.length>0)checkChord()}});
-console.log('🎵 Chord Trainer v59 – correct .values() enumeration and standard MIDI parsing.');
+console.log('🎵 Chord Trainer v60 – delayed MIDI port discovery enabled.');
 </script>
 </body>
 </html>
