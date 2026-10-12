@@ -952,3 +952,149 @@ function disconnectBleMidi() {
   bleConnected = false;
   bleDevice = null; bleServer = null; bleService = null; bleCharacteristic = null;
   setMidiStatus('disconnected', false);
+  feedbackMsg.textContent = 'Disconnected. Tap BLE Connect to reconnect.';
+  feedbackMsg.className = 'feedback-msg waiting';
+}
+
+function makeBleMidiPacket(bytes) {
+  const ts = performance.now() & 0x1fff;
+  const header = 0x80 | ((ts >> 7) & 0x3f);
+  const timestampLow = 0x80 | (ts & 0x7f);
+  const out = [header];
+  for (let i = 0; i < bytes.length; i++) out.push(timestampLow, bytes[i] & 0x7f);
+  return new Uint8Array(out);
+}
+
+function sendBleNoteOn(note, velocity = 100, channel = 0) {
+  if (!bleConnected || !bleCharacteristic) return;
+  const bytes = [0x90 + channel, note & 0x7f, velocity & 0x7f];
+  bleCharacteristic.writeValue(makeBleMidiPacket(bytes)).catch(() => {});
+}
+function sendBleNoteOff(note, channel = 0) {
+  if (!bleConnected || !bleCharacteristic) return;
+  const bytes = [0x80 + channel, note & 0x7f, 0];
+  bleCharacteristic.writeValue(makeBleMidiPacket(bytes)).catch(() => {});
+}
+
+if (midiBtn) midiBtn.addEventListener('click', initMidi);
+if (bleBtn && bluetoothSupported) bleBtn.addEventListener('click', connectBleMidi);
+if (refreshBtn) refreshBtn.addEventListener('click', () => {
+  if (midiAccess) populateMidiDevices();
+  else if (bluetoothSupported) connectBleMidi();
+});
+if (forceScanBtn) forceScanBtn.addEventListener('click', forceScan);
+if (stopBtn) stopBtn.addEventListener('click', disconnectBleMidi);
+
+if (midiDeviceSelect) {
+  midiDeviceSelect.addEventListener('change', e => {
+    const val = e.target.value || '';
+    if (val.startsWith('in:')) {
+      selectedMidiInputId = val.slice(3);
+      bindMidiInputs();
+      feedbackMsg.textContent = 'Input selected. Play a key.';
+      feedbackMsg.className = 'feedback-msg waiting';
+    } else if (val.startsWith('out:')) {
+      selectedMidiOutputId = val.slice(4);
+      feedbackMsg.textContent = 'Output selected.';
+      feedbackMsg.className = 'feedback-msg waiting';
+    }
+  });
+}
+
+// ─── UI ──────────────────────────────────────────────────────────────
+const soundToggle=document.getElementById('soundToggle'),soundStatus=document.getElementById('soundStatus');
+soundToggle.querySelectorAll('button').forEach(btn=>{btn.addEventListener('click',()=>{soundToggle.querySelectorAll('button').forEach(b=>{b.classList.remove('active');b.setAttribute('aria-pressed','false')});btn.classList.add('active');btn.setAttribute('aria-pressed','true');soundMode=btn.dataset.mode;if(soundMode==='internal'){soundStatus.textContent='Warm piano';ensureAudio();initAudioGraph()}else soundStatus.textContent='MIDI Thru (external)';console.log('🔊 Sound mode: '+soundMode)})});
+document.getElementById('startAudioBtn').addEventListener('click',()=>{resumeAudio();feedbackMsg.textContent='🔊 Starting warm piano...';feedbackMsg.className='feedback-msg waiting';setTimeout(()=>{if(audioCtx&&audioCtx.state==='running'){playNote(60,80,.5);setTimeout(()=>playNote(64,70,.5),120);setTimeout(()=>playNote(67,70,.5),240);feedbackMsg.textContent='🔊 Warm piano ready! Play some notes.';feedbackMsg.className='feedback-msg waiting';speak('Audio ready.')}},200)});
+document.getElementById('testSoundBtn').addEventListener('click',playTestTone);
+document.getElementById('resetAudioBtn').addEventListener('click',resetAudio);
+document.getElementById('generateBtn').addEventListener('click',()=>{resumeAudio();generate()});
+document.getElementById('randomBtn').addEventListener('click',()=>{resumeAudio();const keys=[60,62,64,65,67,69,71];keySelect.value=keys[Math.floor(Math.random()*keys.length)];lengthSelect.value=[4,6,8,10][Math.floor(Math.random()*4)];document.getElementById('keyDisplay').textContent='Key: '+noteLabel(parseInt(keySelect.value));const types=['triad','seventh','all'];chordTypeSelect.value=types[Math.floor(Math.random()*types.length)];currentChordType=chordTypeSelect.value;generate()});
+document.getElementById('playBtn').addEventListener('click',()=>{if(currentSequence.length){resumeAudio();playSequence(currentSequence)}});
+document.getElementById('voiceLeadingBtn').addEventListener('click',function(){voiceLeadingEnabled=!voiceLeadingEnabled;this.classList.toggle('active',voiceLeadingEnabled);this.setAttribute('aria-pressed',voiceLeadingEnabled?'true':'false');this.textContent=voiceLeadingEnabled?'🎹 Voice Leading ✓':'🎹 Voice Leading';generate()});
+document.getElementById('strictInvBtn').addEventListener('click',function(){strictInversions=!strictInversions;this.classList.toggle('active',strictInversions);this.setAttribute('aria-pressed',strictInversions?'true':'false');this.textContent=strictInversions?'🔒 Strict ✓':'🔒 Strict Inversions';if(currentSequence.length>0&&currentIndex<currentSequence.length)setCurrentChord(currentIndex)});
+document.querySelectorAll('#libraryRow button').forEach(el=>{el.addEventListener('click',function(){document.querySelectorAll('#libraryRow button').forEach(s=>{s.classList.remove('active');s.setAttribute('aria-pressed','false')});this.classList.add('active');this.setAttribute('aria-pressed','true');currentLibrary=this.dataset.library;generate()})});
+document.getElementById('chromaticToggle').addEventListener('click',function(){allowChromatic=!allowChromatic;this.classList.toggle('active',allowChromatic);this.setAttribute('aria-pressed',allowChromatic?'true':'false');generate()});
+
+function renderSequence(seq){sequenceContainer.innerHTML='';if(!seq||!seq.length){sequenceContainer.innerHTML='<div style="padding:8px;color:#999;font-size:.8rem;">Generate a progression.</div>';return}seq.forEach((item,idx)=>{const div=document.createElement('div');div.className='seq-item';div.dataset.index=idx;const displayName=item.display;const color='#0b6d73';div.style.borderLeftColor=color;let nameText=displayName,keyText='';if(currentMode==='roman'&&currentKeyMode==='modulating'&&item.chordKeyRoot)keyText=noteLabel(item.chordKeyRoot);let notesHtml='';if(showNotes){const noteNames=item.notes.map(n=>noteLabel(n)).join(' ');notesHtml='<div class="notes-display">'+noteNames+'</div>'}div.innerHTML='<div class="deg">'+(idx+1)+'.</div><div class="name">'+nameText+'</div>'+(keyText?'<div class="key-label">'+keyText+'</div>':'')+notesHtml;div.addEventListener('click',()=>playSingleChord(item));sequenceContainer.appendChild(div)})}
+
+function generate(opts){
+  opts = opts || {};
+  const key=keySelect.value,length=parseInt(lengthSelect.value,10)||6;
+  currentKeyMode=keyModeSelect.value;
+  let seq;
+  if(currentMode==='roman')seq=generateSequence(key,length,currentFilter,currentKeyMode,currentInversionMode);
+  else if(currentMode==='absolute')seq=generateAbsoluteSequence(length,currentFilter,currentInversionMode);
+  else seq=generateMixedSequence(key,length,currentFilter,currentKeyMode,currentInversionMode);
+  currentSequence=seq;renderSequence(seq);stopPlayback();currentIndex=0;setCurrentChord(0,false);
+  stats={correct:0,wrong:0,streak:0,bestStreak:0,total:0,times:[]};updateStats();
+  feedbackMsg.textContent='🎯 Play: '+currentTargetDisplay;feedbackMsg.className='feedback-msg waiting';listenMode=true;
+
+  if(!opts.silent && currentSequence.length > 0){
+    const keyName = speakNoteNames(noteLabel(parseInt(keySelect.value,10)));
+    const summary = `${length} chords in ${keyName} major.`;
+    const first = `Chord 1 of ${length}. ${speakChordDescription(currentSequence[0])}.`;
+    speak(summary + ' ' + first);
+  }
+}
+
+function populateKeys(){keySelect.innerHTML='';const names=getNoteNames();ALL_ROOTS.forEach((r,i)=>{const opt=document.createElement('option');opt.value=r;opt.textContent=names[i]||noteLabel(r);keySelect.appendChild(opt)});keySelect.value='60'}populateKeys();
+document.querySelectorAll('#modeSelector button').forEach(btn=>{btn.addEventListener('click',()=>{document.querySelectorAll('#modeSelector button').forEach(b=>{b.classList.remove('active');b.setAttribute('aria-pressed','false')});btn.classList.add('active');btn.setAttribute('aria-pressed','true');currentMode=btn.dataset.mode;const showKey=currentMode==='roman'||currentMode==='mixed';keySelect.parentElement.style.display=showKey?'flex':'none';keyModeSelect.parentElement.style.display=showKey?'flex':'none';document.getElementById('keyDisplay').textContent=showKey?'Key: '+noteLabel(parseInt(keySelect.value)):'Key: none';generate()})});
+document.querySelectorAll('#filterRow button[data-filter]').forEach(el=>{el.addEventListener('click',()=>{document.querySelectorAll('#filterRow button[data-filter]').forEach(s=>{s.classList.remove('active');s.setAttribute('aria-pressed','false')});el.classList.add('active');el.setAttribute('aria-pressed','true');currentFilter=el.dataset.filter;generate()})});
+chordTypeSelect.addEventListener('change',()=>{currentChordType=chordTypeSelect.value;generate()});
+document.querySelectorAll('.top-controls select').forEach(sel=>{sel.addEventListener('change',()=>{if(sel.id==='keySelect')document.getElementById('keyDisplay').textContent='Key: '+noteLabel(parseInt(sel.value));if(sel.id!=='chordTypeSelect')generate()})});
+document.getElementById('stopBtn').addEventListener('click',stopPlayback);
+document.getElementById('checkBtn').addEventListener('click',()=>{if(persistentNotes.length===0){feedbackMsg.textContent='Play some notes first.';feedbackMsg.className='feedback-msg waiting'}else checkChord()});
+document.getElementById('clearBtn').addEventListener('click',()=>{currentSequence=[];renderSequence([]);stopPlayback();listenMode=false;persistentNotes=[];updatePlayedDisplay();keyElements.forEach(el=>el.classList.remove('correct','wrong','missing','pressed'));feedbackMsg.textContent='Cleared – generate a new sequence.';feedbackMsg.className='feedback-msg idle';targetDisplay.textContent='—';progressDisplay.textContent='0 / 0';targetKeyIndicator.style.display='none';invBadge.style.display='none';speak('Cleared.')});
+document.getElementById('showNotesBtn').addEventListener('click',function(){showNotes=!showNotes;this.textContent=showNotes?'Hide Notes':'Show Notes';renderSequence(currentSequence)});
+
+// --- Voice toggle ---
+const voiceToggleBtn = document.getElementById('voiceToggleBtn');
+voiceToggleBtn.addEventListener('click', () => {
+  if (voiceEnabled) {
+    // Speak "Voice off" before silencing
+    try {
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance('Voice off');
+      u.rate = 0.95; u.lang = 'en-US';
+      window.speechSynthesis.speak(u);
+    } catch(e) {}
+    voiceEnabled = false;
+    voiceToggleBtn.textContent = '🔇 Voice Off';
+    voiceToggleBtn.classList.add('off');
+    voiceToggleBtn.setAttribute('aria-pressed', 'false');
+  } else {
+    voiceEnabled = true;
+    voiceToggleBtn.textContent = '🔊 Voice On';
+    voiceToggleBtn.classList.remove('off');
+    voiceToggleBtn.setAttribute('aria-pressed', 'true');
+    speak('Voice on');
+  }
+});
+
+// --- Repeat current chord announcement ---
+document.getElementById('repeatBtn').addEventListener('click', () => {
+  if (!currentSequence || currentIndex >= currentSequence.length) {
+    speak('No chord to repeat. Tap Generate first.');
+    return;
+  }
+  const item = currentSequence[currentIndex];
+  let spoken = `Chord ${currentIndex+1} of ${currentSequence.length}.`;
+  if (currentKeyMode === 'modulating' && item.chordKeyRoot) {
+    spoken += ` Key of ${speakNoteNames(noteLabel(item.chordKeyRoot))}.`;
+  }
+  spoken += ` ${speakChordDescription(item)}.`;
+  speak(spoken);
+});
+
+// ─── INIT ──────────────────────────────────────────────────────────
+document.addEventListener('touchstart',()=>{if(audioCtx&&audioCtx.state==='suspended')resumeAudio()},{passive:true});
+document.addEventListener('click',()=>{if(audioCtx&&audioCtx.state==='suspended')resumeAudio()},{passive:true});
+
+buildPiano();
+generate({ silent: true });
+updateAudioIndicator();
+document.addEventListener('keydown',e=>{if(e.key===' '&&e.target===document.body){e.preventDefault();if(persistentNotes.length>0)checkChord()}});
+console.log('🎵 Chord Trainer v76 a11y – speech edition loaded');
+</script>
+</body>
+</html>
