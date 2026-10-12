@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SR Test</title>
+<style>
+body{font-family:-apple-system,sans-serif;padding:16px;background:#f5f2ed;color:#1f1c18}
+h1{font-size:1.1rem;margin-bottom:8px}
+p{font-size:.8rem;margin-bottom:12px;color:#666;line-height:1.4}
+button{display:block;width:100%;padding:14px;margin-bottom:10px;font-size:1rem;font-weight:600;border-radius:10px;border:1px solid #ccc;background:#fff;cursor:pointer}
+button:active{background:#eee}
+#visibleFocus{padding:8px;background:#d0d0d0;border-radius:8px;margin-top:8px;font-size:.8rem}
+#log{font-family:monospace;font-size:.65rem;background:#fff;padding:8px;border-radius:8px;margin-top:16px;min-height:100px;white-space:pre-wrap;word-break:break-all;border:1px solid #ddd}
+</style>
+</head>
+<body>
+<h1>Screen Reader Test</h1>
+<p>Turn VoiceOver on. Swipe to each button and double-tap. Note which ones speak, and what they say.</p>
+
+<button id="b1">Test 1: alert display toggle</button>
+<button id="b2">Test 2: focus hidden element</button>
+<button id="b3">Test 3: focus visible element</button>
+<button id="b4">Test 4: change this button's label</button>
+<button id="b5">Test 5: dynamic role=alert insert</button>
+
+<div id="alertBox" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden" role="alert" aria-live="assertive"></div>
+<div id="hiddenFocus" tabindex="-1" aria-label="" style="position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden">X</div>
+<div id="visibleFocus" tabindex="-1">visible focus target</div>
+<div id="liveBox" aria-live="assertive" role="status" style="position:absolute;left:-9999px"></div>
+
+<div id="log">Ready. Tap a test button.</div>
+
+<script>
+function log(msg) {
+  document.getElementById('log').textContent = msg + '\n' + document.getElementById('log').textContent;
+  console.log(msg);
+}
+document.getElementById('b1').addEventListener('click', () => {
+  const box = document.getElementById('alertBox');
+  box.style.display = 'none';
+  box.textContent = 'Test one. Alert toggle.';
+  void box.offsetWidth;
+  box.style.display = 'block';
+  log('Test 1 fired');
+});
+document.getElementById('b2').addEventListener('click', () => {
+  const el = document.getElementById('hiddenFocus');
+  el.setAttribute('aria-label', 'Test two. Hidden focus.');
+  try { el.focus({ preventScroll: true }); } catch(e) {}
+  log('Test 2 fired. Active: ' + (document.activeElement ? document.activeElement.id : 'none'));
+});
+document.getElementById('b3').addEventListener('click', () => {
+  const el = document.getElementById('visibleFocus');
+  el.setAttribute('aria-label', 'Test three. Visible focus.');
+  try { el.focus({ preventScroll: true }); } catch(e) {}
+  log('Test 3 fired. Active: ' + (document.activeElement ? document.activeElement.id : 'none'));
+});
+document.getElementById('b4').addEventListener('click', function() {
+  const btn = this;
+  const orig = btn.textContent;
+  btn.setAttribute('aria-label', 'Test four. Changed label.');
+  btn.textContent = 'Test 4 fired!';
+  setTimeout(() => { btn.textContent = orig; btn.removeAttribute('aria-label'); }, 2500);
+  log('Test 4 fired');
+});
+document.getElementById('b5').addEventListener('click', () => {
+  const box = document.getElementById('liveBox');
+  box.innerHTML = '';
+  setTimeout(() => {
+    const d = document.createElement('div');
+    d.setAttribute('role', 'alert');
+    d.textContent = 'Test five. Dynamic alert.';
+    box.appendChild(d);
+  }, 60);
+  log('Test 5 fired');
+});
+</script>
+</body>
+</html>
