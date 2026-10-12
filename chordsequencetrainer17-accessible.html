@@ -127,9 +127,15 @@ function speakChordDescription(item) {
     const qual = CHORD_TYPES[item.typeKey] ? CHORD_TYPES[item.typeKey].label.toLowerCase() : '';
     s = rootName + ' ' + qual;
   } else {
+    const roman = (item.roman || '').replace(/ \(1st\)| \(2nd\)| \(3rd\)/g, '');
+    const hasSharp = roman.includes('♯');
+    const hasFlat = roman.includes('♭');
     const degWord = DEGREE_WORDS[item.degree] || '';
     const qualWord = QUALITY_WORDS[item.typeKey] || '';
-    s = (degWord + ' ' + qualWord).trim();
+    let prefix = '';
+    if (hasSharp) prefix = 'sharp ';
+    else if (hasFlat) prefix = 'flat ';
+    s = (prefix + degWord + ' ' + qualWord).trim();
   }
   if (item.inversion > 0 && item.inversion < INVERSION_WORDS.length) {
     s += ', ' + INVERSION_WORDS[item.inversion];
