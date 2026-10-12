@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SR Test 2</title>
+<style>
+body{font-family:-apple-system,sans-serif;padding:16px;background:#f5f2ed;color:#1f1c18}
+h1{font-size:1.1rem;margin-bottom:8px}
+p{font-size:.8rem;margin-bottom:12px;color:#666;line-height:1.4}
+button{display:block;width:100%;padding:14px;margin-bottom:10px;font-size:1rem;font-weight:600;border-radius:10px;border:1px solid #ccc;background:#fff;cursor:pointer}
+button:active{background:#eee}
+#log{font-family:monospace;font-size:.65rem;background:#fff;padding:8px;border-radius:8px;margin-top:16px;min-height:80px;white-space:pre-wrap;word-break:break-all;border:1px solid #ddd}
+</style>
+</head>
+<body>
+<h1>Screen Reader Test 2</h1>
+<p>Turn VoiceOver on (using the triple-click). Swipe to each button, double-tap, and listen.</p>
+
+<button id="b1">Test A: alert after 800ms</button>
+<button id="b2">Test B: app speaks (SpeechSynthesis)</button>
+<button id="b3">Test C: app speaks + longer phrase</button>
+
+<div id="liveBox" role="alert" aria-live="assertive" style="position:absolute;left:-9999px"></div>
+
+<div id="log">Ready. Tap a test button.</div>
+
+<script>
+function log(msg) {
+  document.getElementById('log').textContent = msg + '\n' + document.getElementById('log').textContent;
+  console.log(msg);
+}
+
+document.getElementById('b1').addEventListener('click', () => {
+  const box = document.getElementById('liveBox');
+  box.innerHTML = '';
+  setTimeout(() => {
+    const d = document.createElement('div');
+    d.setAttribute('role', 'alert');
+    d.textContent = 'Test A worked. Alert after 800ms.';
+    box.appendChild(d);
+  }, 800);
+  log('Test A fired — announcement will play in 800ms');
+});
+
+document.getElementById('b2').addEventListener('click', () => {
+  if (!('speechSynthesis' in window)) { log('No speechSynthesis'); return; }
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance('Test B worked. The app is speaking.');
+  u.rate = 0.95; u.pitch = 1; u.volume = 1;
+  window.speechSynthesis.speak(u);
+  log('Test B fired — speechSynthesis invoked');
+});
+
+document.getElementById('b3').addEventListener('click', () => {
+  if (!('speechSynthesis' in window)) { log('No speechSynthesis'); return; }
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance('Test C worked. Chord one of six. D minor, second inversion.');
+  u.rate = 0.95; u.pitch = 1; u.volume = 1;
+  window.speechSynthesis.speak(u);
+  log('Test C fired — speechSynthesis invoked');
+});
+</script>
+</body>
+</html>
