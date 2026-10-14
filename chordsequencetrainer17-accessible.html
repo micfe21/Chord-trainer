@@ -21,7 +21,6 @@
   <div class="sequence-container" id="sequenceContainer"></div>
   <div class="piano-wrapper" aria-hidden="true"><div class="piano" id="piano"></div></div>
 
-  <!-- ============ MIDI ROW ============ -->
   <div class="midi-row">
     <button class="midi-btn midi" id="midiBtn">🔌 MIDI</button>
     <button class="midi-btn" id="bleBtn" style="background:#0984e3;border-color:#0984e3;color:#fff;">🔵 BLE Connect</button>
@@ -67,22 +66,24 @@
 
 // --- Speech synthesis ---
 let voiceEnabled = true;
+let lastSpokenAt = 0;
 
 function speak(text, urgent = false) {
   if (!voiceEnabled) return;
   if (!('speechSynthesis' in window)) return;
+  lastSpokenAt = Date.now();
   try {
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
-    u.rate = 0.95;
-    u.pitch = 1;
+    u.rate = 0.82;
+    u.pitch = 0.9;
     u.volume = 1;
     u.lang = 'en-US';
     window.speechSynthesis.speak(u);
   } catch(e) { console.warn('speak failed', e); }
 }
 
-// Warm up the speech engine on first user gesture (iOS quirk: first utterance after load often silently fails)
+// Warm up the speech engine on first user gesture
 let speechWarmedUp = false;
 document.addEventListener('touchstart', function warmup() {
   if (speechWarmedUp) return;
@@ -112,7 +113,6 @@ const QUALITY_WORDS = {
 };
 const INVERSION_WORDS = ['','first inversion','second inversion','third inversion'];
 
-// Convert note names for speech: "F#" → "F sharp", "Bb" → "B flat"
 function speakNoteNames(text) {
   return String(text)
     .replace(/[A-G]#/g, m => m[0] + ' sharp')
@@ -129,7 +129,7 @@ function speakChordDescription(item) {
   } else {
     const roman = (item.roman || '').replace(/ \(1st\)| \(2nd\)| \(3rd\)/g, '');
     const hasSharp = roman.includes('♯');
-    const hasFlat = roman.includes('♭');
+    const hasFlat  = roman.includes('♭');
     const degWord = DEGREE_WORDS[item.degree] || '';
     const qualWord = QUALITY_WORDS[item.typeKey] || '';
     let prefix = '';
@@ -230,7 +230,6 @@ function getLibraryTypes(){return currentLibrary==='all'?null:LIBRARY_MAP[curren
 function getChordTypeForDegree(d,m){const e=DEGREE_MAP[d];if(!e)return'maj';if(m==='triad')return e.triad;if(m==='seventh')return e.seventh;return Math.random()<0.5?e.triad:e.seventh}
 function selectVoiceLeadingInversion(p,r,t,m){if(!voiceLeadingEnabled||!p||!p.length)return Math.floor(Math.random()*(m+1));const l=Math.min(...p),s=Math.max(...p),c=new Set(p.map(pitchClass));let o=0,a=Infinity;for(let u=0;u<=m;u++){const e=buildChord(r,t,u);if(!e.length)continue;const n=Math.min(...e),i=Math.max(...e),d=new Set(e.map(pitchClass));let v=Infinity,f=0;for(let e=-2;e<=2;e++){let t=0;const r=[...d].filter(e=>c.has(e)),s=r.length*.8,o=(n+i)/2+e*12,a=(l+s)/2,p=Math.abs(o-a),m=Math.abs(n+e*12-l);t=p*.3+m*.4-s*12;t<v&&(v=t,f=e)}const h=v;h<a&&(a=h,o=u)}return o}
 
-// ─── CHORD GENERATOR ────────────────────────────────────────────────
 function generateSequence(keyRoot,length,filter,keyMode,invMode){
  const degrees=[1,2,3,4,5,6,7];
  const seq=[];
@@ -1051,17 +1050,15 @@ document.querySelectorAll('.top-controls select').forEach(sel=>{sel.addEventList
 document.getElementById('stopBtn').addEventListener('click',stopPlayback);
 document.getElementById('checkBtn').addEventListener('click',()=>{if(persistentNotes.length===0){feedbackMsg.textContent='Play some notes first.';feedbackMsg.className='feedback-msg waiting'}else checkChord()});
 document.getElementById('clearBtn').addEventListener('click',()=>{currentSequence=[];renderSequence([]);stopPlayback();listenMode=false;persistentNotes=[];updatePlayedDisplay();keyElements.forEach(el=>el.classList.remove('correct','wrong','missing','pressed'));feedbackMsg.textContent='Cleared – generate a new sequence.';feedbackMsg.className='feedback-msg idle';targetDisplay.textContent='—';progressDisplay.textContent='0 / 0';targetKeyIndicator.style.display='none';invBadge.style.display='none';speak('Cleared.')});
-document.getElementById('showNotesBtn').addEventListener('click',function(){showNotes=!showNotes;this.textContent=showNotes?'Hide Notes':'Show Notes';renderSequence(currentSequence)});
+document.getElementById('showNotesBtn').addEventListener('click',function(){showNotes=!showNotes;this.textContent=showNotes?'Hide Notes':'Show Notes';renderSequence(currentSequence);speak(showNotes?'Notes shown.':'Notes hidden.')});
 
-// --- Voice toggle ---
 const voiceToggleBtn = document.getElementById('voiceToggleBtn');
 voiceToggleBtn.addEventListener('click', () => {
   if (voiceEnabled) {
-    // Speak "Voice off" before silencing
     try {
       window.speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance('Voice off');
-      u.rate = 0.95; u.lang = 'en-US';
+      u.rate = 0.82; u.pitch = 0.9; u.lang = 'en-US';
       window.speechSynthesis.speak(u);
     } catch(e) {}
     voiceEnabled = false;
@@ -1077,7 +1074,6 @@ voiceToggleBtn.addEventListener('click', () => {
   }
 });
 
-// --- Repeat current chord announcement ---
 document.getElementById('repeatBtn').addEventListener('click', () => {
   if (!currentSequence || currentIndex >= currentSequence.length) {
     speak('No chord to repeat. Tap Generate first.');
@@ -1090,6 +1086,20 @@ document.getElementById('repeatBtn').addEventListener('click', () => {
   }
   spoken += ` ${speakChordDescription(item)}.`;
   speak(spoken);
+});
+
+// --- Global button announcer ---
+// Any button that doesn't have its own speech says its label.
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  if (Date.now() - lastSpokenAt < 250) return; // handler already spoke
+  const raw = btn.getAttribute('aria-label') || btn.textContent || '';
+  const clean = raw
+    .replace(/[^\p{L}\p{N}\s.,:;!?'"()#&/+\-]/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (clean) speak(clean);
 });
 
 // ─── INIT ──────────────────────────────────────────────────────────
