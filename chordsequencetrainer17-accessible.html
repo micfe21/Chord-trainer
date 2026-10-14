@@ -60,8 +60,9 @@
 </div>
 <script>
 // ═══════════════════════════════════════════════════════════════════════
-// v76 a11y – Speech synthesis edition v2
-// Session-based cancellation prevents overlap on iOS.
+// v76 a11y – Speech synthesis edition v3
+// Fixes: 13#11 type qualities read as "1311", session-based cancellation,
+// explicit pauses between phrases, toggle buttons speak their own state.
 // ═══════════════════════════════════════════════════════════════════════
 
 let voiceEnabled = true;
@@ -94,8 +95,6 @@ function speak(text) {
   catch(e) { console.warn('speak failed', e); }
 }
 
-// Speak a sequence of phrases with explicit pauses.
-// Each part is a string (default 400ms pause after) or {text, pause}.
 function speakSequence(parts) {
   if (!voiceEnabled) return;
   if (!('speechSynthesis' in window)) return;
@@ -139,7 +138,6 @@ function speakSequence(parts) {
   next();
 }
 
-// Warm up speech engine on first tap
 let speechWarmedUp = false;
 document.addEventListener('touchstart', function warmup() {
   if (speechWarmedUp) return;
@@ -147,7 +145,6 @@ document.addEventListener('touchstart', function warmup() {
   try { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; window.speechSynthesis.speak(u); } catch(e) {}
 }, { passive: true });
 
-// Pronunciation overrides — TTS guesses wrong on these short labels
 const SPEECH_OVERRIDES = {
   'Aug': 'Augmented',
   'Chromatic': 'Chromatic notes',
@@ -166,7 +163,6 @@ function speechLabel(raw) {
   return SPEECH_OVERRIDES[clean] || clean;
 }
 
-// --- Spoken chord vocabulary ---
 const DEGREE_WORDS = ['','one','two','three','four','five','six','seven'];
 const QUALITY_WORDS = {
   maj:'major', min:'minor', dim:'diminished',
@@ -206,18 +202,26 @@ function speakChordDescription(item) {
   if (!item) return '';
   let s;
   if (currentMode === 'absolute') {
+    // Speak the root using spoken note names, and speak the quality using
+    // a spoken phrase — never the raw symbol (which TTS mangles: "13♯11" -> "1311").
     const rootName = speakNoteNames(noteLabel(item.chordRoot));
     let qual = QUALITY_WORDS[item.typeKey];
-    if (!qual && CHORD_TYPES[item.typeKey]) {
-      qual = CHORD_TYPES[item.typeKey].label.toLowerCase()
-        .replace(/♯/g, ' sharp ')
-        .replace(/#/g, ' sharp ')
-        .replace(/♭/g, ' flat ')
-        .replace(/b(?![a-z])/g, ' flat ')
-        .replace(/\s+/g, ' ')
-        .trim();
+    if (!qual) {
+      const meta = CHORD_TYPES[item.typeKey];
+      if (meta) {
+        qual = String(meta.label || '')
+          .toLowerCase()
+          .replace(/♯/g, ' sharp ')
+          .replace(/#/g, ' sharp ')
+          .replace(/♭/g, ' flat ')
+          .replace(/ø/g, ' half diminished ')
+          .replace(/°/g, ' diminished ')
+          .replace(/\+/g, ' augmented ')
+          .replace(/\s+/g, ' ')
+          .trim();
+      }
     }
-    s = rootName + ' ' + (qual || '');
+    s = (rootName + ' ' + (qual || '')).trim();
   } else {
     const roman = (item.roman || '').replace(/ \(1st\)| \(2nd\)| \(3rd\)/g, '');
     const parsedDeg = romanToDegree(roman);
@@ -1151,9 +1155,6 @@ document.getElementById('repeatBtn').addEventListener('click', () => {
   announceChord(currentIndex, currentSequence[currentIndex]);
 });
 
-// Global click handling:
-// - Capture phase: cancel any pending speech from previous interactions.
-// - Bubble phase: if no handler spoke during this click, speak the button label.
 let lastSpokenBeforeClick = 0;
 document.addEventListener('click', (e) => {
   cancelAllSpeech();
@@ -1175,7 +1176,7 @@ buildPiano();
 generate({ silent: true });
 updateAudioIndicator();
 document.addEventListener('keydown',e=>{if(e.key===' '&&e.target===document.body){e.preventDefault();if(persistentNotes.length>0)checkChord()}});
-console.log('Chord Trainer v76 a11y v2 loaded');
+console.log('Chord Trainer v76 a11y v3 loaded');
 </script>
 </body>
 </html>
