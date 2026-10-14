@@ -60,59 +60,113 @@
 </div>
 <script>
 // ═══════════════════════════════════════════════════════════════════════
-// v76 a11y – Speech synthesis edition
+// v76 a11y – Speech synthesis edition v2
+// Session-based cancellation prevents overlap on iOS.
 // ═══════════════════════════════════════════════════════════════════════
 
 let voiceEnabled = true;
 let lastSpokenAt = 0;
+let speechSession = 0;
+let speechTimers = [];
 
-function speak(text, urgent = false) {
-  if (!voiceEnabled) return;
-  if (!('speechSynthesis' in window)) return;
-  lastSpokenAt = Date.now();
-  try {
-    if (urgent) window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    u.rate = 0.72;
-    u.pitch = 0.9;
-    u.volume = 1;
-    u.lang = 'en-US';
-    window.speechSynthesis.speak(u);
-  } catch(e) { console.warn('speak failed', e); }
+function cancelAllSpeech() {
+  speechSession++;
+  speechTimers.forEach(t => clearTimeout(t));
+  speechTimers = [];
+  try { window.speechSynthesis.cancel(); } catch(e) {}
 }
 
-// Speak multiple phrases in sequence (queued, natural pauses between them)
-function speakQueued(texts) {
+function makeUtterance(text) {
+  const u = new SpeechSynthesisUtterance(text);
+  u.rate = 0.72;
+  u.pitch = 0.9;
+  u.volume = 1;
+  u.lang = 'en-US';
+  return u;
+}
+
+function speak(text) {
   if (!voiceEnabled) return;
   if (!('speechSynthesis' in window)) return;
+  cancelAllSpeech();
   lastSpokenAt = Date.now();
-  try {
-    window.speechSynthesis.cancel();
-    texts.forEach(t => {
-      if (!t) return;
-      const u = new SpeechSynthesisUtterance(t);
-      u.rate = 0.72;
-      u.pitch = 0.9;
-      u.volume = 1;
-      u.lang = 'en-US';
+  try { window.speechSynthesis.speak(makeUtterance(text)); }
+  catch(e) { console.warn('speak failed', e); }
+}
+
+// Speak a sequence of phrases with explicit pauses.
+// Each part is a string (default 400ms pause after) or {text, pause}.
+function speakSequence(parts) {
+  if (!voiceEnabled) return;
+  if (!('speechSynthesis' in window)) return;
+  cancelAllSpeech();
+  const mySession = speechSession;
+  lastSpokenAt = Date.now();
+  const items = parts.map(p =>
+    typeof p === 'string'
+      ? { text: p, pause: 400 }
+      : { text: p.text, pause: (p.pause == null ? 400 : p.pause) }
+  );
+  let i = 0;
+  function next() {
+    if (mySession !== speechSession) return;
+    if (i >= items.length) return;
+    const it = items[i];
+    i++;
+    if (!it.text) { next(); return; }
+    let fb = null;
+    let advanced = false;
+    const advance = () => {
+      if (advanced) return;
+      advanced = true;
+      if (fb) clearTimeout(fb);
+      if (mySession !== speechSession) return;
+      if (i < items.length) {
+        const t = setTimeout(next, it.pause);
+        speechTimers.push(t);
+      }
+    };
+    try {
+      const u = makeUtterance(it.text);
+      u.onend = advance;
+      u.onerror = advance;
       window.speechSynthesis.speak(u);
-    });
-  } catch(e) { console.warn('speakQueued failed', e); }
+      const fallbackMs = Math.max(1500, it.text.length * 110) + 600;
+      fb = setTimeout(advance, fallbackMs);
+      speechTimers.push(fb);
+    } catch(e) { next(); }
+  }
+  next();
 }
 
-// Warm up speech engine
+// Warm up speech engine on first tap
 let speechWarmedUp = false;
 document.addEventListener('touchstart', function warmup() {
   if (speechWarmedUp) return;
   speechWarmedUp = true;
-  try {
-    const u = new SpeechSynthesisUtterance(' ');
-    u.volume = 0;
-    window.speechSynthesis.speak(u);
-  } catch(e) {}
+  try { const u = new SpeechSynthesisUtterance(' '); u.volume = 0; window.speechSynthesis.speak(u); } catch(e) {}
 }, { passive: true });
 
-// --- Vocabulary ---
+// Pronunciation overrides — TTS guesses wrong on these short labels
+const SPEECH_OVERRIDES = {
+  'Aug': 'Augmented',
+  'Chromatic': 'Chromatic notes',
+  'Sus': 'Suspended',
+  'Half-dim': 'Half diminished',
+  'Dim 7': 'Diminished seven',
+  '°7': 'Diminished seven',
+  'MIDI Thru': 'MIDI through',
+  'Internal': 'Internal sound'
+};
+function speechLabel(raw) {
+  const clean = String(raw || '')
+    .replace(/[^\p{L}\p{N}\s.,#&/+\-°♯♭]/gu, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return SPEECH_OVERRIDES[clean] || clean;
+}
+
+// --- Spoken chord vocabulary ---
 const DEGREE_WORDS = ['','one','two','three','four','five','six','seven'];
 const QUALITY_WORDS = {
   maj:'major', min:'minor', dim:'diminished',
@@ -136,7 +190,6 @@ function speakNoteNames(text) {
     .replace(/[A-G]b/g, m => m[0] + ' flat');
 }
 
-// Parse a roman numeral string to its degree number (1-7)
 function romanToDegree(roman) {
   const body = String(roman || '').replace(/^[♯♭]/, '').toUpperCase();
   if (body.startsWith('VII')) return 7;
@@ -175,15 +228,19 @@ function speakChordDescription(item) {
   return s;
 }
 
-// Announce the current chord in two phrases with a natural pause between
+function chordAnnouncementParts(index, item) {
+  const parts = [];
+  parts.push({ text: `Chord ${index+1} of ${currentSequence.length}.`, pause: 800 });
+  if (currentKeyMode === 'modulating' && item.chordKeyRoot) {
+    parts.push({ text: `Key of ${speakNoteNames(noteLabel(item.chordKeyRoot))}.`, pause: 500 });
+  }
+  parts.push({ text: speakChordDescription(item) + '.', pause: 0 });
+  return parts;
+}
+
 function announceChord(index, item) {
   if (!voiceEnabled || !item) return;
-  const parts = [`Chord ${index + 1} of ${currentSequence.length}.`];
-  if (currentKeyMode === 'modulating' && item.chordKeyRoot) {
-    parts.push(`Key of ${speakNoteNames(noteLabel(item.chordKeyRoot))}.`);
-  }
-  parts.push(speakChordDescription(item) + '.');
-  speakQueued(parts);
+  speakSequence(chordAnnouncementParts(index, item));
 }
 
 // --- CHORD THEORY ---
@@ -293,13 +350,11 @@ function generateSequence(keyRoot,length,filter,keyMode,invMode){
      if(Math.random()<0.5){ root+=1; alterDir=1; } else { root-=1; alterDir=-1; }
      altered=true;
    }
-
    const degInfo = DEGREE_MAP[deg];
    let typeKey;
    if(currentChordType==='triad') typeKey = degInfo.triad;
    else if(currentChordType==='seventh') typeKey = degInfo.seventh;
    else typeKey = Math.random()<0.5 ? degInfo.triad : degInfo.seventh;
-
    if(libraryTypes){
      const baseInfo=CHORD_TYPES[typeKey];
      if(baseInfo){
@@ -314,7 +369,6 @@ function generateSequence(keyRoot,length,filter,keyMode,invMode){
        if(match.length>0) typeKey = match[Math.floor(Math.random()*match.length)];
      }
    }
-
    const chordInfo=CHORD_TYPES[typeKey];
    if(!chordInfo) continue;
    const maxInv = chordInfo.intervals.length-1;
@@ -342,10 +396,8 @@ function generateSequence(keyRoot,length,filter,keyMode,invMode){
    } else {
      inv=Math.floor(Math.random()*(maxInv+1));
    }
-
    let detectionNotes = buildChord(root, typeKey, inv);
    let displayNotes = transposeToVisibleRange([...detectionNotes]);
-
    let romanDisplay;
    if(altered){
      const acc = alterDir===1 ? '♯' : '♭';
@@ -369,7 +421,6 @@ function generateSequence(keyRoot,length,filter,keyMode,invMode){
    } else {
      romanDisplay = getRomanNumeral(chordKeyRoot, root, typeKey, inv);
    }
-
    const coreRoman = romanDisplay.replace(/ \(1st\)| \(2nd\)| \(3rd\)/g, '');
    if(coreRoman.includes('♯iii')){
      const isSeventh = typeKey==='maj7' || typeKey==='min7' || typeKey==='minmaj7' ||
@@ -389,7 +440,6 @@ function generateSequence(keyRoot,length,filter,keyMode,invMode){
      romanDisplay = newRoman;
      debugEl.textContent = `♯iii → ${forcedType} (root ${noteLabel(root)}) notes: ${displayNotes.map(n=>noteLabel(n)).join(' ')}`;
    }
-
    if(coreRoman.includes('♭V') && !coreRoman.includes('♯iii')){
      const isSeventh = typeKey==='maj7' || typeKey==='min7' || typeKey==='minmaj7' ||
                        typeKey==='dom7' || typeKey==='m7b5' || typeKey==='dim7' ||
@@ -407,15 +457,12 @@ function generateSequence(keyRoot,length,filter,keyMode,invMode){
      romanDisplay = newRoman;
      debugEl.textContent = `♭V → ${forcedType} (root ${noteLabel(root)}) notes: ${displayNotes.map(n=>noteLabel(n)).join(' ')}`;
    }
-
    if(!coreRoman.includes('♯iii') && !coreRoman.includes('♭V')){
      const label = altered ? ` (altered deg=${deg} dir=${alterDir})` : '';
      debugEl.textContent = `typeKey: ${typeKey}${label} → notes: ${displayNotes.map(n=>noteLabel(n)).join(' ')}`;
    }
-
    const symbol = getChordSymbol(root, typeKey);
    const displayName = (currentMode==='absolute') ? symbol : romanDisplay;
-
    seq.push({
      degree: deg,
      degreeLabel: degInfo.label,
@@ -644,7 +691,7 @@ function checkChord(){
   feedbackMsg.textContent='✅ Correct!';feedbackMsg.className='feedback-msg correct';
   persistentNotes.forEach(n=>{const el=keyElements.get(n);if(el)el.classList.add('correct')});
   const items=document.querySelectorAll('.seq-item');if(items[currentIndex]){items[currentIndex].classList.add('correct');items[currentIndex].classList.remove('playing')}
-  speak('Correct.', true);
+  speak('Correct.');
   if(feedbackTimer)clearTimeout(feedbackTimer);feedbackTimer=setTimeout(()=>{persistentNotes=[];updatePlayedDisplay();advanceToNext()},1400);
  }else{
   stats.wrong++;stats.streak=0;stats.total++;updateStats();
@@ -654,7 +701,7 @@ function checkChord(){
   extra.forEach(pc=>{persistentNotes.forEach(n=>{if(pitchClass(n)===pc){const el=keyElements.get(n);if(el)el.classList.add('wrong')}})});
   missing.forEach(pc=>{for(let n=KEY_START;n<=KEY_END;n++){if(pitchClass(n)===pc){const el=keyElements.get(n);if(el){el.classList.add('missing');break}}}});
   const items=document.querySelectorAll('.seq-item');if(items[currentIndex]){items[currentIndex].classList.add('wrong');items[currentIndex].classList.remove('playing')}
-  speak(speakNoteNames(err) || 'Incorrect.', true);
+  speak(speakNoteNames(err) || 'Incorrect.');
   if(feedbackTimer)clearTimeout(feedbackTimer);feedbackTimer=setTimeout(()=>{keyElements.forEach(el=>el.classList.remove('wrong','missing'));const items2=document.querySelectorAll('.seq-item');if(items2[currentIndex])items2[currentIndex].classList.remove('wrong');feedbackMsg.textContent=`🎯 Play: ${currentTargetDisplay}`;feedbackMsg.className='feedback-msg waiting'},2200);
  }
 }
@@ -673,7 +720,6 @@ function setCurrentChord(index, speakIt){
   feedbackMsg.textContent='🎯 Play: '+display;feedbackMsg.className='feedback-msg waiting';
   const items=document.querySelectorAll('.seq-item');items.forEach(el=>el.classList.remove('playing','correct','wrong'));if(items[index]){items[index].classList.add('playing');const deg=items[index].querySelector('.deg');if(deg)deg.textContent=deg.textContent.replace(/[✅❌]\s*/,'')}
   keyElements.forEach(el=>el.classList.remove('correct','wrong','missing'));persistentNotes=[];updatePlayedDisplay();listenMode=true;
-
   if(speakIt) announceChord(index, item);
 }
 function updateStats(){const avg=stats.times.length?Math.round(stats.times.reduce((a,b)=>a+b,0)/stats.times.length):0;statCorrect.textContent=stats.correct;statWrong.textContent=stats.wrong;statStreak.textContent=stats.streak;statTime.textContent=avg||'—'}
@@ -688,7 +734,6 @@ let midiConnected = false;
 let pollingActive = false;
 let midiPortPollTimer = null;
 let midiPortPollAttempt = 0;
-
 let bleDevice = null, bleServer = null, bleService = null, bleCharacteristic = null;
 
 const BLE_MIDI_SERVICE = '03b80e5a-ede8-4b33-a751-6ce34ec4c700';
@@ -702,7 +747,6 @@ const stopBtn = document.getElementById('stopScanBtn');
 const midiDeviceSelect = document.getElementById('midiDeviceSelect');
 const midiStatus = document.getElementById('midiStatus');
 const midiDebug = document.getElementById('midiDebug');
-
 const bluetoothSupported = 'bluetooth' in navigator;
 if (bleBtn && !bluetoothSupported) bleBtn.style.display = 'none';
 
@@ -716,19 +760,17 @@ function setMidiStatus(text, connected = false) {
     else { bleBtn.textContent = '🔵 BLE Connect'; bleBtn.style.background = '#0984e3'; bleBtn.style.borderColor = '#0984e3'; }
   }
 }
-
 function getAllMidiInputs() {
   if (!midiAccess?.inputs) return [];
-  try { return Array.from(midiAccess.inputs.values()).filter(input => input && input.type === 'input' && input.state === 'connected'); }
+  try { return Array.from(midiAccess.inputs.values()).filter(i => i && i.type === 'input' && i.state === 'connected'); }
   catch (e) { return []; }
 }
 function getAllMidiOutputs() {
   if (!midiAccess?.outputs) return [];
-  try { return Array.from(midiAccess.outputs.values()).filter(output => output && output.type === 'output' && output.state === 'connected'); }
+  try { return Array.from(midiAccess.outputs.values()).filter(o => o && o.type === 'output' && o.state === 'connected'); }
   catch (e) { return []; }
 }
 function clearMidiInputs() { midiInputs.forEach(input => { try { input.onmidimessage = null; } catch(e) {} }); midiInputs = []; }
-
 function handleMidiMessage(event) {
   const data = Array.from(event.data || []);
   const rawHex = data.map(b => b.toString(16).padStart(2, '0')).join(' ');
@@ -816,7 +858,6 @@ function forceScan() {
 }
 function sendMidiNoteOn(note, velocity = 100, channel = 0) { if (!midiAccess || !selectedMidiOutputId) return; const out = midiAccess.outputs.get(selectedMidiOutputId); if (out) out.send([0x90 + channel, note & 0x7f, velocity & 0x7f]); }
 function sendMidiNoteOff(note, channel = 0) { if (!midiAccess || !selectedMidiOutputId) return; const out = midiAccess.outputs.get(selectedMidiOutputId); if (out) out.send([0x80 + channel, note & 0x7f, 0]); }
-
 function parseBleMidiPacket(data) {
   const bytes = Array.from(data);
   if (bytes.length < 3) return [];
@@ -894,8 +935,8 @@ soundToggle.querySelectorAll('button').forEach(btn=>{btn.addEventListener('click
   soundToggle.querySelectorAll('button').forEach(b=>{b.classList.remove('active');b.setAttribute('aria-pressed','false')});
   btn.classList.add('active');btn.setAttribute('aria-pressed','true');
   soundMode=btn.dataset.mode;
-  if(soundMode==='internal'){soundStatus.textContent='Warm piano';ensureAudio();initAudioGraph();speak('Internal sound.')}
-  else{soundStatus.textContent='MIDI Thru (external)';speak('MIDI through.')}
+  if(soundMode==='internal'){soundStatus.textContent='Warm piano';ensureAudio();initAudioGraph();}
+  else{soundStatus.textContent='MIDI Thru (external)';}
 })});
 
 document.getElementById('startAudioBtn').addEventListener('click',()=>{
@@ -940,19 +981,23 @@ document.getElementById('voiceLeadingBtn').addEventListener('click',function(){
   this.classList.toggle('active',voiceLeadingEnabled);
   this.setAttribute('aria-pressed',voiceLeadingEnabled?'true':'false');
   this.textContent=voiceLeadingEnabled?'🎹 Voice Leading ✓':'🎹 Voice Leading';
-  speak(voiceLeadingEnabled?'Voice leading on.':'Voice leading off.');
   generate({silent:true});
-  setTimeout(()=>{ if(currentSequence.length>0) announceChord(0, currentSequence[0]); }, 1200);
+  const parts = [{ text: voiceLeadingEnabled?'Voice leading on.':'Voice leading off.', pause: 600 }];
+  if (currentSequence.length > 0) parts.push(...chordAnnouncementParts(0, currentSequence[0]));
+  speakSequence(parts);
 });
+
 document.getElementById('strictInvBtn').addEventListener('click',function(){
   strictInversions=!strictInversions;
   this.classList.toggle('active',strictInversions);
   this.setAttribute('aria-pressed',strictInversions?'true':'false');
   this.textContent=strictInversions?'🔒 Strict ✓':'🔒 Strict Inversions';
-  speak(strictInversions?'Strict inversions on.':'Strict inversions off.');
-  if(currentSequence.length>0&&currentIndex<currentSequence.length){
-    setTimeout(()=>setCurrentChord(currentIndex), 900);
+  if(currentSequence.length>0&&currentIndex<currentSequence.length) setCurrentChord(currentIndex, false);
+  const parts = [{ text: strictInversions?'Strict inversions on.':'Strict inversions off.', pause: 600 }];
+  if (currentSequence.length > 0 && currentIndex < currentSequence.length) {
+    parts.push(...chordAnnouncementParts(currentIndex, currentSequence[currentIndex]));
   }
+  speakSequence(parts);
 });
 
 document.querySelectorAll('#libraryRow button').forEach(el=>{
@@ -960,10 +1005,11 @@ document.querySelectorAll('#libraryRow button').forEach(el=>{
     document.querySelectorAll('#libraryRow button').forEach(s=>{s.classList.remove('active');s.setAttribute('aria-pressed','false')});
     this.classList.add('active');this.setAttribute('aria-pressed','true');
     currentLibrary=this.dataset.library;
-    const label = this.textContent.trim();
-    speak(label + '.');
     generate({silent:true});
-    setTimeout(()=>{ if(currentSequence.length>0) announceChord(0, currentSequence[0]); }, 1000);
+    const label = speechLabel(this.textContent);
+    const parts = [{ text: label + '.', pause: 600 }];
+    if (currentSequence.length > 0) parts.push(...chordAnnouncementParts(0, currentSequence[0]));
+    speakSequence(parts);
   });
 });
 
@@ -971,9 +1017,10 @@ document.getElementById('chromaticToggle').addEventListener('click',function(){
   allowChromatic=!allowChromatic;
   this.classList.toggle('active',allowChromatic);
   this.setAttribute('aria-pressed',allowChromatic?'true':'false');
-  speak(allowChromatic?'Chromatic on.':'Chromatic off.');
   generate({silent:true});
-  setTimeout(()=>{ if(currentSequence.length>0) announceChord(0, currentSequence[0]); }, 1000);
+  const parts = [{ text: allowChromatic?'Chromatic on.':'Chromatic off.', pause: 600 }];
+  if (currentSequence.length > 0) parts.push(...chordAnnouncementParts(0, currentSequence[0]));
+  speakSequence(parts);
 });
 
 function renderSequence(seq){
@@ -1011,9 +1058,9 @@ function generate(opts){
   feedbackMsg.textContent='🎯 Play: '+currentTargetDisplay;feedbackMsg.className='feedback-msg waiting';listenMode=true;
   if(!opts.silent && currentSequence.length > 0){
     const keyName = speakNoteNames(noteLabel(parseInt(keySelect.value,10)));
-    const summary = `${length} chords in ${keyName} major.`;
-    speak(summary);
-    setTimeout(()=>{ announceChord(0, currentSequence[0]); }, 1100);
+    const parts = [{ text: `${length} chords in ${keyName} major.`, pause: 500 }];
+    parts.push(...chordAnnouncementParts(0, currentSequence[0]));
+    speakSequence(parts);
   }
 }
 
@@ -1028,10 +1075,11 @@ document.querySelectorAll('#modeSelector button').forEach(btn=>{
     keySelect.parentElement.style.display=showKey?'flex':'none';
     keyModeSelect.parentElement.style.display=showKey?'flex':'none';
     document.getElementById('keyDisplay').textContent=showKey?'Key: '+noteLabel(parseInt(keySelect.value)):'Key: none';
-    const modeName = btn.textContent.trim();
-    speak(modeName + ' mode.');
     generate({silent:true});
-    setTimeout(()=>{ if(currentSequence.length>0) announceChord(0, currentSequence[0]); }, 1000);
+    const modeName = speechLabel(btn.textContent);
+    const parts = [{ text: modeName + ' mode.', pause: 600 }];
+    if (currentSequence.length > 0) parts.push(...chordAnnouncementParts(0, currentSequence[0]));
+    speakSequence(parts);
   });
 });
 
@@ -1040,9 +1088,11 @@ document.querySelectorAll('#filterRow button[data-filter]').forEach(el=>{
     document.querySelectorAll('#filterRow button[data-filter]').forEach(s=>{s.classList.remove('active');s.setAttribute('aria-pressed','false')});
     el.classList.add('active');el.setAttribute('aria-pressed','true');
     currentFilter=el.dataset.filter;
-    speak(el.textContent.trim() + '.');
     generate({silent:true});
-    setTimeout(()=>{ if(currentSequence.length>0) announceChord(0, currentSequence[0]); }, 1000);
+    const label = speechLabel(el.textContent);
+    const parts = [{ text: label + '.', pause: 600 }];
+    if (currentSequence.length > 0) parts.push(...chordAnnouncementParts(0, currentSequence[0]));
+    speakSequence(parts);
   });
 });
 
@@ -1068,8 +1118,7 @@ voiceToggleBtn.addEventListener('click', () => {
   if (voiceEnabled) {
     try {
       window.speechSynthesis.cancel();
-      const u = new SpeechSynthesisUtterance('Voice off');
-      u.rate = 0.72; u.pitch = 0.9; u.lang = 'en-US';
+      const u = makeUtterance('Voice off');
       window.speechSynthesis.speak(u);
     } catch(e) {}
     voiceEnabled = false;
@@ -1093,22 +1142,20 @@ document.getElementById('repeatBtn').addEventListener('click', () => {
   announceChord(currentIndex, currentSequence[currentIndex]);
 });
 
-// Global button announcer — speaks button label when a button's own
-// handler didn't already speak during this click.
+// Global click handling:
+// - Capture phase: cancel any pending speech from previous interactions.
+// - Bubble phase: if no handler spoke during this click, speak the button label.
 let lastSpokenBeforeClick = 0;
 document.addEventListener('click', (e) => {
+  cancelAllSpeech();
   lastSpokenBeforeClick = lastSpokenAt;
-}, true); // capture phase, fires BEFORE button handlers
+}, true);
 document.addEventListener('click', (e) => {
   const btn = e.target.closest('button');
   if (!btn) return;
-  if (lastSpokenAt !== lastSpokenBeforeClick) return; // handler already spoke
-  const raw = btn.getAttribute('aria-label') || btn.textContent || '';
-  const clean = raw
-    .replace(/[^\p{L}\p{N}\s.,:;!?'"()#&/+\-]/gu, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-  if (clean) speak(clean);
+  if (lastSpokenAt !== lastSpokenBeforeClick) return;
+  const label = speechLabel(btn.getAttribute('aria-label') || btn.textContent || '');
+  if (label) speak(label);
 });
 
 // ─── INIT ──────────────────────────────────────────────────────────
@@ -1119,7 +1166,7 @@ buildPiano();
 generate({ silent: true });
 updateAudioIndicator();
 document.addEventListener('keydown',e=>{if(e.key===' '&&e.target===document.body){e.preventDefault();if(persistentNotes.length>0)checkChord()}});
-console.log('Chord Trainer v76 a11y – speech edition loaded');
+console.log('Chord Trainer v76 a11y v2 loaded');
 </script>
 </body>
 </html>
