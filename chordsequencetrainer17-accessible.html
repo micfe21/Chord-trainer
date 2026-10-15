@@ -189,8 +189,9 @@ const INVERSION_WORDS = ['','first inversion','second inversion','third inversio
 
 function speakNoteNames(text) {
   return String(text)
-    .replace(/[A-G]#/g, m => m[0] + ' sharp')
-    .replace(/[A-G]b/g, m => m[0] + ' flat');
+    .replace(/[A-G]#/g, m => (m[0] === 'A' ? 'Ay' : m[0]) + ' sharp')
+    .replace(/[A-G]b/g, m => (m[0] === 'A' ? 'Ay' : m[0]) + ' flat')
+    .replace(/\bA(?![a-z])/g, 'Ay');
 }
 
 function romanToDegree(roman) {
